@@ -1,6 +1,6 @@
 //! Local SQLite database for daemon state persistence.
 //!
-//! Stores session history, task records, and audit log locally
+//! Stores session history, task records, audit log, and undo log locally
 //! so the daemon can report on past activity without cloud connectivity.
 
 use rusqlite::{Connection, params};
@@ -64,6 +64,16 @@ impl LocalDb {
                 detail      TEXT NOT NULL,
                 risk_tier   TEXT NOT NULL DEFAULT 'LOW',
                 timestamp   INTEGER NOT NULL DEFAULT (unixepoch())
+            );
+
+            CREATE TABLE IF NOT EXISTS undo_log (
+                id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT NOT NULL,
+                task_id  TEXT NOT NULL,
+                step_number INTEGER NOT NULL,
+                action   TEXT NOT NULL,
+                reversible_command TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now'))
             );",
         )?;
         Ok(())
@@ -107,11 +117,27 @@ impl LocalDb {
         )?;
         Ok(())
     }
+
+    pub fn record_undo_entry(
+        &self,
+        session_id: &str,
+        task_id: &str,
+        step_number: i32,
+        action: &str,
+        reversible_command: Option<&str>,
+    ) -> Result<()> {
+        self.conn.execute(
+            "INSERT INTO undo_log (session_id, task_id, step_number, action, reversible_command) VALUES (?1, ?2, ?3, ?4, ?5)",
+            rusqlite::params![session_id, task_id, step_number, action, reversible_command],
+        )?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::tempdir;
 
     fn in_memory_db() -> LocalDb {
         LocalDb::open(":memory:").expect("in-memory db should open")
@@ -170,5 +196,20 @@ mod tests {
             .query_row("SELECT status FROM sessions WHERE id='sess-2'", [], |r| r.get(0))
             .unwrap();
         assert_eq!(status, "completed");
+    }
+
+    #[test]
+    fn test_record_undo_entry() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = LocalDb::open(db_path.to_str().unwrap()).unwrap();
+        db.record_undo_entry("sess-1", "task-1", 1, "SHELL", Some("rm /tmp/foo")).unwrap();
+        // No panic = success; verify by querying
+        let count: i64 = db.conn.query_row(
+            "SELECT COUNT(*) FROM undo_log WHERE task_id = 'task-1'",
+            [],
+            |row| row.get(0),
+        ).unwrap();
+        assert_eq!(count, 1);
     }
 }
