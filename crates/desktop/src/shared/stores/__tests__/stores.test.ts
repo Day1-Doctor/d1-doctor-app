@@ -6,6 +6,23 @@ vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue('full'),
 }))
 
+vi.mock('@tauri-apps/api/window', () => ({
+  getCurrentWindow: vi.fn(() => ({
+    hide: vi.fn().mockResolvedValue(undefined),
+    show: vi.fn().mockResolvedValue(undefined),
+    setFocus: vi.fn().mockResolvedValue(undefined),
+  })),
+}))
+
+vi.mock('@tauri-apps/api/webviewWindow', () => ({
+  WebviewWindow: {
+    getByLabel: vi.fn().mockResolvedValue({
+      hide: vi.fn().mockResolvedValue(undefined),
+      show: vi.fn().mockResolvedValue(undefined),
+    }),
+  },
+}))
+
 describe('ConversationStore', () => {
   beforeEach(() => { setActivePinia(createPinia()) })
 
