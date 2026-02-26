@@ -4,8 +4,8 @@
     <StepIndicator v-for="step in steps" :key="step.id" v-bind="step" />
     <div class="progress-track"><div class="progress-fill" :style="{ width: progressPct + '%' }" /></div>
     <div class="plan-actions">
-      <button class="btn-approve" @click="onApprove">✓ Approve</button>
-      <button class="btn-reject" @click="onReject">✕ Reject</button>
+      <button class="btn-approve" @click="$emit('approve')">✓ Approve</button>
+      <button class="btn-reject" @click="$emit('reject')">✕ Reject</button>
     </div>
   </div>
 </template>
@@ -13,7 +13,10 @@
 import { computed } from 'vue'
 import type { Step } from '@/shared/types'
 import StepIndicator from './StepIndicator.vue'
-const props = defineProps<{ steps: Step[]; onApprove: () => void; onReject: () => void }>()
+
+const props = defineProps<{ steps: Step[] }>()
+defineEmits<{ approve: []; reject: [] }>()
+
 const progressPct = computed(() => {
   if (!props.steps.length) return 0
   const done = props.steps.filter(s => s.state === 'done').length
@@ -29,5 +32,5 @@ const progressPct = computed(() => {
 button { flex: 1; padding: 7px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--muted); color: var(--text-secondary); cursor: pointer; font: 12px var(--font-mono); transition: all 0.15s; }
 .btn-approve { border-color: var(--accent); color: var(--accent); }
 .btn-approve:hover { background: var(--accent-soft); }
-.btn-reject:hover { background: rgba(239,68,68,0.1); color: var(--error); border-color: var(--error); }
+.btn-reject:hover { background: var(--error-soft); color: var(--error); border-color: var(--error); }
 </style>

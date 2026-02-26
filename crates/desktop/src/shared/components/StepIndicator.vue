@@ -14,6 +14,6 @@ defineProps<{ state: Step['state']; label: string; index: number }>()
 .done .step-dot { background: var(--success-soft); border-color: var(--success); color: var(--success); }
 .active .step-dot { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); animation: agentPulse 1.8s ease-in-out infinite; }
 .pending .step-dot { color: var(--text-disabled); }
-.error .step-dot { background: rgba(239,68,68,0.1); border-color: var(--error); color: var(--error); }
+.error .step-dot { background: var(--error-soft); border-color: var(--error); color: var(--error); }
 .step-label { font: 13px/1.4 var(--font-mono); color: var(--text-secondary); }
 </style>
