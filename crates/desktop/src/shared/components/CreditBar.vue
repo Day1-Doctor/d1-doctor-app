@@ -30,4 +30,8 @@ const pct = computed(() => Math.min(100, props.max > 0 ? (props.credits / props.
 .buy-link { color: var(--accent); text-decoration: none; font-size: 10px; }
 .buy-link:hover { text-decoration: underline; }
 .mini .bar-track { min-width: 30px; }
+/* dropdown variant: compact horizontal layout for popover/menu contexts */
+.dropdown { gap: 6px; padding: 4px 0; }
+.dropdown .bar-track { min-width: 60px; height: 2px; }
+.dropdown .credit-value { font-size: 10px; color: var(--text-muted); }
 </style>

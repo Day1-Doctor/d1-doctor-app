@@ -22,4 +22,18 @@ describe('CreditBar', () => {
     const fill = w.find('.bar-fill')
     expect(fill.attributes('style')).toContain('100%')
   })
+  it('full variant shows buy link', () => {
+    const w = mount(CreditBar, { props: { credits: 50, max: 100, variant: 'full' } })
+    expect(w.find('.buy-link').exists()).toBe(true)
+  })
+  it('mini variant hides buy link', () => {
+    const w = mount(CreditBar, { props: { credits: 50, max: 100, variant: 'mini' } })
+    expect(w.find('.buy-link').exists()).toBe(false)
+  })
+  it('dropdown variant renders with dropdown class', () => {
+    const w = mount(CreditBar, { props: { credits: 30, max: 100, variant: 'dropdown' } })
+    expect(w.classes()).toContain('dropdown')
+    expect(w.find('.bar-track').exists()).toBe(true)
+    expect(w.find('.buy-link').exists()).toBe(false)
+  })
 })

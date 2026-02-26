@@ -22,4 +22,9 @@ describe('StepIndicator', () => {
     const w = mount(StepIndicator, { props: { state: 'active', label: 'Installing...', index: 0 } })
     expect(w.find('.step-label').text()).toBe('Installing...')
   })
+  it('shows index+1 for active state', () => {
+    const w = mount(StepIndicator, { props: { state: 'active', label: 'Step', index: 1 } })
+    expect(w.find('.step-dot').text()).toBe('2')
+    expect(w.classes()).toContain('active')
+  })
 })
