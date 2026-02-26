@@ -1,0 +1,24 @@
+/* CONTRACT FILE — locked per spec §1.2 */
+@keyframes agentPulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(249, 115, 22, 0.15); }
+  50%       { box-shadow: 0 0 20px rgba(249, 115, 22, 0.35); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

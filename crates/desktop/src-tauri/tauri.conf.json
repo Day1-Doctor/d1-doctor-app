@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schema.tauri.app/config/v2",
+  "productName": "Day 1 Doctor",
+  "version": "2.4.0",
+  "identifier": "com.day1doctor.app",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Day 1 Doctor",
+        "url": "index.html",
+        "width": 1200,
+        "height": 760,
+        "minWidth": 900,
+        "minHeight": 600,
+        "decorations": false,
+        "transparent": true,
+        "resizable": true,
+        "visible": true
+      },
+      {
+        "label": "ninja-bar",
+        "title": "Day 1 Doctor — Ninja",
+        "url": "ninja.html",
+        "width": 680,
+        "height": 64,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "resizable": false,
+        "skipTaskbar": true,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": []
+  }
+}

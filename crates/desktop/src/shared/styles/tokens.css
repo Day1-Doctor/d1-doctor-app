@@ -1,0 +1,35 @@
+/* CONTRACT FILE — locked per spec §1.1 */
+:root {
+  --background: #050505;
+  --card: #0D0D0D;
+  --muted: #1F1F1F;
+  --border: #242424;
+  --primary: #F97316;
+  --accent: #F97316;
+  --accent-hover: #EA580C;
+  --accent-glow: rgba(249, 115, 22, 0.25);
+  --accent-soft: rgba(249, 115, 22, 0.08);
+  --accent-border: rgba(249, 115, 22, 0.3);
+  --text-primary: #E5E5E5;
+  --text-secondary: #A0A0A0;
+  --text-muted: #878787;
+  --text-disabled: #555555;
+  --success: #22C55E;
+  --success-soft: rgba(34, 197, 94, 0.15);
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', monospace;
+  --surface-title-bar: rgba(13, 13, 13, 0.82);
+  --surface-sidebar: rgba(10, 10, 10, 0.78);
+  --surface-chat: rgba(5, 5, 5, 0.75);
+  --surface-utility: rgba(13, 13, 13, 0.78);
+  --surface-copilot: rgba(10, 10, 10, 0.85);
+  --surface-ninja-bar: rgba(5, 5, 5, 0.82);
+  --surface-ninja-dropdown: rgba(5, 5, 5, 0.88);
+  --traffic-close: #FF5F57;
+  --traffic-minimize: #FFBD2E;
+  --traffic-maximize: #28C840;
+}

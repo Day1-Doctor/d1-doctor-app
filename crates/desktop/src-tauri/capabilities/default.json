@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.tauri.app/config/v2/capabilities.json",
+  "identifier": "default",
+  "description": "Default capability for Day 1 Doctor",
+  "windows": ["main", "ninja-bar"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-close",
+    "core:window:allow-minimize",
+    "core:window:allow-maximize",
+    "core:window:allow-set-size",
+    "core:window:allow-set-position",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-is-visible",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-create",
+    "fs:allow-mkdir",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister",
+    "window-state:allow-save-window-state",
+    "window-state:allow-restore-state"
+  ]
+}

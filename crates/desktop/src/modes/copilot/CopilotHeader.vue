@@ -1,0 +1,3 @@
+<template><div class="copilot-header"><div class="traffic-lights"><div class="traffic-dot close"/><div class="traffic-dot minimize"/></div><span class="title">Day 1 Doctor</span></div></template>
+<script setup lang="ts"></script>
+<style scoped>.copilot-header { height: 50px; display: flex; align-items: center; padding: 0 14px; gap: 12px; border-bottom: 1px solid var(--border); -webkit-app-region: drag; } .traffic-lights { -webkit-app-region: no-drag; display: flex; gap: 8px; } .traffic-dot { width: 12px; height: 12px; border-radius: 50%; } .close { background: var(--traffic-close); } .minimize { background: var(--traffic-minimize); } .title { font: 13px var(--font-mono); color: var(--text-primary); }</style>
