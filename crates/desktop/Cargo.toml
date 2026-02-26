@@ -1,0 +1,11 @@
+[package]
+name = "d1-doctor-desktop"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+d1-doctor-common = { path = "../common" }
+serde.workspace = true
+serde_json.workspace = true
+# tauri = "2" # Uncomment when Tauri is set up

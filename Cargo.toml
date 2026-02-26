@@ -1,0 +1,66 @@
+[workspace]
+members = [
+    "crates/common",
+    "crates/daemon",
+    "crates/cli",
+    "crates/sdk",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Day 1 Doctor Contributors"]
+license = "MIT"
+repository = "https://github.com/day1-doctor/d1-doctor-app"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+tokio-tungstenite = "0.21"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+prost = "0.12"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Configuration
+toml = "0.8"
+
+# Database
+rusqlite = { version = "0.30", features = ["bundled", "chrono"] }
+
+# System info
+sysinfo = "0.30"
+
+# Terminal UI
+crossterm = "0.27"
+indicatif = "0.17"
+
+# CLI
+clap = { version = "4.4", features = ["derive", "cargo"] }
+
+# Auth
+reqwest = { version = "0.11", features = ["json"] }
+
+# Utilities
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1.6", features = ["v4", "serde"] }
+bytes = "1.5"
+base64 = "0.21"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+
+[profile.dev]
+opt-level = 0
