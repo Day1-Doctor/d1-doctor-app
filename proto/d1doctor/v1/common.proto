@@ -1,0 +1,243 @@
+syntax = "proto3";
+
+package d1doctor.v1;
+
+// Common shared types and enums used across d1doctor protocol
+
+// ============================================================================
+// SHARED ENUMS
+// ============================================================================
+
+// ActionType - Types of actions the daemon can execute
+enum ActionType {
+  SHELL = 0;                  // Execute shell command
+  FILE_READ = 1;              // Read file content
+  FILE_WRITE = 2;             // Write/create file
+  FILE_MOVE = 3;              // Move/rename file or directory
+  FILE_DELETE = 4;            // Delete file or directory
+  SYSTEM_INFO = 5;            // Query system information
+  PROCESS = 6;                // Process management (list, kill, etc)
+  WEB_SEARCH = 7;             // Execute web search (daemon relays to orchestrator)
+}
+
+// RiskTier - Risk classification for actions and plans
+enum RiskTier {
+  LOW = 0;                    // Safe, read-only, reversible operations
+  MEDIUM = 1;                 // Modifies system state but generally reversible
+  HIGH = 2;                   // Destructive, irreversible, or sensitive operations
+}
+
+// ApprovalAction - User's response to plan proposal
+enum ApprovalAction {
+  APPROVE = 0;                // Approve plan as-is
+  MODIFY = 1;                 // Ask for modifications (include modification_text)
+  REJECT = 2;                 // Reject plan entirely
+}
+
+// ============================================================================
+// SYSTEM INFORMATION TYPES
+// ============================================================================
+
+// SystemInfo: Basic system information about the daemon's host.
+// Sent as part of ContextSync to inform orchestrator of device capabilities.
+message SystemInfo {
+  // Operating system name (e.g., "Linux", "macOS", "Windows")
+  string os_name = 1;
+
+  // OS version string (e.g., "22.04 LTS")
+  string os_version = 2;
+
+  // Computer hostname
+  string hostname = 3;
+
+  // Username of daemon's running user
+  string username = 4;
+
+  // Default shell (e.g., "/bin/bash", "cmd.exe")
+  string shell = 5;
+
+  // CPU architecture (e.g., "x86_64", "arm64")
+  string arch = 6;
+
+  // Total system memory in bytes
+  int64 total_memory_bytes = 7;
+
+  // Currently available memory in bytes
+  int64 available_memory_bytes = 8;
+
+  // Number of CPU cores
+  int32 cpu_cores = 9;
+
+  // Current CPU usage as percentage (0-100)
+  float cpu_usage_percent = 10;
+}
+
+// InstalledApp: Information about an installed application.
+// Used to inform orchestrator of available tools and dependencies.
+message InstalledApp {
+  // Application name (e.g., "python", "node", "docker")
+  string name = 1;
+
+  // Version number (e.g., "3.11.4")
+  string version = 2;
+
+  // Installation method (e.g., "brew", "apt", "npm", "manual")
+  string install_method = 3;
+}
+
+// DiskInfo: Disk space information.
+// Helps orchestrator make decisions about file operations.
+message DiskInfo {
+  // Total disk capacity in bytes
+  int64 total_bytes = 1;
+
+  // Used disk space in bytes
+  int64 used_bytes = 2;
+
+  // Available disk space in bytes
+  int64 available_bytes = 3;
+
+  // Mount point (e.g., "/", "/home", "C:")
+  string mount_point = 4;
+}
+
+// RunningProcess: Information about a running process.
+// Identifies resource-consuming processes on the system.
+message RunningProcess {
+  // Process ID
+  int32 pid = 1;
+
+  // Process name/command
+  string name = 2;
+
+  // CPU usage as percentage (0-100)
+  float cpu_percent = 3;
+
+  // Memory usage as percentage (0-100)
+  float memory_percent = 4;
+}
+
+// ============================================================================
+// TIMESTAMP UTILITIES
+// ============================================================================
+
+// Timestamp wrapper for high-precision time values
+// Represents seconds and nanoseconds since Unix epoch
+message Timestamp {
+  // Seconds since Unix epoch
+  int64 seconds = 1;
+
+  // Nanoseconds within the second (0-999999999)
+  int32 nanos = 2;
+}
+
+// ============================================================================
+// ID AND IDENTIFICATION TYPES
+// ============================================================================
+
+// UUID represents a universally unique identifier
+// Uses RFC 4122 format (standard UUID v4)
+message UUID {
+  // UUID string in standard format (e.g., "550e8400-e29b-41d4-a716-446655440000")
+  string value = 1;
+}
+
+// DeviceIdentifier represents a unique device/daemon instance
+message DeviceIdentifier {
+  // Unique device ID (UUID v4)
+  string device_id = 1;
+
+  // Device name for user identification (e.g., "MacBook-Pro-John")
+  string device_name = 2;
+
+  // Device type (e.g., "laptop", "desktop", "server")
+  string device_type = 3;
+}
+
+// ============================================================================
+// CREDIT AND BILLING TYPES
+// ============================================================================
+
+// CreditBalance represents user's current credit state
+message CreditBalance {
+  // Total credits available to user
+  float total_credits = 1;
+
+  // Credits remaining (total - used)
+  float remaining_credits = 2;
+
+  // Credits used in current billing period
+  float used_in_period = 3;
+
+  // Timestamp of last balance update
+  int64 last_updated_ms = 4;
+}
+
+// CreditLedgerEntry represents a single credit transaction
+message CreditLedgerEntry {
+  // Entry timestamp (milliseconds since epoch)
+  int64 timestamp_ms = 1;
+
+  // Task ID this credits belong to
+  string task_id = 2;
+
+  // Action that consumed credits (e.g., "COMMAND_EXECUTION", "PLAN_GENERATION")
+  string action = 3;
+
+  // Credits consumed (negative for refund)
+  float amount = 4;
+
+  // Running balance after this transaction
+  float balance_after = 5;
+
+  // Human-readable description of the charge
+  string description = 6;
+}
+
+// ============================================================================
+// END OF COMMON DEFINITIONS
+// ============================================================================
+
+// ============================================================================
+// FILE OPERATION TYPES
+// ============================================================================
+
+// FileOperation: Parameters for file-related commands.
+// Used in Command when action is FILE_READ, FILE_WRITE, FILE_MOVE, or FILE_DELETE.
+message FileOperation {
+  // Source path for the operation
+  string source_path = 1;
+
+  // Destination path (used for FILE_WRITE and FILE_MOVE)
+  string destination_path = 2;
+
+  // File content to write (used for FILE_WRITE)
+  bytes content = 3;
+
+  // Whether to create intermediate directories
+  bool create_parents = 4;
+}
+
+// ============================================================================
+// SYSTEM SNAPSHOT TYPES
+// ============================================================================
+
+// SystemSnapshot: A point-in-time snapshot of the system state.
+// Optionally sent with CommandResult for context-critical operations.
+message SystemSnapshot {
+  // System information at time of snapshot
+  SystemInfo info = 1;
+
+  // Running processes at time of snapshot
+  repeated RunningProcess processes = 2;
+
+  // Disk information at time of snapshot
+  repeated DiskInfo disks = 3;
+
+  // Timestamp of snapshot (milliseconds since epoch)
+  int64 captured_at_ms = 4;
+}
+
+// ============================================================================
+// END OF ADDITIONAL COMMON DEFINITIONS
+// ============================================================================

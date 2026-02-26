@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package d1doctor.v1;
+
+// ============================================================================
+// BILLING & CREDITS
+// ============================================================================
+
+// CreditUpdate: Billing/credit usage update from orchestrator.
+// Sent periodically or when credit state changes significantly.
+message CreditUpdate {
+  // User's remaining credit balance
+  float balance_remaining = 1;
+
+  // Credits consumed during current task
+  float credits_used_this_task = 2;
+
+  // Total credits consumed today (reset daily)
+  float daily_total_used = 3;
+}

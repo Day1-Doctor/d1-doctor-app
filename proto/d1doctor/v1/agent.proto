@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package d1doctor.v1;
+
+import "proto/d1doctor/v1/common.proto";
+
+// ============================================================================
+// PLANNING PHASE - Orchestrator proposes and user approves execution plan
+// ============================================================================
+
+// PlanProposal: Orchestrator proposes a multi-step execution plan.
+// User must approve, reject, or request modifications before execution begins.
+message PlanProposal {
+  // Unique identifier for this task/plan
+  string task_id = 1;
+
+  // Human-readable summary of what will be executed
+  string summary = 2;
+
+  // Ordered list of steps to execute
+  repeated PlanStep steps = 3;
+
+  // Estimated credit cost for executing this plan
+  float estimated_credits = 4;
+
+  // Overall risk classification of the plan
+  RiskTier overall_risk = 5;
+}
+
+// PlanStep: Individual step within an execution plan.
+message PlanStep {
+  // Sequential step number (1-indexed)
+  int32 step_number = 1;
+
+  // Description of what this step does
+  string description = 2;
+
+  // Name of agent responsible for this step
+  string agent_name = 3;
+
+  // Type of action to execute
+  ActionType action_type = 4;
+
+  // Risk level of this specific step
+  RiskTier risk_tier = 5;
+}
+
+// PlanApproval: User's response to a plan proposal.
+// Sent as response to PlanProposal.
+message PlanApproval {
+  // ID of the task/plan being approved/rejected/modified
+  string task_id = 1;
+
+  // User's decision on the plan
+  ApprovalAction action = 2;
+
+  // If action == MODIFY: user's requested modifications as natural language text
+  string modification_text = 3;
+}
+
+// ============================================================================
+// COMMAND EXECUTION - Orchestrator sends commands, daemon executes
+// ============================================================================
+
+// Command: Orchestrator instructs daemon to execute a specific action.
+// Daemon must execute and report result via CommandResult.
+message Command {
+  // Unique command identifier
+  string id = 1;
+
+  // Task ID this command belongs to
+  string task_id = 2;
+
+  // Which step of the plan this command executes
+  int32 step_number = 3;
+
+  // Type of action to perform
+  ActionType action = 4;
+
+  // Shell command to execute (populated when action == SHELL)
+  string shell_command = 5;
+
+  // File operation details (populated when action == FILE_*)
+  FileOperation file_op = 6;
+
+  // Risk classification for this command
+  RiskTier risk = 7;
+
+  // Maximum execution time in milliseconds (0 = no limit)
+  int32 timeout_ms = 8;
+
+  // Human-readable description of what this command does
+  string description = 9;
+}
+
+// CommandResult: Daemon reports the result of executing a command.
+// Sent as response to Command.
+message CommandResult {
+  // ID of the command being reported
+  string command_id = 1;
+
+  // Task ID this result belongs to
+  string task_id = 2;
+
+  // Whether execution succeeded
+  bool success = 3;
+
+  // Standard output from command
+  string stdout = 4;
+
+  // Standard error output from command
+  string stderr = 5;
+
+  // Process exit code (0 = success typically)
+  int32 exit_code = 6;
+
+  // Execution duration in milliseconds
+  int64 duration_ms = 7;
+
+  // System state snapshot after command execution
+  // (optional, sent for context-critical operations)
+  SystemSnapshot system_state = 8;
+}
+
+// ============================================================================
+// PERMISSIONS - Daemon requests user permission for risky operations
+// ============================================================================
+
+// PermissionRequest: Daemon requests permission to perform a risky action.
+// User must respond with PermissionResponse before daemon proceeds.
+// Used for HIGH-risk operations or operations outside daemon's pre-authorized scope.
+message PermissionRequest {
+  // Unique permission request identifier
+  string permission_key = 1;
+
+  // Human-readable description of what permission is needed
+  string description = 2;
+
+  // Risk level of the requested action
+  RiskTier risk_tier = 3;
+
+  // Preview of the command/operation being requested
+  string command_preview = 4;
+}
+
+// PermissionResponse: User's response to a permission request.
+message PermissionResponse {
+  // ID of the permission request being answered
+  string permission_key = 1;
+
+  // Whether permission was granted
+  bool granted = 2;
+
+  // If true, remember this choice and don't ask again for similar operations
+  bool remember = 3;
+}

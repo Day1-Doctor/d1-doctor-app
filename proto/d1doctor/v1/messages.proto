@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package d1doctor.v1;
+
+// Main envelope and core message types for d1doctor protocol
+
+// ============================================================================
+// MESSAGE TYPE ENUM - Discriminator for Envelope.type
+// ============================================================================
+
+// MessageType - Discriminator for Envelope.payload to determine message type
+enum MessageType {
+  USER_REQUEST = 0;           // User submits natural language request
+  PLAN_PROPOSAL = 1;          // Orchestrator proposes execution plan
+  PLAN_APPROVAL = 2;          // User approves/rejects/modifies plan
+  COMMAND = 3;                // Orchestrator sends command to daemon
+  COMMAND_RESULT = 4;         // Daemon reports command execution result
+  PROGRESS_UPDATE = 5;        // Agent reports progress on current step
+  TASK_COMPLETE = 6;          // Agent reports task completion
+  PERMISSION_REQUEST = 7;     // Daemon requests user permission for risky action
+  PERMISSION_RESPONSE = 8;    // User grants/denies permission
+  ERROR = 9;                  // Error message from either component
+  CREDIT_UPDATE = 10;         // Billing/credit usage update
+  CONTEXT_SYNC = 11;          // Daemon sends system context to orchestrator
+  HEARTBEAT = 12;             // Health check message (daemon -> orchestrator)
+  AUTH_CHALLENGE = 13;        // Orchestrator challenges daemon for auth
+  AUTH_RESPONSE = 14;         // Daemon authenticates with orchestrator
+  DEVICE_CODE_RESPONSE = 15;  // Device code flow response
+}
+
+// ============================================================================
+// ENVELOPE - Top-level message wrapper
+// ============================================================================
+
+// Envelope is the top-level message that wraps all protocol messages.
+// It provides consistent metadata, routing, and payload serialization.
+// All inter-component communication uses this wrapper for consistency.
+message Envelope {
+  // Unique identifier for this message (UUID v4)
+  // Used for message deduplication and request-response correlation
+  string id = 1;
+
+  // Session ID linking related messages from user request through task completion
+  // Allows orchestrator to group related messages into logical workflows
+  string session_id = 2;
+
+  // Server timestamp when message was created (milliseconds since epoch)
+  // Used for timeout detection and audit logging
+  int64 timestamp_ms = 3;
+
+  // Discriminator: type of message in payload
+  // Indicates which protobuf message type to deserialize from payload
+  MessageType type = 4;
+
+  // Serialized message payload - type determined by 'type' field
+  // Unpack to appropriate message type based on 'type' value.
+  // Use Message.ParseFromString() or equivalent in target language.
+  bytes payload = 5;
+
+  // Additional metadata: tracing IDs, version info, source, etc.
+  // Flexible key-value store for extensibility without proto changes
+  map<string, string> metadata = 6;
+}
+
+// ============================================================================
+// USER REQUEST - User initiates conversation
+// ============================================================================
+
+// UserRequest: User's natural language request to the system.
+// This is the entry point for all user interactions with the orchestrator.
+// The user provides a natural language instruction that the AI agents
+// will parse, plan, and execute.
+message UserRequest {
+  // User's natural language instruction/query
+  // Example: "Install Docker and run my application"
+  string text = 1;
+
+  // If true, suppress interactive plan proposal and proceed silently
+  // Only for pre-approved, low-risk operations where user has pre-authorized execution
+  // If false (default), orchestrator sends PlanProposal before proceeding
+  bool silence_mode = 2;
+
+  // Context hints provided by user (optional)
+  // Example: {"project_root": "/home/user/myapp", "python_version": "3.11"}
+  // Helps orchestrator make better planning decisions
+  map<string, string> context_hints = 3;
+}
+
+// ============================================================================
+// ERROR MESSAGE - Error reporting
+// ============================================================================
+
+// ErrorMessage: Error notification from either component.
+// Indicates failure condition that may or may not be recoverable.
+// Sent when operations fail and provides actionable error information.
+message ErrorMessage {
+  // Machine-readable error code (see error_codes.yaml)
+  // Examples: "AUTH_001", "CREDIT_002", "TASK_003"
+  string code = 1;
+
+  // Human-readable error description
+  // Should explain what went wrong and how to resolve if possible
+  string message = 2;
+
+  // Task ID if error is task-specific (empty if not)
+  // Allows correlation of errors with specific tasks
+  string task_id = 3;
+
+  // Whether the operation can be retried
+  // If true, client may retry the failed operation after delay
+  // If false, operation failed permanently
+  bool recoverable = 4;
+
+  // Optional detailed error context
+  // May include stack traces, system error codes, etc.
+  string details = 5;
+
+  // Suggested retry delay in milliseconds (if recoverable)
+  int32 retry_delay_ms = 6;
+}
+
+// ============================================================================
+// END OF CORE MESSAGES
+// ============================================================================

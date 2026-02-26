@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package d1doctor.v1;
+
+// ============================================================================
+// AUTHENTICATION
+// ============================================================================
+
+// AuthChallenge: Orchestrator challenges daemon to authenticate.
+// Sent before accepting commands from daemon.
+message AuthChallenge {
+  // JWT token or challenge string
+  string token = 1;
+
+  // Device identifier being authenticated
+  string device_id = 2;
+}
+
+// AuthResponse: Daemon authenticates with orchestrator.
+// Response to AuthChallenge.
+message AuthResponse {
+  // JWT token or authentication proof
+  string token = 1;
+
+  // Device identifier
+  string device_id = 2;
+
+  // Whether authentication succeeded
+  bool authenticated = 3;
+}

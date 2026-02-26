@@ -64,3 +64,6 @@ codegen-units = 1
 
 [profile.dev]
 opt-level = 0
+
+[build-dependencies]
+prost-build = "0.12"
