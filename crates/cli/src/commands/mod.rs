@@ -82,7 +82,7 @@ pub enum DaemonAction {
 /// Route a top-level command to its handler.
 pub async fn handle(cmd: Commands) -> Result<()> {
     match cmd {
-        Commands::Status => status().await,
+        Commands::Status => status_check().await,
         Commands::Auth { action } => match action {
             AuthAction::Login => auth_login().await,
             AuthAction::Logout => auth_logout(),
@@ -104,9 +104,25 @@ pub async fn handle(cmd: Commands) -> Result<()> {
 
 // ─── Status ──────────────────────────────────────────────────────────────────
 
+/// Fetch and display credit balance using the CreditStatus API.
+/// Used by `d1-doctor status` when a token and base URL are available.
+pub async fn status(token: &str, base_url: &str) -> anyhow::Result<()> {
+    match credits::fetch_credit_status(token, base_url).await {
+        Ok(credit_status) => {
+            let display = credits::format_credit_display(&credit_status);
+            println!("{display}");
+        }
+        Err(e) => {
+            eprintln!("Could not fetch credit status: {e}");
+            println!("Day 1 Doctor v1.0");
+        }
+    }
+    Ok(())
+}
+
 /// Call the local daemon's /health endpoint and print the result,
 /// then attempt to fetch and display credit balance from the orchestrator.
-async fn status() -> Result<()> {
+async fn status_check() -> Result<()> {
     // ── Daemon health check ──────────────────────────────────────────────
     let port = d1_common::DEFAULT_DAEMON_PORT;
     let url = format!("http://localhost:{}/health", port);

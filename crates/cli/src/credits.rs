@@ -61,6 +61,71 @@ pub fn format_balance(balance: &CreditBalance) -> String {
     )
 }
 
+// ─── CreditStatus (Sprint 5 B17) ─────────────────────────────────────────────
+
+/// Simplified credit status returned by the platform REST API `/api/credits`.
+#[derive(Debug, Deserialize)]
+pub struct CreditStatus {
+    pub balance: i32,
+    pub monthly_used: i32,
+    pub tier: String,
+}
+
+/// Formats credit status into a human-readable display string.
+pub fn format_credit_display(status: &CreditStatus) -> String {
+    let tier_label = match status.tier.as_str() {
+        "pro" | "team" => format!("{} Tier", capitalize(&status.tier)),
+        _ => "Free Tier".to_string(),
+    };
+
+    if status.tier == "pro" || status.tier == "team" {
+        return format!("Day 1 Doctor v1.0 | {tier_label}\nCredits: Unlimited");
+    }
+
+    let daily_total = 5;
+    let monthly_total = 50;
+    let monthly_remaining = monthly_total - status.monthly_used;
+
+    format!(
+        "Day 1 Doctor v1.0 | {tier_label}\nCredits: {}/{} remaining today | {}/{} this month",
+        status.balance, daily_total, monthly_remaining, monthly_total
+    )
+}
+
+/// Fetches credit status from the platform REST API.
+pub async fn fetch_credit_status(token: &str, base_url: &str) -> Result<CreditStatus> {
+    let client = reqwest::Client::new();
+    let url = format!("{}/api/credits", base_url);
+
+    let resp = client
+        .get(&url)
+        .bearer_auth(token)
+        .send()
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to reach {}: {}", url, e))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        anyhow::bail!("Credits API returned {status}: {body}");
+    }
+
+    let credit_status: CreditStatus = resp
+        .json()
+        .await
+        .map_err(|e| anyhow::anyhow!("Failed to parse credit status response: {}", e))?;
+
+    Ok(credit_status)
+}
+
+fn capitalize(s: &str) -> String {
+    let mut chars = s.chars();
+    match chars.next() {
+        None => String::new(),
+        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+    }
+}
+
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -139,5 +204,38 @@ mod tests {
         assert_eq!(balance.bonus_balance, 10);
         assert_eq!(balance.daily_used, 30);
         assert_eq!(balance.reset_at, "2026-02-28T00:00:00Z");
+    }
+
+    #[test]
+    fn test_parse_credit_status_from_json() {
+        let json = r#"{"balance": 3, "monthly_used": 12, "tier": "free"}"#;
+        let status: CreditStatus = serde_json::from_str(json).expect("parse failed");
+        assert_eq!(status.balance, 3);
+        assert_eq!(status.monthly_used, 12);
+        assert_eq!(status.tier, "free");
+    }
+
+    #[test]
+    fn test_format_credit_display_free_tier() {
+        let status = CreditStatus {
+            balance: 3,
+            monthly_used: 12,
+            tier: "free".to_string(),
+        };
+        let display = format_credit_display(&status);
+        assert!(display.contains("Credits: 3"), "Expected 'Credits: 3' in: {display}");
+        assert!(display.contains("Free Tier"), "Expected 'Free Tier' in: {display}");
+    }
+
+    #[test]
+    fn test_format_credit_display_pro_tier() {
+        let status = CreditStatus {
+            balance: 0,
+            monthly_used: 0,
+            tier: "pro".to_string(),
+        };
+        let display = format_credit_display(&status);
+        assert!(display.contains("Pro Tier"), "Expected 'Pro Tier' in: {display}");
+        assert!(display.contains("Unlimited"), "Expected 'Unlimited' in: {display}");
     }
 }
