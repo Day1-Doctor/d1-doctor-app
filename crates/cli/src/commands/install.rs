@@ -132,3 +132,243 @@ fn now_ms() -> i64 {
         .unwrap_or_default()
         .as_millis() as i64
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use d1_common::proto::{
+        Envelope, MessageType, UserRequest, PlanProposal, PlanStep, PlanApproval, ApprovalAction,
+    };
+    use futures::{SinkExt, StreamExt};
+    use prost::Message as ProstMessage;
+    use tokio::net::TcpListener;
+    use tokio_tungstenite::{accept_async, tungstenite::Message as WsMessage};
+
+    // ─── helpers ──────────────────────────────────────────────────────────────
+
+    /// Spawn a mock WebSocket server on a random port.
+    /// `handler` receives `(sink, stream)` for one connection.
+    /// Returns the `ws://…` URL to connect to.
+    async fn mock_server<H, F>(handler: H) -> String
+    where
+        H: FnOnce(
+                futures::stream::SplitSink<
+                    tokio_tungstenite::WebSocketStream<tokio::net::TcpStream>,
+                    WsMessage,
+                >,
+                futures::stream::SplitStream<
+                    tokio_tungstenite::WebSocketStream<tokio::net::TcpStream>,
+                >,
+            ) -> F
+            + Send
+            + 'static,
+        F: std::future::Future<Output = ()> + Send + 'static,
+    {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let url = format!("ws://127.0.0.1:{}/ws", addr.port());
+
+        tokio::spawn(async move {
+            let (tcp, _) = listener.accept().await.unwrap();
+            let ws = accept_async(tcp).await.unwrap();
+            let (sink, stream) = ws.split();
+            handler(sink, stream).await;
+        });
+
+        url
+    }
+
+    /// Build a binary WsMessage containing a PlanProposal envelope.
+    fn plan_proposal_msg(task_id: &str, steps: usize) -> WsMessage {
+        let proposal = PlanProposal {
+            task_id: task_id.to_string(),
+            summary: format!("Install package using Homebrew ({} step(s))", steps),
+            steps: (1..=(steps as i32))
+                .map(|i| PlanStep {
+                    step_number: i,
+                    description: format!("Step {}", i),
+                    agent_name: "install_agent".to_string(),
+                })
+                .collect(),
+            estimated_credits: steps as f32 * 0.5,
+        };
+        let mut env = Envelope::default();
+        env.id = "server-env-1".to_string();
+        env.session_id = "sess-1".to_string();
+        env.r#type = MessageType::PlanProposal as i32;
+        env.payload = proposal.encode_to_vec();
+        WsMessage::Binary(env.encode_to_vec())
+    }
+
+    /// Decode an `Envelope` from a binary WsMessage.
+    fn decode_envelope(msg: WsMessage) -> Envelope {
+        let bytes = match msg {
+            WsMessage::Binary(b) => b,
+            other => panic!("Expected binary message, got: {:?}", other),
+        };
+        Envelope::decode(bytes.as_slice()).expect("Failed to decode Envelope")
+    }
+
+    // ─── tests ────────────────────────────────────────────────────────────────
+
+    /// Happy path: CLI sends UserRequest, server proposes plan, CLI auto-approves.
+    #[tokio::test]
+    async fn test_install_auto_approve_full_flow() {
+        let url = mock_server(|mut sink, mut stream| async move {
+            // 1. Receive UserRequest
+            let env = decode_envelope(stream.next().await.unwrap().unwrap());
+            assert_eq!(env.r#type, MessageType::UserRequest as i32);
+            let req = UserRequest::decode(env.payload.as_slice()).unwrap();
+            assert_eq!(req.text, "install node");
+
+            // 2. Send PlanProposal
+            sink.send(plan_proposal_msg("task-001", 2)).await.unwrap();
+
+            // 3. Receive PlanApproval
+            let env = decode_envelope(stream.next().await.unwrap().unwrap());
+            assert_eq!(env.r#type, MessageType::PlanApproval as i32);
+            let approval = PlanApproval::decode(env.payload.as_slice()).unwrap();
+            assert_eq!(approval.task_id, "task-001");
+            assert_eq!(approval.action, ApprovalAction::Approve as i32);
+        })
+        .await;
+
+        run_install("node", &url, true).await.unwrap();
+    }
+
+    /// CLI sends UserRequest with the correct package name embedded.
+    #[tokio::test]
+    async fn test_install_user_request_text_contains_package() {
+        let url = mock_server(|mut sink, mut stream| async move {
+            let env = decode_envelope(stream.next().await.unwrap().unwrap());
+            let req = UserRequest::decode(env.payload.as_slice()).unwrap();
+            // Package name "postgresql@16" must appear in the text
+            assert!(
+                req.text.contains("postgresql@16"),
+                "UserRequest text should contain the package name, got: {}",
+                req.text
+            );
+            sink.send(plan_proposal_msg("task-002", 1)).await.unwrap();
+            // consume approval
+            let _ = stream.next().await;
+        })
+        .await;
+
+        run_install("postgresql@16", &url, true).await.unwrap();
+    }
+
+    /// Plan with many steps: all steps are listed, approval still sent.
+    #[tokio::test]
+    async fn test_install_plan_with_four_steps() {
+        let url = mock_server(|mut sink, mut stream| async move {
+            let _ = stream.next().await; // consume UserRequest
+            sink.send(plan_proposal_msg("task-004", 4)).await.unwrap();
+            // Receive approval — verify it approves task-004
+            let env = decode_envelope(stream.next().await.unwrap().unwrap());
+            let approval = PlanApproval::decode(env.payload.as_slice()).unwrap();
+            assert_eq!(approval.task_id, "task-004");
+            assert_eq!(approval.action, ApprovalAction::Approve as i32);
+        })
+        .await;
+
+        run_install("vscode", &url, true).await.unwrap();
+    }
+
+    /// Approval envelope echoes back the task_id from the proposal.
+    #[tokio::test]
+    async fn test_install_approval_echoes_task_id() {
+        let task_id = "task-uuid-xyz-987";
+        let url = mock_server({
+            let task_id = task_id.to_string();
+            move |mut sink, mut stream| async move {
+                let _ = stream.next().await;
+                sink.send(plan_proposal_msg(&task_id, 1)).await.unwrap();
+                let env = decode_envelope(stream.next().await.unwrap().unwrap());
+                let approval = PlanApproval::decode(env.payload.as_slice()).unwrap();
+                assert_eq!(approval.task_id, task_id);
+            }
+        })
+        .await;
+
+        run_install("git", &url, true).await.unwrap();
+    }
+
+    /// Daemon not running: connection refused → clean error message.
+    #[tokio::test]
+    async fn test_install_connection_refused_returns_error() {
+        // Port 19991 is almost certainly not listening
+        let result = run_install("node", "ws://127.0.0.1:19991/ws", false).await;
+        assert!(result.is_err());
+        let msg = format!("{:#}", result.unwrap_err());
+        assert!(
+            msg.to_lowercase().contains("connect") || msg.to_lowercase().contains("daemon"),
+            "Expected error about connection/daemon, got: {}",
+            msg
+        );
+    }
+
+    /// Server sends wrong message type (Error) instead of PlanProposal → error.
+    #[tokio::test]
+    async fn test_install_wrong_message_type_returns_error() {
+        let url = mock_server(|mut sink, mut stream| async move {
+            let _ = stream.next().await; // consume UserRequest
+            let mut env = Envelope::default();
+            env.r#type = MessageType::Error as i32;
+            env.payload = b"internal server error".to_vec();
+            sink.send(WsMessage::Binary(env.encode_to_vec()))
+                .await
+                .unwrap();
+        })
+        .await;
+
+        let result = run_install("node", &url, false).await;
+        assert!(result.is_err());
+        let msg = format!("{:#}", result.unwrap_err());
+        assert!(
+            msg.contains("PLAN_PROPOSAL") || msg.contains("type="),
+            "Expected error about wrong message type, got: {}",
+            msg
+        );
+    }
+
+    /// Server closes connection immediately after UserRequest → error.
+    #[tokio::test]
+    async fn test_install_server_closes_before_plan_returns_error() {
+        let url = mock_server(|_sink, mut stream| async move {
+            let _ = stream.next().await; // consume UserRequest, then drop everything
+        })
+        .await;
+
+        let result = run_install("node", &url, false).await;
+        assert!(result.is_err());
+        let msg = format!("{:#}", result.unwrap_err());
+        assert!(
+            msg.to_lowercase().contains("closed") || msg.to_lowercase().contains("plan"),
+            "Expected error about closed connection, got: {}",
+            msg
+        );
+    }
+
+    /// Server sends a text frame instead of binary → error.
+    #[tokio::test]
+    async fn test_install_text_frame_returns_error() {
+        let url = mock_server(|mut sink, mut stream| async move {
+            let _ = stream.next().await;
+            sink.send(WsMessage::Text(
+                r#"{"error":"unexpected text frame"}"#.to_string(),
+            ))
+            .await
+            .unwrap();
+        })
+        .await;
+
+        let result = run_install("node", &url, false).await;
+        assert!(result.is_err());
+        let msg = format!("{:#}", result.unwrap_err());
+        assert!(
+            msg.to_lowercase().contains("binary") || msg.to_lowercase().contains("expected"),
+            "Expected error about non-binary message, got: {}",
+            msg
+        );
+    }
+}

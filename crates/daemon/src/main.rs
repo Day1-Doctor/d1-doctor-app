@@ -176,7 +176,7 @@ fn dispatch_message(
         t if t == MessageType::Heartbeat as i32 => {
             info!(msg_id = %envelope.id, "Received HEARTBEAT ack");
         }
-        t if t == MessageType::CommandRequest as i32 => {
+        t if t == MessageType::Command as i32 => {
             warn!(
                 msg_id = %envelope.id,
                 "CommandRequest received — executor not yet wired (Sprint 2)"

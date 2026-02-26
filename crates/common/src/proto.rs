@@ -51,10 +51,10 @@ pub struct PlanProposal {
     pub task_id: String,
     #[prost(string, tag = "2")]
     pub summary: String,
-    #[prost(float, tag = "3")]
-    pub estimated_credits: f32,
-    #[prost(message, repeated, tag = "4")]
+    #[prost(message, repeated, tag = "3")]
     pub steps: Vec<PlanStep>,
+    #[prost(float, tag = "4")]
+    pub estimated_credits: f32,
 }
 
 /// Approval or rejection of a proposed plan.
@@ -122,22 +122,27 @@ pub struct ProgressUpdate {
     pub percent_complete: i32,
 }
 
-/// Placeholder MessageType enum — matches the proto enum values.
+/// MessageType enum — values match the canonical proto enum in
+/// proto/d1doctor/v1/messages.proto (and the Python-generated messages_pb2).
 #[repr(i32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MessageType {
-    Unknown = 0,
-    Heartbeat = 1,
-    UserRequest = 2,
-    PlanProposal = 3,
-    PlanApproval = 4,
-    Command = 5,
-    CommandResult = 6,
-    ProgressUpdate = 7,
-    CommandRequest = 8,
-    CommandResponse = 9,
-    HealthReport = 10,
+    UserRequest = 0,
+    PlanProposal = 1,
+    PlanApproval = 2,
+    Command = 3,
+    CommandResult = 4,
+    ProgressUpdate = 5,
+    TaskComplete = 6,
+    PermissionRequest = 7,
+    PermissionResponse = 8,
+    Error = 9,
+    CreditUpdate = 10,
+    ContextSync = 11,
+    Heartbeat = 12,
+    AuthChallenge = 13,
     AuthResponse = 14,
+    DeviceCodeResponse = 15,
 }
 
 // ─── JSON-based helpers (Sprint 1 compatibility) ─────────────────────────────
