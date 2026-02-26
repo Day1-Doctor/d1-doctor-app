@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Rust build artifacts
+src-tauri/target/
+
+# Tauri generated schema files (re-generated on build)
+src-tauri/gen/
+
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
+# Editor
+.vscode/
+*.swp
+*.swo
