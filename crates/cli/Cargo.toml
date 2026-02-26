@@ -4,6 +4,14 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
+[lib]
+name = "d1_doctor_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "d1-doctor"
+path = "src/main.rs"
+
 [dependencies]
 d1-common = { path = "../common" }
 tokio.workspace = true
@@ -14,6 +22,13 @@ tracing.workspace = true
 clap = { version = "4", features = ["derive"] }
 crossterm = "0.28"
 reqwest = { version = "0.11", features = ["json", "blocking"] }
+tokio-tungstenite = { workspace = true, features = ["native-tls"] }
+prost = { workspace = true }
+uuid = { version = "1", features = ["v4"] }
+futures = "0.3"
 
 [dev-dependencies]
 tempfile = "3"
+tokio = { workspace = true, features = ["full"] }
+tokio-tungstenite = { workspace = true }
+futures = "0.3"

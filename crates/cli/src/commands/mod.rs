@@ -6,6 +6,10 @@
 //!   auth logout — removes local token file
 //!   daemon      — start/stop/logs stubs
 //!   install / diagnose / files / upgrade — "coming in Sprint N" stubs
+//!
+//! Sprint 3: install command fully wired via WebSocket.
+
+pub mod install;
 
 use anyhow::Result;
 use clap::Subcommand;
@@ -28,7 +32,7 @@ pub enum Commands {
         action: DaemonAction,
     },
 
-    /// Install and configure software packages (coming in Sprint 2)
+    /// Install and configure software packages
     Install {
         /// Package name to install
         package: String,
@@ -75,11 +79,7 @@ pub async fn handle(cmd: Commands) -> Result<()> {
             DaemonAction::Stop => daemon_stop(),
             DaemonAction::Logs => daemon_logs(),
         },
-        Commands::Install { package } => {
-            println!("Install command coming in Sprint 2.");
-            println!("(Would install: {})", package);
-            Ok(())
-        }
+        Commands::Install { package } => install::handle(&package).await,
         Commands::Diagnose => {
             println!("Diagnose command coming in Sprint 2.");
             Ok(())
