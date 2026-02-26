@@ -9,6 +9,7 @@
 //!
 //! Sprint 3: install command fully wired via WebSocket.
 //! Sprint 4: files and diagnose commands fully wired.
+//! Sprint 5: status command displays credit balance.
 
 pub mod install;
 pub mod files;
@@ -16,6 +17,9 @@ pub mod diagnose;
 
 use anyhow::Result;
 use clap::Subcommand;
+
+use crate::auth_token::TokenStore;
+use crate::credits;
 
 /// Top-level subcommands for `d1-doctor`.
 #[derive(Subcommand)]
@@ -100,8 +104,10 @@ pub async fn handle(cmd: Commands) -> Result<()> {
 
 // ─── Status ──────────────────────────────────────────────────────────────────
 
-/// Call the local daemon's /health endpoint and print the result.
+/// Call the local daemon's /health endpoint and print the result,
+/// then attempt to fetch and display credit balance from the orchestrator.
 async fn status() -> Result<()> {
+    // ── Daemon health check ──────────────────────────────────────────────
     let port = d1_common::DEFAULT_DAEMON_PORT;
     let url = format!("http://localhost:{}/health", port);
 
@@ -127,7 +133,41 @@ async fn status() -> Result<()> {
         }
     }
 
+    // ── Credit balance ───────────────────────────────────────────────────
+    println!();
+    fetch_and_display_credits().await;
+
     Ok(())
+}
+
+/// Attempt to load token and fetch credit balance from the orchestrator.
+/// Prints a helpful hint instead of crashing if anything goes wrong.
+async fn fetch_and_display_credits() {
+    let token_path = d1_common::config_dir().join("token.json");
+
+    let token_store = match TokenStore::try_load(&token_path) {
+        Some(ts) => ts,
+        None => {
+            println!("Credit balance: not available (not logged in).");
+            println!("Hint: run `d1-doctor auth login` to see your credit balance.");
+            return;
+        }
+    };
+
+    let api_url = credits::DEFAULT_ORCHESTRATOR_API_URL;
+
+    match credits::fetch_credits(api_url, &token_store.access_token).await {
+        Ok(balance) => {
+            credits::display_balance(&balance);
+        }
+        Err(_) => {
+            println!("Credit balance: unable to reach orchestrator.");
+            println!(
+                "Hint: ensure the orchestrator is running at {}.",
+                api_url
+            );
+        }
+    }
 }
 
 // ─── Auth ────────────────────────────────────────────────────────────────────
