@@ -1,5 +1,6 @@
 //! Day 1 Doctor — CLI Client
 
+mod auth_token;
 mod commands;
 mod auth;
 mod credits;
