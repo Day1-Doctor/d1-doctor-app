@@ -8,6 +8,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 const emit = defineEmits<{ submit: [query: string]; esc: [] }>()
+const inputRef = ref<HTMLInputElement | null>(null)
 const query = ref('')
 function submit() { if (query.value.trim()) { emit('submit', query.value.trim()); query.value = '' } }
 </script>

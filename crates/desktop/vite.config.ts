@@ -4,6 +4,7 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [vue()],
+  root: resolve(__dirname, 'src'),
   clearScreen: false,
   server: {
     port: 5173,
@@ -22,11 +23,13 @@ export default defineConfig({
         ninja: resolve(__dirname, 'src/ninja.html'),
       },
     },
-    outDir: 'dist',
+    outDir: '../dist',
+    emptyOutDir: true,
   },
   test: {
     environment: 'jsdom',
     globals: true,
+    root: resolve(__dirname, 'src'),
   },
   resolve: {
     alias: {
