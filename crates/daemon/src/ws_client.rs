@@ -4,7 +4,7 @@
 //! Reconnects automatically with exponential backoff on disconnect.
 
 use anyhow::{Context, Result};
-use d1_common::proto::{decode_envelope, encode_envelope, Envelope};
+use d1_common::proto::{decode_envelope, encode_envelope, JsonEnvelope};
 use futures::{SinkExt, StreamExt};
 use std::time::Duration;
 use tokio::time::sleep;
@@ -59,7 +59,7 @@ impl WsConnection {
     }
 
     /// Send an Envelope as a binary WebSocket frame.
-    pub async fn send(&mut self, envelope: &Envelope) -> Result<()> {
+    pub async fn send(&mut self, envelope: &JsonEnvelope) -> Result<()> {
         let bytes = encode_envelope(envelope);
         self.inner
             .send(Message::Binary(bytes))
@@ -70,7 +70,7 @@ impl WsConnection {
 
     /// Receive the next Envelope from the WebSocket.
     /// Returns None if the connection was closed cleanly.
-    pub async fn recv(&mut self) -> Result<Option<Envelope>> {
+    pub async fn recv(&mut self) -> Result<Option<JsonEnvelope>> {
         loop {
             match self.inner.next().await {
                 Some(Ok(Message::Binary(bytes))) => {

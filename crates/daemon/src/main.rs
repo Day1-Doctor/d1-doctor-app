@@ -9,9 +9,10 @@
 //! 6. Spawn heartbeat task (every 30s)
 //! 7. Enter receive loop — dispatch by MessageType
 
-mod executor;
-mod health;
-mod local_db;
+pub mod executor;
+pub mod health;
+pub mod local_db;
+pub mod message_handler;
 mod ws_client;
 
 use anyhow::Result;
@@ -130,12 +131,12 @@ async fn main() -> Result<()> {
 }
 
 /// Build a HEARTBEAT Envelope for the given session.
-fn build_heartbeat(session_id: &str) -> d1_common::proto::Envelope {
+fn build_heartbeat(session_id: &str) -> d1_common::proto::JsonEnvelope {
     d1_common::proto::heartbeat_envelope(session_id)
 }
 
 /// Build an AUTH_RESPONSE Envelope, loading JWT from the token file if present.
-fn build_auth_response(session_id: &str) -> d1_common::proto::Envelope {
+fn build_auth_response(session_id: &str) -> d1_common::proto::JsonEnvelope {
     let token_path = d1_common::config_dir().join("token.json");
     let (jwt_token, device_id) = if token_path.exists() {
         match std::fs::read_to_string(&token_path) {
@@ -167,7 +168,7 @@ fn build_auth_response(session_id: &str) -> d1_common::proto::Envelope {
 fn dispatch_message(
     db: &local_db::LocalDb,
     session_id: &str,
-    envelope: d1_common::proto::Envelope,
+    envelope: d1_common::proto::JsonEnvelope,
 ) {
     use d1_common::proto::MessageType;
 
