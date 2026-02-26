@@ -6,7 +6,7 @@ license.workspace = true
 description = "Plugin SDK for Day 1 Doctor — build custom setup automation plugins"
 
 [dependencies]
-d1-doctor-common = { path = "../common" }
+d1-common = { path = "../common" }
 serde.workspace = true
 serde_json.workspace = true
 anyhow.workspace = true

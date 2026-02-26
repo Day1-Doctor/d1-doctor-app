@@ -15,8 +15,11 @@ license = "MIT"
 repository = "https://github.com/day1-doctor/d1-doctor-app"
 
 [workspace.dependencies]
+# Internal crates
+d1-common = { path = "crates/common" }
+
 # Async runtime
-tokio = { version = "1.35", features = ["full"] }
+tokio = { version = "=1.35.1", features = ["full"] }
 tokio-tungstenite = "0.21"
 
 # Serialization
@@ -53,7 +56,7 @@ reqwest = { version = "0.11", features = ["json"] }
 
 # Utilities
 chrono = { version = "0.4", features = ["serde"] }
-uuid = { version = "1.6", features = ["v4", "serde"] }
+uuid = { version = "=1.6.1", features = ["v4", "serde"] }
 bytes = "1.5"
 base64 = "0.21"
 
@@ -64,6 +67,3 @@ codegen-units = 1
 
 [profile.dev]
 opt-level = 0
-
-[build-dependencies]
-prost-build = "0.12"
