@@ -28,6 +28,7 @@ pub enum MessageType {
     CommandRequest = 2,
     CommandResponse = 3,
     HealthReport = 4,
+    AuthResponse = 14,
 }
 
 /// Build a HEARTBEAT Envelope.
@@ -43,6 +44,29 @@ pub fn heartbeat_envelope(session_id: impl Into<String>) -> Envelope {
         r#type: MessageType::Heartbeat as i32,
         payload: vec![],
         metadata: Default::default(),
+    }
+}
+
+/// Build an AUTH_RESPONSE Envelope with a JWT token and device_id.
+pub fn auth_response_envelope(
+    session_id: impl Into<String>,
+    jwt_token: impl Into<String>,
+    device_id: impl Into<String>,
+) -> Envelope {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let mut metadata = std::collections::HashMap::new();
+    metadata.insert("jwt_token".to_string(), jwt_token.into());
+    metadata.insert("device_id".to_string(), device_id.into());
+    Envelope {
+        id: uuid::Uuid::new_v4().to_string(),
+        session_id: session_id.into(),
+        timestamp_ms: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as i64,
+        r#type: MessageType::AuthResponse as i32,
+        payload: vec![],
+        metadata,
     }
 }
 
@@ -101,5 +125,22 @@ mod tests {
     fn test_decode_invalid_bytes_returns_error() {
         let result = decode_envelope(b"not valid json at all !!!");
         assert!(result.is_err(), "invalid bytes should return Err");
+    }
+
+    #[test]
+    fn test_auth_response_envelope_can_be_serialized() {
+        let env = auth_response_envelope("session-1", "jwt-token-xyz", "device-001");
+        assert_eq!(env.r#type, MessageType::AuthResponse as i32);
+        assert!(!env.id.is_empty());
+        assert_eq!(env.session_id, "session-1");
+        assert_eq!(env.metadata.get("jwt_token").map(|s| s.as_str()), Some("jwt-token-xyz"));
+        assert_eq!(env.metadata.get("device_id").map(|s| s.as_str()), Some("device-001"));
+
+        // Verify it round-trips through JSON serialization
+        let bytes = encode_envelope(&env);
+        assert!(!bytes.is_empty());
+        let decoded = decode_envelope(&bytes).expect("decode should succeed");
+        assert_eq!(decoded.r#type, MessageType::AuthResponse as i32);
+        assert_eq!(decoded.metadata.get("jwt_token").map(|s| s.as_str()), Some("jwt-token-xyz"));
     }
 }

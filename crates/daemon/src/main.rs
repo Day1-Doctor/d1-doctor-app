@@ -5,8 +5,9 @@
 //! 2. Load config from ~/.d1doctor/config.toml (or defaults)
 //! 3. Open SQLite database
 //! 4. Connect to orchestrator via WebSocket (with retry)
-//! 5. Spawn heartbeat task (every 30s)
-//! 6. Enter receive loop — dispatch by MessageType
+//! 5. Send AUTH_RESPONSE envelope immediately after connecting
+//! 6. Spawn heartbeat task (every 30s)
+//! 7. Enter receive loop — dispatch by MessageType
 
 mod executor;
 mod health;
@@ -64,7 +65,16 @@ async fn main() -> Result<()> {
     // Generate a session ID for this daemon run
     let session_id = uuid::Uuid::new_v4().to_string();
 
-    // 5 + 6. Main event loop: heartbeat ticks and inbound message dispatch
+    // 5. Send AUTH_RESPONSE immediately after connecting
+    let auth_envelope = build_auth_response(&session_id);
+    if let Err(e) = conn.send(&auth_envelope).await {
+        error!(error = %e, "Failed to send AUTH_RESPONSE — continuing anyway");
+    } else {
+        info!(session_id = %session_id, "AUTH_RESPONSE sent");
+        db.append_audit_log(&session_id, "AUTH_RESPONSE_SENT", "ok", "LOW").ok();
+    }
+
+    // 6 + 7. Main event loop: heartbeat ticks and inbound message dispatch
     let mut heartbeat_interval = time::interval(Duration::from_secs(HEARTBEAT_INTERVAL_SECS));
     // Tick immediately fires on creation — skip the first instant tick so we
     // don't send a heartbeat before the connection is fully established.
@@ -124,6 +134,34 @@ fn build_heartbeat(session_id: &str) -> d1_common::proto::Envelope {
     d1_common::proto::heartbeat_envelope(session_id)
 }
 
+/// Build an AUTH_RESPONSE Envelope, loading JWT from the token file if present.
+fn build_auth_response(session_id: &str) -> d1_common::proto::Envelope {
+    let token_path = d1_common::config_dir().join("token.json");
+    let (jwt_token, device_id) = if token_path.exists() {
+        match std::fs::read_to_string(&token_path) {
+            Ok(json) => {
+                let parsed: serde_json::Value = serde_json::from_str(&json).unwrap_or_default();
+                let token = parsed
+                    .get("access_token")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string();
+                let user_id = parsed
+                    .get("user_id")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown")
+                    .to_string();
+                (token, user_id)
+            }
+            Err(_) => (String::new(), "unknown".to_string()),
+        }
+    } else {
+        (String::new(), "unknown".to_string())
+    };
+
+    d1_common::proto::auth_response_envelope(session_id, jwt_token, device_id)
+}
+
 /// Dispatch an inbound Envelope by MessageType.
 /// In Sprint 1 this is a routing stub — Sprint 2 will fill in execution.
 fn dispatch_message(
@@ -147,5 +185,29 @@ fn dispatch_message(
         t => {
             warn!(msg_type = t, msg_id = %envelope.id, "Unknown message type — ignored");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use d1_common::proto::MessageType;
+
+    #[test]
+    fn test_build_auth_response_type() {
+        let env = build_auth_response("test-session");
+        assert_eq!(env.r#type, MessageType::AuthResponse as i32);
+        assert!(!env.id.is_empty());
+        assert_eq!(env.session_id, "test-session");
+    }
+
+    #[test]
+    fn test_build_auth_response_encodes() {
+        let env = build_auth_response("session-xyz");
+        let bytes = d1_common::proto::encode_envelope(&env);
+        assert!(!bytes.is_empty(), "AUTH_RESPONSE envelope should encode to non-empty bytes");
+        let decoded = d1_common::proto::decode_envelope(&bytes)
+            .expect("AUTH_RESPONSE envelope should decode");
+        assert_eq!(decoded.r#type, MessageType::AuthResponse as i32);
     }
 }
