@@ -8,8 +8,11 @@
 //!   install / diagnose / files / upgrade — "coming in Sprint N" stubs
 //!
 //! Sprint 3: install command fully wired via WebSocket.
+//! Sprint 4: files and diagnose commands fully wired.
 
 pub mod install;
+pub mod files;
+pub mod diagnose;
 
 use anyhow::Result;
 use clap::Subcommand;
@@ -38,11 +41,17 @@ pub enum Commands {
         package: String,
     },
 
-    /// Run system diagnostics (coming in Sprint 2)
-    Diagnose,
+    /// Run system diagnostics
+    Diagnose {
+        #[command(flatten)]
+        args: diagnose::DiagnoseArgs,
+    },
 
-    /// Manage files and directories (coming in Sprint 3)
-    Files,
+    /// Manage files and directories
+    Files {
+        #[command(flatten)]
+        args: files::FilesArgs,
+    },
 
     /// Upgrade Day 1 Doctor to the latest version (coming in Sprint 4)
     Upgrade,
@@ -80,14 +89,8 @@ pub async fn handle(cmd: Commands) -> Result<()> {
             DaemonAction::Logs => daemon_logs(),
         },
         Commands::Install { package } => install::handle(&package).await,
-        Commands::Diagnose => {
-            println!("Diagnose command coming in Sprint 2.");
-            Ok(())
-        }
-        Commands::Files => {
-            println!("Files command coming in Sprint 3.");
-            Ok(())
-        }
+        Commands::Diagnose { args } => diagnose::handle(&args).await,
+        Commands::Files { args } => files::handle(&args).await,
         Commands::Upgrade => {
             println!("Upgrade command coming in Sprint 4.");
             Ok(())
