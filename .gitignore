@@ -1,3 +1,8 @@
 
 # Git worktrees
 .worktrees/
+# Rust build artifacts
+target/
+# macOS
+.DS_Store
+# Cargo lock (apps should commit this, but checking current practice)

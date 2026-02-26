@@ -27,5 +27,14 @@ export const useConversationStore = defineStore('conversation', () => {
     scrollPinned.value = true
   }
 
-  return { messages, currentPlan, scrollPinned, appendMessage, setPlan, updateStep, clearMessages }
+  function setScrollPinned(pinned: boolean): void {
+    scrollPinned.value = pinned
+  }
+
+  function approvePlan(approved: boolean): void {
+    if (!currentPlan.value) return
+    currentPlan.value = { ...currentPlan.value, approved }
+  }
+
+  return { messages, currentPlan, scrollPinned, appendMessage, setPlan, updateStep, clearMessages, setScrollPinned, approvePlan }
 })

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 
@@ -57,11 +57,6 @@ vi.mock('@/shared/composables/useAgentEvents', () => ({
 
 import App from '../App.vue'
 
-// Helper to flush all pending async operations
-function flushPromises(): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, 0))
-}
-
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 describe('App.vue', () => {
@@ -73,10 +68,8 @@ describe('App.vue', () => {
     mockListen.mockClear()
     // Set screen dimensions
     Object.defineProperty(window.screen, 'availWidth', { value: 1920, configurable: true })
-    Object.defineProperty(window.screen, 'availHeight', { value: 1080, configurable: true })
   })
 
-  // Test 1: renders FullMode when uiMode === 'full'
   it('renders FullMode when uiMode is "full"', async () => {
     const { useAppStore } = await import('@/shared/stores/app')
     const pinia = createPinia()
@@ -93,7 +86,6 @@ describe('App.vue', () => {
     expect(wrapper.find('.copilot-mode-stub').exists()).toBe(false)
   })
 
-  // Test 2: renders CopilotMode when uiMode === 'copilot'
   it('renders CopilotMode when uiMode is "copilot"', async () => {
     const { useAppStore } = await import('@/shared/stores/app')
     const pinia = createPinia()
@@ -110,13 +102,12 @@ describe('App.vue', () => {
     expect(wrapper.find('.full-mode-stub').exists()).toBe(false)
   })
 
-  // Test 3: listens for 'ninja_dismissed' event and calls switchMode with previousMode
   it('listens for "ninja_dismissed" and calls switchMode with previousMode', async () => {
     const { useAppStore } = await import('@/shared/stores/app')
     const pinia = createPinia()
     setActivePinia(pinia)
     const appStore = useAppStore()
-    // Set up state: uiMode = ninja, previousMode = full
+    // Set up pre-condition: simulate being in ninja mode with 'full' as previous
     appStore.uiMode = 'ninja'
     appStore.previousMode = 'full'
 

@@ -10,7 +10,7 @@
       v-if="showDropdown"
       :query="query"
       :steps="steps"
-      :creditEstimate="creditEstimate"
+      :creditEstimate="CREDIT_ESTIMATE_PLACEHOLDER"
       @approve="onApprove"
       @dismiss="onDismiss"
     />
@@ -26,12 +26,14 @@ import NinjaDropdown from '@/modes/ninja/NinjaDropdown.vue'
 import { useConversationStore } from '@/shared/stores/conversation'
 import type { Step } from '@/shared/types'
 
+// TODO: wire to agentStore.credits when credit tracking is implemented
+const CREDIT_ESTIMATE_PLACEHOLDER = '~0.5 credits'
+
 const conversationStore = useConversationStore()
 
 const appEl = ref<HTMLDivElement | null>(null)
 const showDropdown = ref(false)
 const query = ref('')
-const creditEstimate = '~0.5 credits'
 
 const steps = computed((): Step[] => conversationStore.currentPlan?.steps ?? [])
 
@@ -79,9 +81,6 @@ function onEsc(): void {
 onMounted(() => {
   appEl.value?.focus()
 })
-
-// Expose for testing only — allows tests to assert internal query state
-defineExpose({ query, dismissNinjaWindow })
 </script>
 
 <style scoped>
@@ -89,7 +88,6 @@ defineExpose({ query, dismissNinjaWindow })
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 0;
   outline: none;
 }
 </style>

@@ -5,6 +5,16 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import type { UIMode } from '@/shared/types'
 
+const FULL_WINDOW_WIDTH = 1200
+const FULL_WINDOW_HEIGHT = 760
+const COPILOT_WINDOW_WIDTH = 420
+const COPILOT_WINDOW_HEIGHT = 720
+const COPILOT_WINDOW_MARGIN = 12
+
+function isUIMode(value: string): value is UIMode {
+  return value === 'full' || value === 'copilot' || value === 'ninja'
+}
+
 export const useAppStore = defineStore('app', () => {
   const uiMode = ref<UIMode>('full')
   const previousMode = ref<UIMode>('full')
@@ -30,11 +40,11 @@ export const useAppStore = defineStore('app', () => {
       await mainWindow.setFocus()
 
       if (mode === 'full') {
-        await invoke('resize_window', { width: 1200, height: 760 })
+        await invoke('resize_window', { width: FULL_WINDOW_WIDTH, height: FULL_WINDOW_HEIGHT })
       } else if (mode === 'copilot') {
-        await invoke('resize_window', { width: 420, height: 720 })
-        const x = Math.max(0, window.screen.availWidth - 420 - 12)
-        const y = 12
+        await invoke('resize_window', { width: COPILOT_WINDOW_WIDTH, height: COPILOT_WINDOW_HEIGHT })
+        const x = Math.max(0, window.screen.availWidth - COPILOT_WINDOW_WIDTH - COPILOT_WINDOW_MARGIN)
+        const y = COPILOT_WINDOW_MARGIN
         await invoke('position_window', { x, y })
       }
     }
@@ -43,12 +53,12 @@ export const useAppStore = defineStore('app', () => {
   async function init(): Promise<void> {
     try {
       const savedMode = await invoke<string>('get_config', { key: 'ui_mode' })
-      if (savedMode && (['full', 'copilot', 'ninja'] as string[]).includes(savedMode)) {
+      if (savedMode && isUIMode(savedMode)) {
         // On startup in ninja mode, restore to previous non-ninja mode
-        uiMode.value = (savedMode === 'ninja' ? 'full' : savedMode) as UIMode
+        uiMode.value = savedMode === 'ninja' ? 'full' : savedMode
       }
-    } catch {
-      // Default to full mode on error
+    } catch (err) {
+      console.warn('[AppStore] Failed to load ui_mode from config, defaulting to full:', err)
     }
   }
 
