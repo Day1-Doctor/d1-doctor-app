@@ -11,8 +11,8 @@
       <div class="progress-fill" :style="{ width: progressPct + '%' }" />
     </div>
     <div class="plan-actions">
-      <button class="btn-approve" @click="$emit('approve')">✓ Approve</button>
-      <button class="btn-reject" @click="$emit('reject')">✕ Reject</button>
+      <button class="btn-approve" @click="emit('approve')">✓ Approve</button>
+      <button class="btn-reject" @click="emit('reject')">✕ Reject</button>
     </div>
   </div>
 </template>
@@ -23,7 +23,7 @@ import type { Step } from '@/shared/types'
 import StepIndicator from './StepIndicator.vue'
 
 const props = defineProps<{ steps: Step[] }>()
-defineEmits<{ approve: []; reject: [] }>()
+const emit = defineEmits<{ approve: []; reject: [] }>()
 
 const doneCount = computed(() => props.steps.filter(s => s.state === 'done').length)
 const progressPct = computed(() =>

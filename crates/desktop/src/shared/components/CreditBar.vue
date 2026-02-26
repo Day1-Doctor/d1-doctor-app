@@ -5,13 +5,14 @@
       <div class="bar-fill" :style="{ width: pct + '%' }" />
     </div>
     <span class="credit-value">{{ credits }}<template v-if="variant === 'full'">/{{ max }}</template></span>
-    <a v-if="variant === 'full'" href="#" class="buy-link">Buy</a>
+    <a v-if="variant === 'full'" href="#" class="buy-link" @click.prevent="emit('buy')">Buy</a>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 const props = defineProps<{ credits: number; max: number; variant: 'full' | 'mini' | 'dropdown' }>()
+const emit = defineEmits<{ buy: [] }>()
 const pct = computed(() => Math.min(100, props.max > 0 ? (props.credits / props.max) * 100 : 0))
 </script>
 

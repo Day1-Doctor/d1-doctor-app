@@ -26,6 +26,11 @@ describe('CreditBar', () => {
     const w = mount(CreditBar, { props: { credits: 50, max: 100, variant: 'full' } })
     expect(w.find('.buy-link').exists()).toBe(true)
   })
+  it('buy link click emits buy event', async () => {
+    const w = mount(CreditBar, { props: { credits: 50, max: 100, variant: 'full' } })
+    await w.find('.buy-link').trigger('click')
+    expect(w.emitted('buy')).toBeTruthy()
+  })
   it('mini variant hides buy link', () => {
     const w = mount(CreditBar, { props: { credits: 50, max: 100, variant: 'mini' } })
     expect(w.find('.buy-link').exists()).toBe(false)
