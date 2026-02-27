@@ -14,7 +14,6 @@ use tokio::sync::{mpsc, Mutex};
 use tokio_tungstenite::tungstenite::handshake::server::{Request, Response};
 use tokio_tungstenite::tungstenite::Message;
 use tracing::{info, warn};
-use uuid::Uuid;
 
 /// Shared state across all client connections.
 #[derive(Clone)]
@@ -102,7 +101,6 @@ async fn handle_connection(stream: TcpStream, addr: SocketAddr, state: ServerSta
 
     // Create per-client channel for server-push messages
     let (push_tx, mut push_rx) = mpsc::channel::<DaemonEnvelope>(64);
-    let _client_id = Uuid::new_v4().to_string();
 
     // Send initial daemon.status
     let orch_connected = state.is_orch_connected().await;
@@ -142,17 +140,23 @@ async fn handle_connection(stream: TcpStream, addr: SocketAddr, state: ServerSta
                                             let input = envelope.payload.get("input").and_then(|v| v.as_str()).unwrap_or("");
                                             {
                                                 let db = state.db.lock().await;
-                                                let _ = db.insert_task(task_id, input);
+                                                if let Err(e) = db.insert_task(task_id, input) {
+                                                    tracing::error!("Failed to persist task {}: {}", task_id, e);
+                                                }
                                             }
                                             // Forward to orchestrator (DB lock released above)
-                                            let _ = state.to_orchestrator.send(envelope.payload.clone()).await;
+                                            if let Err(e) = state.to_orchestrator.send(envelope.payload.clone()).await {
+                                                tracing::warn!("Failed to forward {} to orchestrator: {}", envelope.msg_type, e);
+                                            }
                                         } else {
                                             let err = DaemonEnvelope::error("PROTOCOL_ERROR", "task.submit missing task_id", Some(&envelope.id));
                                             write.send(Message::Text(serde_json::to_string(&err)?)).await?;
                                         }
                                     }
                                     "plan.approve" | "permission.response" | "task.cancel" => {
-                                        let _ = state.to_orchestrator.send(envelope.payload.clone()).await;
+                                        if let Err(e) = state.to_orchestrator.send(envelope.payload.clone()).await {
+                                            tracing::warn!("Failed to forward {} to orchestrator: {}", envelope.msg_type, e);
+                                        }
                                     }
                                     unknown => {
                                         let err = DaemonEnvelope::error(

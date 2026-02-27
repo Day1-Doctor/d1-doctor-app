@@ -112,9 +112,10 @@ impl DaemonConfig {
 
     /// Apply D1_* environment variable overrides.
     fn apply_env_overrides(&mut self) {
-        if let Ok(port) = std::env::var("D1_DAEMON_PORT") {
-            if let Ok(p) = port.parse() {
-                self.daemon.port = p;
+        if let Ok(port_str) = std::env::var("D1_DAEMON_PORT") {
+            match port_str.parse() {
+                Ok(p) => self.daemon.port = p,
+                Err(_) => tracing::warn!("D1_DAEMON_PORT value '{}' is not a valid port number, using default {}", port_str, self.daemon.port),
             }
         }
         if let Ok(url) = std::env::var("D1_ORCHESTRATOR_URL") {

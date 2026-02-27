@@ -33,7 +33,9 @@ async fn main() -> anyhow::Result<()> {
     if let Some(parent) = db_path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    let db = Arc::new(Mutex::new(LocalDb::open(db_path.to_str().unwrap())?));
+    let db_path_str = db_path.to_str()
+        .ok_or_else(|| anyhow::anyhow!("DB path contains non-UTF-8 characters: {:?}", db_path))?;
+    let db = Arc::new(Mutex::new(LocalDb::open(db_path_str)?));
     info!("Database opened at {:?}", db_path);
 
     // 3. Create channels for orchestrator communication
@@ -42,7 +44,9 @@ async fn main() -> anyhow::Result<()> {
     let (orch_status_tx, mut orch_status_rx) = mpsc::channel::<bool>(16);
 
     // 4. Start local WS server
-    let server_state = ws_server::ServerState::new(db.clone(), to_orchestrator_tx);
+    let mut server_state = ws_server::ServerState::new(db.clone(), to_orchestrator_tx);
+    server_state.orchestrator_url = cfg.orchestrator.url.clone();
+    server_state.device_id = cfg.auth.device_id.clone();
     let port = cfg.daemon.port;
     let server_state_clone = server_state.clone();
     let server_handle = tokio::spawn(async move {
