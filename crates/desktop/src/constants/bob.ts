@@ -33,5 +33,8 @@ export const BOB_LOADING_PHRASES: ReadonlyArray<string> = [
  * Called on each `step_started` event — a new phrase per step, not per session.
  */
 export function getRandomBobPhrase(): string {
+  if (BOB_LOADING_PHRASES.length === 0) {
+    return 'Bob is on the case …'
+  }
   return BOB_LOADING_PHRASES[Math.floor(Math.random() * BOB_LOADING_PHRASES.length)]
 }

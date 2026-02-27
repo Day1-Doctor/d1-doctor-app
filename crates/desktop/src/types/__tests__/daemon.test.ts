@@ -20,8 +20,10 @@ describe('daemon types', () => {
     expect(msg.v).toBe(1)
     expect(msg.type).toBe('task.submit')
     expect(msg.payload.task_id).toBe('tsk_001')
-    expect(typeof msg.id).toBe('string')
-    expect(typeof msg.ts).toBe('number')
+    expect(msg.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+    const now = Date.now()
+    expect(msg.ts).toBeGreaterThan(now - 1000)
+    expect(msg.ts).toBeLessThanOrEqual(now + 1)
   })
 
   it('createMessage("heartbeat", ...) produces heartbeat', () => {

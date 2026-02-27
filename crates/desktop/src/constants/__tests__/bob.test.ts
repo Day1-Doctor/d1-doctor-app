@@ -8,7 +8,7 @@ describe('bob loading phrases', () => {
 
   it('each phrase matches format "Bob is [a/an] {noun}, {pronoun} is {verb+ing} …"', () => {
     for (const phrase of BOB_LOADING_PHRASES) {
-      expect(phrase).toMatch(/^Bob is (a|an) .+, (he|she|they) is .+ing …$/)
+      expect(phrase).toMatch(/^Bob is (a|an) .+, he is .+ing …$/)
     }
   })
 

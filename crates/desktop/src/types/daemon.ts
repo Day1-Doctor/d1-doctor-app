@@ -271,8 +271,6 @@ export type ClientMessage =
 // Helper — type-safe message factory
 // ─────────────────────────────────────────────────────────────────────────────
 
-let _msgSeq = 0;
-
 export function createMessage<T extends ClientMessage['type']>(
   type: T,
   payload: Extract<ClientMessage, { type: T }>['payload'],
