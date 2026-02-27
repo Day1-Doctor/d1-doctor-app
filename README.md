@@ -12,6 +12,40 @@ Day 1 Doctor automates the tedious, error-prone first-day developer machine setu
 - **Offline Capable**: Local caching and offline-first design
 - **Security-First**: Sandboxed command execution, clear permission boundaries
 
+## Local Development
+
+### Prerequisites
+- Rust (1.75+): `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+- Node.js (20+): `brew install node` or https://nodejs.org
+- Python 3.12+: `brew install python3`
+- uv: `pip3 install uv`
+
+### First-time Setup
+```bash
+./scripts/setup-local.sh
+```
+
+### Start Local Stack
+```bash
+./scripts/dev.sh
+```
+
+This starts:
+- `d1d` daemon on `ws://localhost:9876/ws`
+- Mac client (Tauri dev mode)
+
+### Run Tests
+```bash
+# All tests
+cargo test --workspace          # Rust (target: 60+ tests)
+cd crates/desktop && npx vitest run   # TypeScript (target: 240+ tests)
+
+# Platform tests (in d1-doctor-platform repo)
+cd orchestrator && uv run pytest      # Python (target: 25+ tests)
+```
+
+---
+
 ## Quick Start
 
 ### Installation
