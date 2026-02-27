@@ -21,6 +21,9 @@ pub enum D1Error {
     #[error("TOML parsing error: {0}")]
     TomlError(#[from] toml::de::Error),
 
+    #[error("TOML serialization error: {0}")]
+    TomlSerError(#[from] toml::ser::Error),
+
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 
