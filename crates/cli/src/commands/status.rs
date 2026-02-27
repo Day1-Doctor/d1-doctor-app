@@ -42,25 +42,34 @@ pub async fn execute(json: bool) -> Result<()> {
 
 pub fn print_status_table(payload: Option<&serde_json::Value>) {
     println!("{}", "Day 1 Doctor Daemon".bold());
+    println!("{}", "─".repeat(48).dimmed());
+
     if let Some(p) = payload {
         let version = p["daemon_version"].as_str().unwrap_or("unknown");
-        let orch = p["orchestrator_connected"].as_bool().unwrap_or(false);
+        let orch_connected = p["orchestrator_connected"].as_bool().unwrap_or(false);
+        let orch_url = p["orchestrator_url"].as_str().unwrap_or("(not configured)");
         let tasks = p["active_tasks"].as_u64().unwrap_or(0);
-        println!("  {:<16} {}", "Version".dimmed(), version);
-        println!("  {:<16} {}", "Status".dimmed(), "● connected".green());
+
+        println!("  {:<18} {}", "Version".dimmed(), version);
+        println!("  {:<18} {}", "Status".dimmed(), "● connected".green());
         println!(
-            "  {:<16} {}",
+            "  {:<18} {}",
             "Orchestrator".dimmed(),
-            if orch {
-                "● connected".green().to_string()
+            if orch_connected {
+                format!("● {}", orch_url).green().to_string()
             } else {
-                "○ disconnected".red().to_string()
+                format!("○ {} (disconnected)", orch_url).red().to_string()
             }
         );
-        println!("  {:<16} {}", "Active Tasks".dimmed(), tasks);
+        println!("  {:<18} {}", "Daemon port".dimmed(), "9876");
+        println!("  {:<18} {}", "Active tasks".dimmed(), tasks);
     } else {
-        println!("  {}", "(no status data received)".dimmed());
+        println!(
+            "  {}",
+            "(no status data received — daemon may not be running)".dimmed()
+        );
     }
+    println!("{}", "─".repeat(48).dimmed());
 }
 
 #[cfg(test)]

@@ -12,9 +12,11 @@ path = "src/main.rs"
 d1-common = { path = "../common" }
 clap = { version = "4.4", features = ["derive"] }
 tokio = { workspace = true }
+# CLI uses 0.24; daemon uses workspace 0.21. Both are independent binaries so duplicate is acceptable.
 tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
+# Uses 0.28 for IsTerminal trait; workspace has 0.27. Independent binary, acceptable.
 crossterm = "0.28"
 indicatif = "0.17"
 colored = "2"

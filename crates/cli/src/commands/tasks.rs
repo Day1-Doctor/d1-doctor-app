@@ -50,30 +50,42 @@ pub async fn execute(task_id: Option<String>, json: bool, _all: bool) -> Result<
 fn print_tasks_table(payload: &serde_json::Value) {
     let tasks = payload["tasks"].as_array();
     match tasks {
-        Some(tasks) if tasks.is_empty() => println!("{}", "No recent tasks".dimmed()),
+        Some(tasks) if tasks.is_empty() => {
+            println!("{}", "  No recent tasks".dimmed());
+        }
         Some(tasks) => {
-            println!(
-                "{:<12} {:<8} {:<30} {}",
-                "TASK ID".bold(),
-                "STATUS".bold(),
-                "INPUT".bold(),
-                "CREATED".bold()
-            );
+            println!("  {}", "Recent Tasks".bold());
+            println!("  {}", "─".repeat(64).dimmed());
             for task in tasks {
                 let id = task["task_id"].as_str().unwrap_or("-");
                 let status = task["status"].as_str().unwrap_or("-");
                 let input = task["input"].as_str().unwrap_or("-");
                 let created = task["created_at"].as_str().unwrap_or("-");
+
+                let (icon, colored_status) = match status {
+                    "completed" => ("✓".green(), status.green()),
+                    "failed" => ("✗".red(), status.red()),
+                    "running" => ("◉".cyan(), status.cyan()),
+                    _ => ("○".white(), status.white()),
+                };
+
                 println!(
-                    "{:<12} {:<8} {:<30} {}",
-                    id,
-                    status,
-                    &input[..input.len().min(30)],
-                    created
+                    "  {}  {} {}  {:<35} {}",
+                    id.dimmed(),
+                    icon,
+                    colored_status,
+                    &input[..input.len().min(35)],
+                    created.dimmed()
                 );
             }
+            println!("  {}", "─".repeat(64).dimmed());
+            println!(
+                "  {}  ·  {} to see full history",
+                format!("{} tasks shown", tasks.len()).dimmed(),
+                "d1 tasks --all".cyan()
+            );
         }
-        None => println!("{}", "No task data in response".dimmed()),
+        None => println!("{}", "  No task data in response".dimmed()),
     }
 }
 

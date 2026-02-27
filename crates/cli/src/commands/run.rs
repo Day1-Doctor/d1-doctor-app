@@ -3,10 +3,11 @@ use anyhow::Result;
 use colored::Colorize;
 use uuid::Uuid;
 
-pub async fn execute(task: String, approve: bool, _no_approve: bool, json: bool) -> Result<()> {
+pub async fn execute(task: String, approve: bool, no_approve: bool, json: bool) -> Result<()> {
     let mut client = DaemonClient::connect().await?;
 
-    let task_id = format!("tsk_{}", &Uuid::new_v4().to_string()[..8]);
+    // Fix 11: Strip hyphens so ID is always alphanumeric
+    let task_id = format!("tsk_{}", Uuid::new_v4().simple().to_string().get(..8).unwrap_or("00000000"));
     client
         .send(
             "task.submit",
@@ -25,8 +26,15 @@ pub async fn execute(task: String, approve: bool, _no_approve: bool, json: bool)
     loop {
         match client.recv_timeout(120).await {
             Ok(Some(msg)) => {
+                // Fix 5: Output full envelope in JSON mode
                 if json {
-                    println!("{}", serde_json::to_string(&msg.payload)?);
+                    println!("{}", serde_json::to_string(&serde_json::json!({
+                        "v": msg.v,
+                        "id": msg.id,
+                        "ts": msg.ts,
+                        "type": msg.msg_type,
+                        "payload": msg.payload,
+                    }))?);
                     if msg.msg_type == "task.completed" || msg.msg_type == "task.failed" {
                         break;
                     }
@@ -36,10 +44,12 @@ pub async fn execute(task: String, approve: bool, _no_approve: bool, json: bool)
                 match msg.msg_type.as_str() {
                     "daemon.status" => {} // ignore
                     "plan.proposed" => {
-                        handle_plan_proposed(&msg.payload, &mut client, &task_id, approve).await?;
+                        // Fix 4: pass no_approve
+                        handle_plan_proposed(&msg.payload, &mut client, &task_id, approve, no_approve).await?;
                     }
+                    // Fix 2: corrected field names
                     "step.started" => {
-                        let step_num = msg.payload["step_number"].as_u64().unwrap_or(0);
+                        let step_num = msg.payload["order"].as_u64().unwrap_or(0);
                         let desc = msg.payload["description"].as_str().unwrap_or("");
                         println!(
                             "  {} {}  {}",
@@ -49,8 +59,8 @@ pub async fn execute(task: String, approve: bool, _no_approve: bool, json: bool)
                         );
                     }
                     "step.completed" => {
-                        let step_num = msg.payload["step_number"].as_u64().unwrap_or(0);
-                        let secs = msg.payload["duration_seconds"].as_f64().unwrap_or(0.0);
+                        let step_num = msg.payload["order"].as_u64().unwrap_or(0);
+                        let secs = msg.payload["duration_ms"].as_f64().map(|ms| ms / 1000.0).unwrap_or(0.0);
                         println!(
                             "  {} {}  ({:.1}s)",
                             format!("{step_num}").dimmed(),
@@ -59,8 +69,35 @@ pub async fn execute(task: String, approve: bool, _no_approve: bool, json: bool)
                         );
                     }
                     "step.failed" => {
-                        let desc = msg.payload["description"].as_str().unwrap_or("step");
+                        let desc = msg.payload["error"]["message"].as_str().unwrap_or("step");
                         println!("  {} {}", "✗".red(), desc);
+                    }
+                    // Fix 3: Handle permission.requested
+                    "permission.requested" => {
+                        let task_id_ref = msg.payload["task_id"].as_str().unwrap_or("").to_string();
+                        let perm_id = msg.payload["permission_id"].as_str().unwrap_or("").to_string();
+                        let desc = msg.payload["description"].as_str().unwrap_or("Unknown action");
+                        let risk = msg.payload["risk_tier"].as_str().unwrap_or("MEDIUM");
+
+                        println!("\n  {} {} [{}]", "Permission requested:".yellow(), desc, format_risk(risk));
+
+                        let granted = if approve || !std::io::IsTerminal::is_terminal(&std::io::stdout()) {
+                            println!("  {} Auto-granting (--approve flag)", "→".cyan());
+                            true
+                        } else {
+                            print!("  Grant permission? [Y/n] ");
+                            use std::io::Write;
+                            std::io::stdout().flush()?;
+                            let mut input = String::new();
+                            std::io::stdin().read_line(&mut input)?;
+                            !input.trim().eq_ignore_ascii_case("n")
+                        };
+
+                        client.send("permission.response", serde_json::json!({
+                            "task_id": task_id_ref,
+                            "permission_id": perm_id,
+                            "granted": granted,
+                        })).await?;
                     }
                     "agent.message" => {
                         let content = msg.payload["message"].as_str().unwrap_or("");
@@ -97,11 +134,13 @@ pub async fn execute(task: String, approve: bool, _no_approve: bool, json: bool)
     Ok(())
 }
 
+// Fix 4: Added no_approve parameter
 async fn handle_plan_proposed(
     payload: &serde_json::Value,
     client: &mut DaemonClient,
     task_id: &str,
     auto_approve: bool,
+    no_approve: bool,
 ) -> Result<()> {
     let plan_id = payload["plan_id"].as_str().unwrap_or("").to_string();
     let summary = payload["summary"].as_str().unwrap_or("Execute task");
@@ -119,20 +158,22 @@ async fn handle_plan_proposed(
     }
     println!();
 
-    let action =
-        if auto_approve || !std::io::IsTerminal::is_terminal(&std::io::stdout()) {
-            println!("{} Auto-approving plan (--approve flag)", "→".cyan());
-            "APPROVE"
-        } else {
-            // Interactive TUI
-            print_tui_prompt();
-            let mut input = String::new();
-            std::io::stdin().read_line(&mut input)?;
-            match input.trim().to_lowercase().as_str() {
-                "y" | "yes" | "" => "APPROVE",
-                _ => "REJECT",
-            }
-        };
+    let action = if no_approve {
+        println!("{} Auto-rejecting plan (--no-approve flag)", "→".red());
+        "REJECT"
+    } else if auto_approve || !std::io::IsTerminal::is_terminal(&std::io::stdout()) {
+        println!("{} Auto-approving plan (--approve flag)", "→".cyan());
+        "APPROVE"
+    } else {
+        // Fix 7: More explicit interactive TUI prompt
+        print_tui_prompt();
+        let mut input = String::new();
+        std::io::stdin().read_line(&mut input)?;
+        match input.trim().to_lowercase().as_str() {
+            "r" | "reject" | "n" | "no" => "REJECT",
+            _ => "APPROVE", // empty Enter or 'a'/'approve'/'y'/'yes'
+        }
+    };
 
     client
         .send(
@@ -162,8 +203,11 @@ async fn handle_plan_proposed(
     Ok(())
 }
 
+// Fix 7: More explicit TUI prompt
 fn print_tui_prompt() {
-    println!("Approve this plan? [Y/n] ");
+    print!("  Approve this plan? [A]pprove / [R]eject (Enter = approve): ");
+    use std::io::Write;
+    std::io::stdout().flush().unwrap_or(());
 }
 
 fn format_risk(risk: &str) -> colored::ColoredString {

@@ -1,6 +1,9 @@
 //! CLI → Daemon WebSocket client.
 //! Connects to ws://localhost:9876/ws, sends/receives JSON protocol v1 messages.
 
+/// JSON protocol version. Must match daemon PROTOCOL_VERSION.
+pub const PROTOCOL_VERSION: u8 = 1;
+
 use anyhow::{anyhow, Result};
 use futures_util::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
@@ -25,7 +28,7 @@ pub struct Envelope<P: Serialize> {
 impl<P: Serialize> Envelope<P> {
     pub fn new(msg_type: &str, payload: P) -> Self {
         Self {
-            v: 1,
+            v: PROTOCOL_VERSION,
             id: Uuid::new_v4().to_string(),
             ts: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)

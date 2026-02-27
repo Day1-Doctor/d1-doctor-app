@@ -92,22 +92,77 @@ pub async fn execute(fix: bool) -> Result<()> {
         },
     });
 
-    // Print results
-    println!("{}", "Day 1 Doctor — System Diagnostics".bold());
-    println!();
+    // Check 5: Orchestrator reachability
+    let orch_url = {
+        let config_path = dirs::home_dir()
+            .unwrap_or_default()
+            .join(".d1doctor/config.toml");
+        if config_path.exists() {
+            let content = std::fs::read_to_string(&config_path).unwrap_or_default();
+            let table: toml::Value = content
+                .parse()
+                .unwrap_or(toml::Value::Table(Default::default()));
+            table
+                .get("orchestrator")
+                .and_then(|o| o.get("url"))
+                .and_then(|u| u.as_str())
+                .unwrap_or("ws://localhost:8000/ws")
+                .to_string()
+        } else {
+            "ws://localhost:8000/ws".to_string()
+        }
+    };
+    let orch_host_port = orch_url
+        .trim_start_matches("ws://")
+        .trim_start_matches("wss://")
+        .split('/')
+        .next()
+        .unwrap_or("localhost:8000");
+    let orch_ok = tokio::net::TcpStream::connect(orch_host_port).await.is_ok();
+    checks.push(Check {
+        name: "Orchestrator",
+        status: if orch_ok {
+            CheckStatus::Ok
+        } else {
+            CheckStatus::Warning
+        },
+        message: if orch_ok {
+            format!("{} (reachable)", orch_url)
+        } else {
+            format!("{} (unreachable)", orch_url)
+        },
+    });
+
+    // Check 6: Database
+    let db_path = dirs::home_dir()
+        .unwrap_or_default()
+        .join(".d1doctor/daemon.db");
+    checks.push(Check {
+        name: "Database",
+        status: if db_path.exists() {
+            CheckStatus::Ok
+        } else {
+            CheckStatus::Warning
+        },
+        message: if db_path.exists() {
+            db_path.display().to_string()
+        } else {
+            "Not found (will be created on first run)".to_string()
+        },
+    });
+
+    // Fix 9: Updated title and format with separator lines
+    println!("{}", "Day 1 Doctor — Self Diagnostic".bold());
+    println!("{}", "─".repeat(56).dimmed());
     for check in &checks {
-        let (icon, colored_name) = match check.status {
-            CheckStatus::Ok => ("✓".green(), check.name.green()),
-            CheckStatus::Warning => ("⚠".yellow(), check.name.yellow()),
-            CheckStatus::Error => ("✗".red(), check.name.red()),
+        let (icon, label) = match check.status {
+            CheckStatus::Ok => ("✓".green(), check.name.to_string()),
+            CheckStatus::Warning => ("⚠".yellow(), check.name.to_string()),
+            CheckStatus::Error => ("✗".red(), check.name.to_string()),
         };
-        println!(
-            "  {} {:<30} {}",
-            icon,
-            colored_name,
-            check.message.dimmed()
-        );
+        println!("  {} {:<28} {}", icon, label, check.message.dimmed());
     }
+    println!("{}", "─".repeat(56).dimmed());
 
     let errors = checks
         .iter()
@@ -123,6 +178,15 @@ pub async fn execute(fix: bool) -> Result<()> {
         }
     } else {
         println!("\n{} All checks passed", "✓".green());
+    }
+
+    // Fix 9: Add --fix logic for LOW-risk auto-fix (daemon not running)
+    if fix {
+        let daemon_check = checks.iter().find(|c| c.name == "Daemon (port 9876)");
+        if matches!(daemon_check, Some(Check { status: CheckStatus::Error, .. })) {
+            println!("\n{} Auto-fixing: starting daemon...", "→".cyan());
+            let _ = crate::commands::start::execute().await;
+        }
     }
 
     Ok(())

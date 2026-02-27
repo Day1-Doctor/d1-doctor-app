@@ -6,7 +6,7 @@ pub async fn execute() -> Result<()> {
     let pid_path = dirs::home_dir()
         .ok_or_else(|| anyhow::anyhow!("No home directory"))?
         .join(".d1doctor")
-        .join("daemon.pid");
+        .join("d1d.pid");
 
     if !pid_path.exists() {
         println!(
