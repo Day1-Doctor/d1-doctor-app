@@ -20,12 +20,16 @@ pub async fn ensure_daemon_running(app: tauri::AppHandle) -> Result<(), String> 
     {
         use std::time::Duration;
         use tauri_plugin_shell::ShellExt;
+        let config_path = dirs::home_dir()
+            .map(|h| h.join(".d1doctor").join("config.toml"))
+            .map(|p| p.to_string_lossy().to_string())
+            .unwrap_or_else(|| "~/.d1doctor/config.toml".to_string());
         let sidecar = app
             .shell()
             .sidecar("binaries/d1d")
             .map_err(|e| e.to_string())?;
         let (_rx, _child) = sidecar
-            .args(["--config", "~/.d1doctor/config.toml"])
+            .args(["--config", &config_path])
             .spawn()
             .map_err(|e| e.to_string())?;
 

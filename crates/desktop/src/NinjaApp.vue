@@ -39,6 +39,7 @@ import NinjaBar from '@/modes/ninja/NinjaBar.vue'
 import NinjaDropdown from '@/modes/ninja/NinjaDropdown.vue'
 import { useConversationStore } from '@/shared/stores/conversation'
 import { useDaemonStore } from '@/shared/stores/daemon'
+import { useDaemonConnection } from '@/shared/composables/useDaemonConnection'
 import type { Step } from '@/shared/types'
 
 // TODO: wire to agentStore.credits when credit tracking is implemented
@@ -46,6 +47,7 @@ const CREDIT_ESTIMATE_PLACEHOLDER = '~0.5 credits'
 
 const conversationStore = useConversationStore()
 const daemonStore = useDaemonStore()
+const { approvePlan } = useDaemonConnection()
 
 const appEl = ref<HTMLDivElement | null>(null)
 const showDropdown = ref(false)
@@ -68,12 +70,9 @@ function onDismiss(): void {
   showDropdown.value = false
 }
 
-function onApprove(): void {
-  if (conversationStore.currentPlan) {
-    conversationStore.setPlan({
-      ...conversationStore.currentPlan,
-      approved: true,
-    })
+async function onApprove(): Promise<void> {
+  if (daemonStore.currentPlanId) {
+    approvePlan('', daemonStore.currentPlanId, 'APPROVE')
   }
   showDropdown.value = false
 }

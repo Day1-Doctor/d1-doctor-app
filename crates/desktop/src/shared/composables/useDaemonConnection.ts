@@ -22,6 +22,8 @@ export function useDaemonConnection() {
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null
   let reconnectAttempt = 0
   let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+  let intentionalDisconnect = false
+  let isMounted = false
 
   function handleMessage(event: MessageEvent) {
     let msg: DaemonMessage
@@ -45,14 +47,14 @@ export function useDaemonConnection() {
       }
       case 'plan.proposed': {
         const p = msg.payload
-        daemonStore.setCurrentPlanId(p.plan_id)
+        daemonStore.setCurrentPlanId(p.plan_id ?? null)
         conversationStore.setPlan({
-          steps: p.steps.map((s: any, i: number) => ({
-            id: s.step_id,
-            label: s.description,
+          steps: Array.isArray(p.steps) ? p.steps.map((s: any, i: number) => ({
+            id: s.step_id ?? `step-${i}`,
+            label: s.description ?? '',
             state: 'pending' as const,
             index: i,
-          })),
+          })) : [],
           approved: null,
         })
         break
@@ -104,6 +106,7 @@ export function useDaemonConnection() {
           content: `Task failed: ${p.error.message}`,
           timestamp: Date.now(),
         })
+        daemonStore.decrementActiveTasks()
         break
       }
       case 'credits.updated': {
@@ -151,7 +154,14 @@ export function useDaemonConnection() {
     ws = new WebSocket(DAEMON_WS_URL)
     ws.onopen = () => { reconnectAttempt = 0; startHeartbeat() }
     ws.onmessage = handleMessage
-    ws.onclose = () => { stopHeartbeat(); daemonStore.setStatus('disconnected'); scheduleReconnect() }
+    ws.onclose = () => {
+      stopHeartbeat()
+      daemonStore.setStatus('disconnected')
+      if (!intentionalDisconnect) {
+        scheduleReconnect()
+      }
+      intentionalDisconnect = false
+    }
     ws.onerror = (err) => { console.error('[useDaemonConnection] WS error:', err) }
   }
 
@@ -162,6 +172,7 @@ export function useDaemonConnection() {
   }
 
   function disconnect() {
+    intentionalDisconnect = true
     stopHeartbeat()
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null }
     ws?.close()
@@ -190,6 +201,7 @@ export function useDaemonConnection() {
   }
 
   onMounted(async () => {
+    isMounted = true
     try {
       await invoke('ensure_daemon_running')
     } catch (err) {
@@ -197,10 +209,14 @@ export function useDaemonConnection() {
       daemonStore.setError('Daemon failed to start. Run: d1 start')
       return
     }
+    if (!isMounted) return
     connect()
   })
 
-  onUnmounted(() => { disconnect() })
+  onUnmounted(() => {
+    isMounted = false
+    disconnect()
+  })
 
   return { submitTask, approvePlan }
 }
