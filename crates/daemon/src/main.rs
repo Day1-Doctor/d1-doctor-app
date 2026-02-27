@@ -4,6 +4,7 @@ mod config;
 mod executor;
 mod health;
 mod local_db;
+mod protocol;
 mod ws_client;
 
 #[tokio::main]
