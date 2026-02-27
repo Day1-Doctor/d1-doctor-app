@@ -16,10 +16,12 @@ tauri-plugin-global-shortcut = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-window-state = "2"
 tauri-plugin-single-instance = "2"
+tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"
 dirs = "5"
+tokio = { version = "1", features = ["net", "time", "rt"] }
 
 [profile.release]
 panic = "abort"
