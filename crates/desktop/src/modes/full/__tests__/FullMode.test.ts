@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { useDaemonStore } from '@/shared/stores/daemon'
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue('full') }))
 vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn().mockResolvedValue(() => {}), emit: vi.fn() }))
@@ -95,5 +96,45 @@ describe('FullMode', () => {
   it('imports and uses UtilityPanel', () => {
     const w = mount(FullMode)
     expect(w.findComponent(UtilityPanel).exists()).toBe(true)
+  })
+
+  it('shows bob phrase when daemonStore.currentBobPhrase is set', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const daemonStore = useDaemonStore()
+    daemonStore.setBobPhrase('Bob is a doctor, he is diagnosing …')
+
+    const wrapper = mount(FullMode, { global: { plugins: [pinia] } })
+    expect(wrapper.find('[data-testid="bob-phrase"]').text()).toBe('Bob is a doctor, he is diagnosing …')
+  })
+
+  it('hides bob phrase when daemonStore.currentBobPhrase is null', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const daemonStore = useDaemonStore()
+    daemonStore.setBobPhrase(null)
+
+    const wrapper = mount(FullMode, { global: { plugins: [pinia] } })
+    expect(wrapper.find('[data-testid="bob-phrase"]').exists()).toBe(false)
+  })
+
+  it('shows connection dot with correct class for connected status', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const daemonStore = useDaemonStore()
+    daemonStore.setStatus('connected')
+
+    const wrapper = mount(FullMode, { global: { plugins: [pinia] } })
+    expect(wrapper.find('[data-testid="connection-dot"]').classes()).toContain('connected')
+  })
+
+  it('shows connection dot with disconnected class for disconnected status', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const daemonStore = useDaemonStore()
+    daemonStore.setStatus('disconnected')
+
+    const wrapper = mount(FullMode, { global: { plugins: [pinia] } })
+    expect(wrapper.find('[data-testid="connection-dot"]').classes()).toContain('disconnected')
   })
 })

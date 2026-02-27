@@ -55,6 +55,14 @@ vi.mock('@/shared/composables/useAgentEvents', () => ({
   })),
 }))
 
+// Stub useDaemonConnection to avoid real WebSocket connections in unit tests
+vi.mock('@/shared/composables/useDaemonConnection', () => ({
+  useDaemonConnection: vi.fn(() => ({
+    submitTask: vi.fn(),
+    approvePlan: vi.fn(),
+  })),
+}))
+
 import App from '../App.vue'
 
 // ── Tests ──────────────────────────────────────────────────────────────────

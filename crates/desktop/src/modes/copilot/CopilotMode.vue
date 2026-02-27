@@ -44,7 +44,19 @@
         :max="agentStore.credits.max"
         variant="mini"
       />
+      <span
+        class="connection-dot"
+        :class="daemonStore.status"
+        :title="`Daemon: ${daemonStore.status}`"
+        data-testid="connection-dot"
+      />
     </div>
+    <p
+      v-if="daemonStore.currentBobPhrase"
+      class="bob-phrase"
+      data-testid="bob-phrase"
+      aria-live="polite"
+    >{{ daemonStore.currentBobPhrase }}</p>
   </div>
 </template>
 
@@ -52,6 +64,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useConversationStore } from '@/shared/stores/conversation'
 import { useAgentStore } from '@/shared/stores/agent'
+import { useDaemonStore } from '@/shared/stores/daemon'
 import CopilotHeader from './CopilotHeader.vue'
 import SessionBar from './SessionBar.vue'
 import CopilotInput from './CopilotInput.vue'
@@ -61,6 +74,7 @@ import CreditBar from '@/shared/components/CreditBar.vue'
 
 const conversationStore = useConversationStore()
 const agentStore = useAgentStore()
+const daemonStore = useDaemonStore()
 
 const listEl = ref<HTMLDivElement | null>(null)
 
@@ -205,5 +219,33 @@ function onReject(): void {
   align-items: center;
   flex-shrink: 0;
   background: var(--card);
+  gap: 8px;
 }
+
+.bob-phrase {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin: 0;
+  padding: 2px 14px 4px;
+  animation: fadeIn 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bob-phrase { animation: none; }
+}
+
+.connection-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.connection-dot.connected { background: var(--success, #22c55e); }
+.connection-dot.connecting { background: var(--warning, #f59e0b); animation: agentPulse 1.5s infinite; }
+.connection-dot.disconnected,
+.connection-dot.error { background: var(--error, #ef4444); }
 </style>

@@ -14,6 +14,20 @@
       @approve="onApprove"
       @dismiss="onDismiss"
     />
+    <div class="ninja-status">
+      <p
+        v-if="daemonStore.currentBobPhrase"
+        class="bob-phrase"
+        data-testid="bob-phrase"
+        aria-live="polite"
+      >{{ daemonStore.currentBobPhrase }}</p>
+      <span
+        class="connection-dot"
+        :class="daemonStore.status"
+        :title="`Daemon: ${daemonStore.status}`"
+        data-testid="connection-dot"
+      />
+    </div>
   </div>
 </template>
 
@@ -24,12 +38,14 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import NinjaBar from '@/modes/ninja/NinjaBar.vue'
 import NinjaDropdown from '@/modes/ninja/NinjaDropdown.vue'
 import { useConversationStore } from '@/shared/stores/conversation'
+import { useDaemonStore } from '@/shared/stores/daemon'
 import type { Step } from '@/shared/types'
 
 // TODO: wire to agentStore.credits when credit tracking is implemented
 const CREDIT_ESTIMATE_PLACEHOLDER = '~0.5 credits'
 
 const conversationStore = useConversationStore()
+const daemonStore = useDaemonStore()
 
 const appEl = ref<HTMLDivElement | null>(null)
 const showDropdown = ref(false)
@@ -90,4 +106,36 @@ onMounted(() => {
   align-items: center;
   outline: none;
 }
+
+.ninja-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+}
+
+.bob-phrase {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin: 0;
+  animation: fadeIn 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bob-phrase { animation: none; }
+}
+
+.connection-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.connection-dot.connected { background: var(--success, #22c55e); }
+.connection-dot.connecting { background: var(--warning, #f59e0b); }
+.connection-dot.disconnected,
+.connection-dot.error { background: var(--error, #ef4444); }
 </style>
