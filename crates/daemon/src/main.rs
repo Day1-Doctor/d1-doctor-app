@@ -6,6 +6,7 @@ mod health;
 mod local_db;
 mod protocol;
 mod ws_client;
+mod ws_server;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
