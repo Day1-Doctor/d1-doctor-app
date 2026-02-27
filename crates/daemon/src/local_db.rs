@@ -126,6 +126,17 @@ impl LocalDb {
         Ok(())
     }
 
+    /// Mark a step as running and record when it started.
+    /// Fixes spec §2.4: task_steps.started_at was never populated.
+    pub fn start_step(&self, step_id: &str) -> Result<()> {
+        let now = chrono::Utc::now().timestamp_millis();
+        self.conn.execute(
+            "UPDATE task_steps SET status = 'running', started_at = ?1 WHERE step_id = ?2",
+            rusqlite::params![now, step_id],
+        )?;
+        Ok(())
+    }
+
     pub fn update_step_status(&self, step_id: &str, status: &str, result_json: Option<&str>) -> Result<()> {
         let now = chrono::Utc::now().timestamp_millis();
         self.conn.execute(
@@ -224,6 +235,17 @@ mod tests {
         let db = test_db();
         let task = db.get_task("nonexistent").unwrap();
         assert!(task.is_none());
+    }
+
+    #[test]
+    fn test_start_step_sets_started_at() {
+        let db = test_db();
+        db.insert_task("tsk_004", "task d").unwrap();
+        db.insert_step("step_002", "tsk_004", 1, "do thing").unwrap();
+        db.start_step("step_002").unwrap();
+        let steps = db.get_steps("tsk_004").unwrap();
+        assert_eq!(steps[0].status, "running");
+        assert!(steps[0].started_at.is_some());
     }
 
     #[test]

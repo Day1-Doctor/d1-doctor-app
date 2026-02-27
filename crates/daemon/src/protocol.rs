@@ -51,14 +51,14 @@ impl DaemonEnvelope {
         Self::new("heartbeat", serde_json::json!({ "pong": true }))
     }
 
-    pub fn daemon_status(version: &str, orchestrator_connected: bool, active_tasks: usize) -> Self {
+    pub fn daemon_status(version: &str, orchestrator_connected: bool, active_tasks: usize, orchestrator_url: &str, device_id: &str) -> Self {
         Self::new("daemon.status", serde_json::json!({
             "daemon_version": version,
             "protocol_version": PROTOCOL_VERSION,
             "orchestrator_connected": orchestrator_connected,
-            "orchestrator_url": "",
+            "orchestrator_url": orchestrator_url,
             "active_tasks": active_tasks,
-            "device_id": "",
+            "device_id": device_id,
         }))
     }
 }

@@ -11,6 +11,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc, Mutex};
+use tokio_tungstenite::tungstenite::handshake::server::{Request, Response};
 use tokio_tungstenite::tungstenite::Message;
 use tracing::{info, warn};
 use uuid::Uuid;
@@ -28,6 +29,10 @@ pub struct ServerState {
     pub version: String,
     /// Whether orchestrator is connected.
     pub orch_connected: Arc<Mutex<bool>>,
+    /// Orchestrator URL (from config), included in daemon.status responses.
+    pub orchestrator_url: String,
+    /// Device ID (from config auth section), included in daemon.status responses.
+    pub device_id: String,
 }
 
 impl ServerState {
@@ -38,6 +43,8 @@ impl ServerState {
             db,
             version: env!("CARGO_PKG_VERSION").to_string(),
             orch_connected: Arc::new(Mutex::new(false)),
+            orchestrator_url: String::new(),
+            device_id: String::new(),
         }
     }
 
@@ -72,7 +79,23 @@ pub async fn run_ws_server_on(listener: TcpListener, state: ServerState) -> Resu
 }
 
 async fn handle_connection(stream: TcpStream, addr: SocketAddr, state: ServerState) -> Result<()> {
-    let ws_stream = tokio_tungstenite::accept_async(stream).await?;
+    // Enforce /ws path per spec §2.2. The server binds on 127.0.0.1 (loopback-only)
+    // so the security risk of path-mismatch is minimal, but we reject non-/ws paths for
+    // spec compliance. ErrorResponse = tungstenite::http::Response<Option<String>>.
+    use tokio_tungstenite::tungstenite::http;
+    let ws_stream: tokio_tungstenite::WebSocketStream<TcpStream> =
+        tokio_tungstenite::accept_hdr_async(stream, |req: &Request, response: Response| {
+            let path = req.uri().path();
+            if path != "/ws" {
+                let error_response = http::Response::builder()
+                    .status(http::StatusCode::NOT_FOUND)
+                    .body(Some(format!("Not found: {}", path)))
+                    .expect("failed to build error response");
+                Err(error_response)
+            } else {
+                Ok(response)
+            }
+        }).await?;
     info!("New client connected: {}", addr);
 
     let (mut write, mut read) = ws_stream.split();
@@ -83,7 +106,7 @@ async fn handle_connection(stream: TcpStream, addr: SocketAddr, state: ServerSta
 
     // Send initial daemon.status
     let orch_connected = state.is_orch_connected().await;
-    let status = DaemonEnvelope::daemon_status(&state.version, orch_connected, 0);
+    let status = DaemonEnvelope::daemon_status(&state.version, orch_connected, 0, &state.orchestrator_url, &state.device_id);
     let status_json = serde_json::to_string(&status)?;
     write.send(Message::Text(status_json)).await?;
 
@@ -114,12 +137,14 @@ async fn handle_connection(stream: TcpStream, addr: SocketAddr, state: ServerSta
                                         if let Some(task_id) = envelope.payload.get("task_id").and_then(|v| v.as_str()) {
                                             // Register subscriber
                                             state.task_subs.lock().await.insert(task_id.to_string(), push_tx.clone());
-                                            // Insert task into DB
+                                            // Insert task into DB — use async lock to avoid silently
+                                            // dropping writes when the mutex is contended (Fix 1).
                                             let input = envelope.payload.get("input").and_then(|v| v.as_str()).unwrap_or("");
-                                            if let Ok(db) = state.db.try_lock() {
+                                            {
+                                                let db = state.db.lock().await;
                                                 let _ = db.insert_task(task_id, input);
                                             }
-                                            // Forward to orchestrator
+                                            // Forward to orchestrator (DB lock released above)
                                             let _ = state.to_orchestrator.send(envelope.payload.clone()).await;
                                         } else {
                                             let err = DaemonEnvelope::error("PROTOCOL_ERROR", "task.submit missing task_id", Some(&envelope.id));

@@ -186,6 +186,14 @@ mod tests {
     }
 
     #[test]
+    fn test_allow_unauthenticated_127_auto_set() {
+        let mut cfg = DaemonConfig::default();
+        cfg.orchestrator.url = "ws://127.0.0.1:8000/ws/connect".into();
+        cfg.apply_auto_rules();
+        assert!(cfg.orchestrator.allow_unauthenticated_local);
+    }
+
+    #[test]
     fn test_expand_path_tilde() {
         let expanded = DaemonConfig::expand_path("~/.d1doctor/db");
         let expanded_str = expanded.to_string_lossy();
