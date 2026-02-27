@@ -187,4 +187,58 @@ describe('useDaemonConnection', () => {
     expect(sentData.payload.input).toBe('install openclaw')
     expect(sentData.payload.task_id).toMatch(/^tsk_/)
   })
+
+  it('plan.proposed message stores plan_id in daemon store', async () => {
+    const { daemonStore, conversationStore } = await mountComposable()
+    const ws = MockWebSocket.instances[0]
+
+    ws.simulateMessage({
+      v: 1,
+      id: 'msg-plan',
+      ts: Date.now(),
+      type: 'plan.proposed',
+      payload: {
+        task_id: 'tsk-abc',
+        plan_id: 'pln_test123',
+        steps: [
+          { step_id: 'stp-1', description: 'Install dependencies', order: 0 },
+          { step_id: 'stp-2', description: 'Run tests', order: 1 },
+        ],
+      },
+    })
+
+    await flushPromises()
+
+    // plan_id must be stored in the daemon store
+    expect(daemonStore.currentPlanId).toBe('pln_test123')
+    // steps must be mapped into the conversation store
+    expect(conversationStore.currentPlan).not.toBeNull()
+    expect(conversationStore.currentPlan?.steps).toHaveLength(2)
+    expect(conversationStore.currentPlan?.steps[0].id).toBe('stp-1')
+    expect(conversationStore.currentPlan?.steps[1].label).toBe('Run tests')
+  })
+
+  it('task.completed message decrements activeTasks via decrementActiveTasks()', async () => {
+    const { daemonStore } = await mountComposable()
+    const ws = MockWebSocket.instances[0]
+
+    // Set active tasks to 2
+    daemonStore.setDaemonInfo({ daemonVersion: '0.4.1', orchestratorConnected: true, activeTasks: 2 })
+
+    ws.simulateMessage({
+      v: 1,
+      id: 'msg-done',
+      ts: Date.now(),
+      type: 'task.completed',
+      payload: {
+        task_id: 'tsk-abc',
+        summary: 'All done!',
+        artifacts: [],
+        completed_at: Date.now(),
+      },
+    })
+
+    await flushPromises()
+    expect(daemonStore.activeTasks).toBe(1)
+  })
 })

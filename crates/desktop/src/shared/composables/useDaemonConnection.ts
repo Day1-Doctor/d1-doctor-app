@@ -45,8 +45,9 @@ export function useDaemonConnection() {
       }
       case 'plan.proposed': {
         const p = msg.payload
+        daemonStore.setCurrentPlanId(p.plan_id)
         conversationStore.setPlan({
-          steps: p.steps.map((s, i) => ({
+          steps: p.steps.map((s: any, i: number) => ({
             id: s.step_id,
             label: s.description,
             state: 'pending' as const,
@@ -92,7 +93,7 @@ export function useDaemonConnection() {
           content: p.summary,
           timestamp: Date.now(),
         })
-        daemonStore.activeTasks = Math.max(0, daemonStore.activeTasks - 1)
+        daemonStore.decrementActiveTasks()
         break
       }
       case 'task.failed': {

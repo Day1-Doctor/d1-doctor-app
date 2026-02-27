@@ -10,6 +10,7 @@ export const useDaemonStore = defineStore('daemon', () => {
   const activeTasks = ref(0)
   const errorMessage = ref<string | null>(null)
   const currentBobPhrase = ref<string | null>(null)
+  const currentPlanId = ref<string | null>(null)
 
   function setStatus(s: DaemonStatus) { status.value = s }
 
@@ -32,6 +33,12 @@ export const useDaemonStore = defineStore('daemon', () => {
     currentBobPhrase.value = phrase
   }
 
+  function setCurrentPlanId(id: string | null) { currentPlanId.value = id }
+
+  function decrementActiveTasks() {
+    activeTasks.value = Math.max(0, activeTasks.value - 1)
+  }
+
   return {
     status,
     daemonVersion,
@@ -39,9 +46,12 @@ export const useDaemonStore = defineStore('daemon', () => {
     activeTasks,
     errorMessage,
     currentBobPhrase,
+    currentPlanId,
     setStatus,
     setDaemonInfo,
     setError,
     setBobPhrase,
+    setCurrentPlanId,
+    decrementActiveTasks,
   }
 })

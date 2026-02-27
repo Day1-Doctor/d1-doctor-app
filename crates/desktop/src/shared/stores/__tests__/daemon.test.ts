@@ -56,4 +56,23 @@ describe('useDaemonStore', () => {
     expect(store.status).toBe('error')
     expect(store.errorMessage).toBe('Daemon failed to start')
   })
+
+  it('setCurrentPlanId() stores the plan id', async () => {
+    const { useDaemonStore } = await import('../daemon')
+    const store = useDaemonStore()
+    store.setCurrentPlanId('pln_abc123')
+    expect(store.currentPlanId).toBe('pln_abc123')
+  })
+
+  it('decrementActiveTasks() reduces activeTasks by 1, not below 0', async () => {
+    const { useDaemonStore } = await import('../daemon')
+    const store = useDaemonStore()
+    store.setDaemonInfo({ daemonVersion: '0.4.1', orchestratorConnected: false, activeTasks: 2 })
+    store.decrementActiveTasks()
+    expect(store.activeTasks).toBe(1)
+    store.decrementActiveTasks()
+    expect(store.activeTasks).toBe(0)
+    store.decrementActiveTasks()
+    expect(store.activeTasks).toBe(0)
+  })
 })

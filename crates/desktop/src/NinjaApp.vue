@@ -135,7 +135,16 @@ onMounted(() => {
 }
 
 .connection-dot.connected { background: var(--success, #22c55e); }
-.connection-dot.connecting { background: var(--warning, #f59e0b); }
+.connection-dot.connecting { background: var(--warning, #f59e0b); animation: agentPulse 1.5s infinite; }
 .connection-dot.disconnected,
 .connection-dot.error { background: var(--error, #ef4444); }
+
+@keyframes agentPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connection-dot.connecting { animation: none; }
+}
 </style>
