@@ -47,14 +47,6 @@ pub struct TaskSubmitPayload {
     pub context: serde_json::Value,
 }
 
-#[derive(Serialize)]
-pub struct PlanApprovePayload {
-    pub task_id: String,
-    pub plan_id: String,
-    pub action: String, // "APPROVE" or "REJECT"
-    pub modifications: Option<serde_json::Value>,
-}
-
 // ── Inbound (Daemon → CLI) ────────────────────────────────────────────────────
 
 #[derive(Deserialize, Debug, Clone)]
@@ -97,7 +89,7 @@ impl DaemonClient {
     pub async fn send<P: Serialize>(&mut self, msg_type: &str, payload: P) -> Result<()> {
         let envelope = Envelope::new(msg_type, payload);
         let json = serde_json::to_string(&envelope)?;
-        self.sender.send(Message::Text(json.into())).await?;
+        self.sender.send(Message::Text(json)).await?;
         Ok(())
     }
 
@@ -117,7 +109,7 @@ impl DaemonClient {
             }
             Ok(Some(Ok(_))) => Ok(None), // binary/ping/pong, skip
             Ok(Some(Err(e))) => Err(anyhow!("WebSocket error: {e}")),
-            Ok(None) => Ok(None), // stream closed
+            Ok(None) => Err(anyhow!("Daemon connection closed unexpectedly")),
             Err(_) => Err(anyhow!("Timeout waiting for daemon response")),
         }
     }

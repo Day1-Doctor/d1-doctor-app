@@ -43,7 +43,8 @@ pub async fn execute(action: ConfigAction) -> Result<()> {
             let content = if path.exists() {
                 std::fs::read_to_string(&path)?
             } else {
-                std::fs::create_dir_all(path.parent().unwrap())?;
+                let parent = path.parent().ok_or_else(|| anyhow::anyhow!("Config path has no parent directory"))?;
+                std::fs::create_dir_all(parent)?;
                 String::new()
             };
             let mut table: toml::value::Table = toml::from_str(&content).unwrap_or_default();

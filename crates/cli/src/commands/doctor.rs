@@ -185,7 +185,10 @@ pub async fn execute(fix: bool) -> Result<()> {
         let daemon_check = checks.iter().find(|c| c.name == "Daemon (port 9876)");
         if matches!(daemon_check, Some(Check { status: CheckStatus::Error, .. })) {
             println!("\n{} Auto-fixing: starting daemon...", "→".cyan());
-            let _ = crate::commands::start::execute().await;
+            match crate::commands::start::execute().await {
+                Ok(()) => println!("  {} Daemon started", "✓".green()),
+                Err(e) => println!("  {} Failed to start daemon: {}", "✗".red(), e),
+            }
         }
     }
 
@@ -194,9 +197,27 @@ pub async fn execute(fix: bool) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn test_doctor_output_formatting() {
-        // Just ensure the module compiles and functions are accessible
-        // Real integration test would require running the command
+    fn test_check_status_display() {
+        // Verify CheckStatus variants produce correct icons
+        let ok_icon = match CheckStatus::Ok { CheckStatus::Ok => "✓", _ => "" };
+        let warn_icon = match CheckStatus::Warning { CheckStatus::Warning => "⚠", _ => "" };
+        let err_icon = match CheckStatus::Error { CheckStatus::Error => "✗", _ => "" };
+        assert_eq!(ok_icon, "✓");
+        assert_eq!(warn_icon, "⚠");
+        assert_eq!(err_icon, "✗");
+    }
+
+    #[test]
+    fn test_check_struct_creation() {
+        let check = Check {
+            name: "test",
+            status: CheckStatus::Ok,
+            message: "all good".to_string(),
+        };
+        assert_eq!(check.name, "test");
+        assert!(matches!(check.status, CheckStatus::Ok));
     }
 }

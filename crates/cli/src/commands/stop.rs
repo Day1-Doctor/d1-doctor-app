@@ -35,7 +35,9 @@ pub async fn execute() -> Result<()> {
                     "⚠".yellow(),
                     pid
                 );
-                let _ = std::fs::remove_file(&pid_path);
+                if let Err(e) = std::fs::remove_file(&pid_path) {
+                    eprintln!("{} Could not remove PID file {}: {}", "⚠".yellow(), pid_path.display(), e);
+                }
                 return Ok(());
             }
             return Err(anyhow::anyhow!(
@@ -45,6 +47,8 @@ pub async fn execute() -> Result<()> {
     }
 
     println!("{} Daemon stopped (PID {})", "✓".green(), pid);
-    let _ = std::fs::remove_file(&pid_path);
+    if let Err(e) = std::fs::remove_file(&pid_path) {
+        eprintln!("{} Could not remove PID file {}: {}", "⚠".yellow(), pid_path.display(), e);
+    }
     Ok(())
 }

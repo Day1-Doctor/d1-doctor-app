@@ -6,10 +6,7 @@ pub async fn execute(task_id: Option<String>, json: bool, _all: bool) -> Result<
     // Query daemon for task list via REST-like WS message
     // For now: connect, send a tasks.list custom message, wait for response
     // If daemon doesn't support it yet, show a helpful message
-    let mut client = DaemonClient::connect().await.unwrap_or_else(|e| {
-        eprintln!("{} {}", "Error:".red(), e);
-        std::process::exit(1);
-    });
+    let mut client = DaemonClient::connect().await?;
 
     client
         .send(

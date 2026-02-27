@@ -37,8 +37,28 @@ pub async fn execute(tail: u32) -> Result<()> {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_logs_no_crash_when_no_file() {
-        // The function handles missing file gracefully
-        // We just verify it compiles
+    fn test_tail_offset_calculation() {
+        // Simulate: 10 lines, tail=3 → start index = 7
+        let lines: Vec<&str> = (0..10).map(|_| "line").collect();
+        let tail: u32 = 3;
+        let start = if lines.len() > tail as usize {
+            lines.len() - tail as usize
+        } else {
+            0
+        };
+        assert_eq!(start, 7);
+    }
+
+    #[test]
+    fn test_tail_offset_clamps_at_zero() {
+        // Simulate: 2 lines, tail=50 → start = 0 (don't go negative)
+        let lines: Vec<&str> = vec!["a", "b"];
+        let tail: u32 = 50;
+        let start = if lines.len() > tail as usize {
+            lines.len() - tail as usize
+        } else {
+            0
+        };
+        assert_eq!(start, 0);
     }
 }

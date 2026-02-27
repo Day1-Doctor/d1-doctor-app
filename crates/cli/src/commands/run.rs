@@ -112,9 +112,10 @@ pub async fn execute(task: String, approve: bool, no_approve: bool, json: bool) 
                     "task.failed" => {
                         let error = msg.payload["error"]["message"]
                             .as_str()
-                            .unwrap_or("Unknown error");
-                        println!("\n{} Task failed: {}", "✗".red().bold(), error);
-                        std::process::exit(1);
+                            .unwrap_or("Unknown error")
+                            .to_string();
+                        eprintln!("\n{} Task failed: {}", "✗".red().bold(), error);
+                        return Err(anyhow::anyhow!("Task failed: {}", error));
                     }
                     "error" => {
                         let code = msg.payload["code"].as_str().unwrap_or("unknown");
