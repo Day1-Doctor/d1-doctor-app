@@ -1,6 +1,10 @@
 <template>
   <div class="app-window">
     <TitleBar />
+    <!-- Mode switcher — always visible top-right -->
+    <div class="full-mode-bar">
+      <ModeBar />
+    </div>
     <div class="main-content">
       <Sidebar />
       <ChatWorkspace />
@@ -14,6 +18,7 @@ import TitleBar from './TitleBar.vue'
 import Sidebar from './Sidebar.vue'
 import ChatWorkspace from './ChatWorkspace.vue'
 import UtilityPanel from './UtilityPanel.vue'
+import ModeBar from '@/shared/components/ModeBar.vue'
 </script>
 
 <style scoped>
@@ -25,6 +30,15 @@ import UtilityPanel from './UtilityPanel.vue'
   color: var(--text-primary);
   font-family: var(--font-mono);
   overflow: hidden;
+  position: relative;
+}
+
+.full-mode-bar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 200;
+  -webkit-app-region: no-drag;  /* Tauri: allow clicks in draggable title bar area */
 }
 
 .main-content {

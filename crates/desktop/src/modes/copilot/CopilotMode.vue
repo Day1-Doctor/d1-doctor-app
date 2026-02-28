@@ -1,5 +1,9 @@
 <template>
   <div class="copilot copilot-panel">
+    <!-- Mode switcher — always visible top-right -->
+    <div class="copilot-mode-bar">
+      <ModeBar />
+    </div>
     <CopilotHeader />
     <SessionBar
       :session-name="sessionName"
@@ -52,6 +56,7 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useConversationStore } from '@/shared/stores/conversation'
 import { useAgentStore } from '@/shared/stores/agent'
+import ModeBar from '@/shared/components/ModeBar.vue'
 import CopilotHeader from './CopilotHeader.vue'
 import SessionBar from './SessionBar.vue'
 import CopilotInput from './CopilotInput.vue'
@@ -109,6 +114,14 @@ function onReject(): void {
 </script>
 
 <style scoped>
+.copilot-mode-bar {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 100;
+  -webkit-app-region: no-drag;  /* Tauri: allow clicks in draggable window */
+}
+
 .copilot-panel {
   background: var(--surface-copilot);
   backdrop-filter: blur(40px) saturate(160%);
