@@ -25,17 +25,27 @@
 
     <!-- Recent Tasks section -->
     <div class="sidebar-section">
-      <div class="section-title">Recent Tasks</div>
-      <div class="task-list">
-        <div v-for="task in recentTasks" :key="task.id" class="task-item">
-          <span class="task-dot" :class="task.status" />
-          <span class="task-name">{{ task.name }}</span>
-          <span class="task-time">{{ task.ago }}</span>
+      <div class="section-label">RECENT</div>
+      <div v-if="recentTasks.length === 0" class="no-tasks">No recent tasks</div>
+      <div v-else class="task-list">
+        <div
+          v-for="task in recentTasks"
+          :key="task.id"
+          class="task-item"
+        >
+          <span class="task-dot" :class="statusClass(task.status)" />
+          <span class="task-name">{{ task.title }}</span>
         </div>
       </div>
     </div>
 
     <div class="sidebar-spacer" />
+
+    <!-- Mode switcher -->
+    <ModeSwitcher />
+
+    <!-- Connection status -->
+    <ConnectionStatus />
 
     <!-- Credits section -->
     <div class="sidebar-credits">
@@ -60,9 +70,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
 import { useAgentStore } from '@/shared/stores/agent'
 import CreditBar from '@/shared/components/CreditBar.vue'
+import ModeSwitcher from '@/shared/components/ModeSwitcher.vue'
+import ConnectionStatus from '@/shared/components/ConnectionStatus.vue'
 
 interface NavItem {
   id: string
@@ -72,9 +85,9 @@ interface NavItem {
 
 interface RecentTask {
   id: string
-  name: string
-  status: 'done' | 'active' | 'pending'
-  ago: string
+  title: string
+  status: string
+  created_at: number
 }
 
 const agentStore = useAgentStore()
@@ -88,11 +101,23 @@ const navItems: NavItem[] = [
   { id: 'settings',  icon: '⚙️', label: 'Settings'  },
 ]
 
-const recentTasks: RecentTask[] = [
-  { id: '1', name: 'Fix login bug',       status: 'done',    ago: '2m ago'  },
-  { id: '2', name: 'Review PR #142',      status: 'active',  ago: '15m ago' },
-  { id: '3', name: 'Update dependencies', status: 'pending', ago: '1h ago'  },
-]
+const recentTasks = ref<RecentTask[]>([])
+
+onMounted(async () => {
+  try {
+    recentTasks.value = await invoke<RecentTask[]>('list_recent_tasks')
+  } catch (err) {
+    console.warn('[Sidebar] list_recent_tasks failed:', err)
+    recentTasks.value = []
+  }
+})
+
+function statusClass(status: string): string {
+  if (status === 'completed') return 'done'
+  if (status === 'failed') return 'error'
+  if (status === 'running') return 'active'
+  return 'pending'
+}
 
 function onBuyCredits(): void {
   // Placeholder — Phase 4 will wire this up
@@ -206,7 +231,7 @@ function onBuyCredits(): void {
   padding: 12px 16px 8px;
 }
 
-.section-title {
+.section-label {
   font: 700 10px var(--font-mono);
   color: var(--text-disabled);
   text-transform: uppercase;
@@ -238,6 +263,7 @@ function onBuyCredits(): void {
 .task-dot.done    { background: var(--success); }
 .task-dot.active  { background: var(--accent); }
 .task-dot.pending { background: var(--text-disabled); }
+.task-dot.error   { background: var(--error, #ef4444); }
 
 .task-name {
   flex: 1;
@@ -246,10 +272,10 @@ function onBuyCredits(): void {
   white-space: nowrap;
 }
 
-.task-time {
+.no-tasks {
+  font: 11px var(--font-mono, monospace);
   color: var(--text-disabled);
-  font-size: 10px;
-  white-space: nowrap;
+  padding: 4px 0;
 }
 
 /* Spacer */

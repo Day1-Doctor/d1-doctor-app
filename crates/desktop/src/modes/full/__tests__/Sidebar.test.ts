@@ -1,9 +1,29 @@
 import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
+import { flushPromises } from '@vue/test-utils'
 
-vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue('full') }))
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn((cmd: string) => {
+    if (cmd === 'list_recent_tasks') return Promise.resolve([
+      { id: 'a', title: 'Fix login bug', status: 'completed', created_at: 1700000000 },
+      { id: 'b', title: 'Setup Docker', status: 'failed', created_at: 1700000100 },
+    ])
+    return Promise.resolve('full')  // default for get_config etc.
+  })
+}))
 vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn().mockResolvedValue(() => {}), emit: vi.fn() }))
+vi.mock('@tauri-apps/api/window', () => ({
+  getCurrentWindow: vi.fn(() => ({
+    hide: vi.fn().mockResolvedValue(undefined),
+    show: vi.fn().mockResolvedValue(undefined),
+    setFocus: vi.fn().mockResolvedValue(undefined),
+  })),
+}))
+vi.mock('@tauri-apps/api/webviewWindow', () => ({
+  WebviewWindow: { getByLabel: vi.fn().mockResolvedValue(null) },
+}))
 
 import Sidebar from '../Sidebar.vue'
 import { useAgentStore } from '@/shared/stores/agent'
@@ -53,13 +73,7 @@ describe('Sidebar', () => {
 
   it('renders Recent Tasks section', () => {
     const w = mount(Sidebar)
-    expect(w.text()).toContain('Recent Tasks')
-  })
-
-  it('renders three stub task items', () => {
-    const w = mount(Sidebar)
-    const taskItems = w.findAll('.task-item')
-    expect(taskItems).toHaveLength(3)
+    expect(w.text()).toContain('RECENT')
   })
 
   it('renders CreditBar component', () => {
@@ -99,5 +113,37 @@ describe('Sidebar', () => {
     const creditBar = w.findComponent({ name: 'CreditBar' })
     expect(creditBar.props('credits')).toBe(42)
     expect(creditBar.props('max')).toBe(100)
+  })
+
+  it('renders ModeSwitcher component', () => {
+    const w = mount(Sidebar)
+    expect(w.findComponent({ name: 'ModeSwitcher' }).exists()).toBe(true)
+  })
+
+  it('renders ConnectionStatus component', () => {
+    const w = mount(Sidebar)
+    expect(w.findComponent({ name: 'ConnectionStatus' }).exists()).toBe(true)
+  })
+
+  it('loads tasks from list_recent_tasks invoke on mount', async () => {
+    const w = mount(Sidebar)
+    await flushPromises()
+    const taskItems = w.findAll('.task-item')
+    expect(taskItems.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('renders task titles from invoked task list', async () => {
+    const w = mount(Sidebar)
+    await flushPromises()
+    expect(w.text()).toContain('Fix login bug')
+    expect(w.text()).toContain('Setup Docker')
+  })
+
+  it('shows "No recent tasks" when task list is empty', async () => {
+    const { invoke } = await import('@tauri-apps/api/core')
+    vi.mocked(invoke).mockResolvedValueOnce([])
+    const w = mount(Sidebar)
+    await flushPromises()
+    expect(w.text()).toContain('No recent tasks')
   })
 })
