@@ -66,17 +66,4 @@ mod tests {
         assert!(result.is_err(), "Expected no listener on port 19876");
     }
 
-    #[test]
-    fn test_ping_daemon_error_type() {
-        // Verify ping_daemon returns Err when port not open
-        // We test on a definitely closed port
-        let rt = tokio::runtime::Runtime::new().unwrap();
-        let result: Result<(), ()> = rt.block_on(async {
-            tokio::net::TcpStream::connect("127.0.0.1:19876")
-                .await
-                .map(|_| ())
-                .map_err(|_| ())
-        });
-        assert!(result.is_err(), "ping on closed port should return Err");
-    }
 }

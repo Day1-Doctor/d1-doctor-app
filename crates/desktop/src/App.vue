@@ -27,7 +27,8 @@ import CopilotMode from '@/modes/copilot/CopilotMode.vue'
 
 const appStore = useAppStore()
 useAgentEvents() // auto-registers Tauri event listener on mount
-useDaemonConnection() // called once for side effects (starts WS on mount)
+// Establishes WebSocket connection; return value not used at this level.
+useDaemonConnection()
 const daemonStore = useDaemonStore()
 
 let unlistenNinja: UnlistenFn | null = null
@@ -69,9 +70,7 @@ onUnmounted(() => {
   padding: 2px 6px;
   border-radius: 4px;
 }
-</style>
 
-<style scoped>
 .mode-switch-enter-active,
 .mode-switch-leave-active {
   transition: opacity 0.3s ease;

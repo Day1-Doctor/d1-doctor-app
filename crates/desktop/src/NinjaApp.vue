@@ -71,8 +71,8 @@ function onDismiss(): void {
 }
 
 async function onApprove(): Promise<void> {
-  if (daemonStore.currentPlanId) {
-    approvePlan('', daemonStore.currentPlanId, 'APPROVE')
+  if (daemonStore.currentTaskId && daemonStore.currentPlanId) {
+    approvePlan(daemonStore.currentTaskId, daemonStore.currentPlanId, 'APPROVE')
   }
   showDropdown.value = false
 }

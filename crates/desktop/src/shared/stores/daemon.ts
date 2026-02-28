@@ -11,8 +11,12 @@ export const useDaemonStore = defineStore('daemon', () => {
   const errorMessage = ref<string | null>(null)
   const currentBobPhrase = ref<string | null>(null)
   const currentPlanId = ref<string | null>(null)
+  const currentTaskId = ref<string | null>(null)
 
-  function setStatus(s: DaemonStatus) { status.value = s }
+  function setStatus(s: DaemonStatus) {
+    status.value = s
+    if (s !== 'error') errorMessage.value = null  // Clear stale error on recovery
+  }
 
   function setDaemonInfo(info: {
     daemonVersion: string
@@ -35,6 +39,8 @@ export const useDaemonStore = defineStore('daemon', () => {
 
   function setCurrentPlanId(id: string | null) { currentPlanId.value = id }
 
+  function setCurrentTaskId(id: string | null) { currentTaskId.value = id }
+
   function decrementActiveTasks() {
     activeTasks.value = Math.max(0, activeTasks.value - 1)
   }
@@ -47,11 +53,13 @@ export const useDaemonStore = defineStore('daemon', () => {
     errorMessage,
     currentBobPhrase,
     currentPlanId,
+    currentTaskId,
     setStatus,
     setDaemonInfo,
     setError,
     setBobPhrase,
     setCurrentPlanId,
+    setCurrentTaskId,
     decrementActiveTasks,
   }
 })

@@ -12,6 +12,8 @@ import { useAgentStore } from '@/shared/stores/agent'
 const DAEMON_WS_URL = 'ws://localhost:9876/ws'
 const HEARTBEAT_INTERVAL_MS = 30_000
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 8000]
+/** Maximum daily credit budget. TODO: make this configurable via daemon config. */
+const MAX_DAILY_CREDITS = 100
 
 export function useDaemonConnection() {
   const daemonStore = useDaemonStore()
@@ -47,14 +49,15 @@ export function useDaemonConnection() {
       }
       case 'plan.proposed': {
         const p = msg.payload
+        daemonStore.setCurrentTaskId(p.task_id ?? null)
         daemonStore.setCurrentPlanId(p.plan_id ?? null)
         conversationStore.setPlan({
-          steps: Array.isArray(p.steps) ? p.steps.map((s: any, i: number) => ({
+          steps: p.steps.map((s, i) => ({
             id: s.step_id ?? `step-${i}`,
             label: s.description ?? '',
             state: 'pending' as const,
             index: i,
-          })) : [],
+          })),
           approved: null,
         })
         break
@@ -112,7 +115,7 @@ export function useDaemonConnection() {
       case 'credits.updated': {
         agentStore.updateCredits({
           current: msg.payload.daily_balance + msg.payload.bonus_balance,
-          max: 100,
+          max: MAX_DAILY_CREDITS,
         })
         break
       }
@@ -181,23 +184,31 @@ export function useDaemonConnection() {
 
   function submitTask(input: string): string {
     const taskId = `tsk_${crypto.randomUUID().slice(0, 8)}`
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.warn('[useDaemonConnection] submitTask called while not connected')
+      return taskId  // Return without sending — caller should check daemon status first
+    }
     const msg = createMessage('task.submit', {
       task_id: taskId,
       input,
       context: { cwd: undefined, env: {} },
     })
-    ws?.send(JSON.stringify(msg))
+    ws.send(JSON.stringify(msg))
     return taskId
   }
 
   function approvePlan(taskId: string, planId: string, action: 'APPROVE' | 'REJECT') {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.warn('[useDaemonConnection] approvePlan called while not connected')
+      return
+    }
     const msg = createMessage('plan.approve', {
       task_id: taskId,
       plan_id: planId,
       action,
       modifications: null,
     })
-    ws?.send(JSON.stringify(msg))
+    ws.send(JSON.stringify(msg))
   }
 
   onMounted(async () => {

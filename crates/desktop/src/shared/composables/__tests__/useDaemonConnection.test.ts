@@ -233,6 +233,8 @@ describe('useDaemonConnection', () => {
       payload: {
         task_id: 'tsk-abc',
         summary: 'All done!',
+        steps_completed: 3,
+        steps_total: 3,
         artifacts: [],
         completed_at: Date.now(),
       },
