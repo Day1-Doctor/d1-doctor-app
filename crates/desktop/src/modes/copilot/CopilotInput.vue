@@ -13,7 +13,7 @@
       />
       <button
         class="send-btn"
-        :disabled="!inputText.trim()"
+        :disabled="!inputText.trim() || daemonStore.status !== 'connected'"
         @click="submitMessage"
         title="Send"
         aria-label="Send message"
@@ -27,8 +27,12 @@
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
 import { useConversationStore } from '@/shared/stores/conversation'
+import { useDaemonConnection } from '@/shared/composables/useDaemonConnection'
+import { useDaemonStore } from '@/shared/stores/daemon'
 
 const conversationStore = useConversationStore()
+const daemonStore = useDaemonStore()
+const { submitTask } = useDaemonConnection()
 
 const textareaEl = ref<HTMLTextAreaElement | null>(null)
 const inputText = ref('')
@@ -39,17 +43,17 @@ const MAX_TEXTAREA_HEIGHT_PX = 50 // must match CSS max-height on .copilot-texta
 function submitMessage(): void {
   const text = inputText.value.trim()
   if (!text) return
+  if (daemonStore.status !== 'connected') return
   conversationStore.appendMessage({
     id: crypto.randomUUID(),
     role: 'user',
     content: text,
     timestamp: Date.now(),
   })
+  submitTask(text)
   inputText.value = ''
   nextTick(() => {
-    if (textareaEl.value) {
-      textareaEl.value.style.height = 'auto'
-    }
+    if (textareaEl.value) textareaEl.value.style.height = 'auto'
   })
 }
 
