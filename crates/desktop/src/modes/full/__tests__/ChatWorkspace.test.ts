@@ -3,15 +3,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { nextTick } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 
-vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue('full') }))
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn().mockResolvedValue(() => {}), emit: vi.fn() }))
+
+const mockSubmitTask = vi.fn().mockReturnValue('tsk_test')
+vi.mock('@/shared/composables/useDaemonConnection', () => ({
+  useDaemonConnection: vi.fn(() => ({ submitTask: mockSubmitTask })),
+}))
 
 import ChatWorkspace from '../ChatWorkspace.vue'
 import { useConversationStore } from '@/shared/stores/conversation'
+import { useDaemonStore } from '@/shared/stores/daemon'
 
 describe('ChatWorkspace', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    // Default to connected so existing tests work without changes
+    useDaemonStore().setStatus('connected')
   })
 
   it('renders the chat-workspace element', () => {
@@ -170,5 +178,43 @@ describe('ChatWorkspace', () => {
     // Click the Reject button inside PlanCard to trigger the Vue emit
     await w.find('.btn-reject').trigger('click')
     expect(spy).toHaveBeenCalledWith(false)
+  })
+
+  it('shows disconnection banner when daemon status is disconnected', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    const daemonStore = useDaemonStore()
+    daemonStore.setStatus('disconnected')
+    const w = mount(ChatWorkspace)
+    expect(w.find('.disconnection-banner').exists()).toBe(true)
+  })
+
+  it('hides disconnection banner when daemon status is connected', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    const daemonStore = useDaemonStore()
+    daemonStore.setStatus('connected')
+    const w = mount(ChatWorkspace)
+    expect(w.find('.disconnection-banner').exists()).toBe(false)
+  })
+
+  it('send button is disabled when daemon is disconnected', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    const daemonStore = useDaemonStore()
+    daemonStore.setStatus('disconnected')
+    const w = mount(ChatWorkspace)
+    const textarea = w.find('textarea')
+    await textarea.setValue('Hello')
+    expect((w.find('.send-btn').element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('submitMessage calls submitTask with message content', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    const daemonStore = useDaemonStore()
+    daemonStore.setStatus('connected')
+    mockSubmitTask.mockClear()
+    const w = mount(ChatWorkspace)
+    const textarea = w.find('textarea')
+    await textarea.setValue('Deploy app')
+    await textarea.trigger('keydown', { key: 'Enter', shiftKey: false })
+    expect(mockSubmitTask).toHaveBeenCalledWith('Deploy app')
   })
 })

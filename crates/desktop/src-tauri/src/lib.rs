@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::{config, daemon, window};
+use commands::{config, daemon, tasks, window};
 use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
 
@@ -39,6 +39,7 @@ pub fn run() {
             window::resize_window,
             window::position_window,
             daemon::ensure_daemon_running,
+            tasks::list_recent_tasks,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
