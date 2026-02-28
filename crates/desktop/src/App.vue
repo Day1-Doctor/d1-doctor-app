@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useAppStore } from '@/shared/stores/app'
 import { useAgentEvents } from '@/shared/composables/useAgentEvents'
 import { useDaemonConnection } from '@/shared/composables/useDaemonConnection'
@@ -35,6 +36,10 @@ let unlistenNinja: UnlistenFn | null = null
 
 onMounted(async () => {
   await appStore.init()
+  // Always hide ninja-bar on startup — fixes the "always-showing" bug.
+  const ninjaWindow = await WebviewWindow.getByLabel('ninja-bar')
+  if (ninjaWindow) await ninjaWindow.hide()
+
   unlistenNinja = await listen('ninja_dismissed', () => {
     void appStore.switchMode(appStore.previousMode)
   })

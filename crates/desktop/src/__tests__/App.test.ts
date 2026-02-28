@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 
 // ── Hoisted mocks — vi.mock factories are hoisted to top of file ───────────
 
-const { mockInvoke, mockListen, mockNinjaListeners } = vi.hoisted(() => {
+const { mockInvoke, mockListen, mockNinjaListeners, mockNinjaWindow } = vi.hoisted(() => {
   const mockNinjaListeners: Array<() => void> = []
   const mockInvoke = vi.fn().mockResolvedValue(undefined)
   const mockListen = vi.fn(async (event: string, handler: () => void) => {
@@ -14,7 +14,8 @@ const { mockInvoke, mockListen, mockNinjaListeners } = vi.hoisted(() => {
     }
     return () => {}
   })
-  return { mockInvoke, mockListen, mockNinjaListeners }
+  const mockNinjaWindow = { hide: vi.fn().mockResolvedValue(undefined) }
+  return { mockInvoke, mockListen, mockNinjaListeners, mockNinjaWindow }
 })
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: mockInvoke }))
@@ -31,10 +32,7 @@ vi.mock('@tauri-apps/api/window', () => ({
 }))
 vi.mock('@tauri-apps/api/webviewWindow', () => ({
   WebviewWindow: {
-    getByLabel: vi.fn().mockResolvedValue({
-      hide: vi.fn().mockResolvedValue(undefined),
-      show: vi.fn().mockResolvedValue(undefined),
-    }),
+    getByLabel: vi.fn().mockResolvedValue(mockNinjaWindow),
   },
 }))
 
@@ -66,6 +64,7 @@ describe('App.vue', () => {
     mockNinjaListeners.length = 0
     mockInvoke.mockClear()
     mockListen.mockClear()
+    mockNinjaWindow.hide.mockClear()
     // Set screen dimensions
     Object.defineProperty(window.screen, 'availWidth', { value: 1920, configurable: true })
   })
@@ -132,5 +131,14 @@ describe('App.vue', () => {
 
     // switchMode should have been called with the previousMode value ('full')
     expect(switchModeSpy).toHaveBeenCalledWith('full')
+  })
+
+  it('hides ninja-bar window on startup regardless of saved mode', async () => {
+    // Arrange: simulate saved mode was 'ninja'
+    mockInvoke.mockResolvedValueOnce('ninja')
+    const wrapper = mount(App, { global: { stubs: { FullMode: true, CopilotMode: true } } })
+    await flushPromises()
+    // Assert: ninja window hide must have been called
+    expect(mockNinjaWindow.hide).toHaveBeenCalled()
   })
 })
