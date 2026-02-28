@@ -49,12 +49,34 @@ describe('useDaemonStore', () => {
     expect(store.currentBobPhrase).toBeNull()
   })
 
-  it('setError() sets status to error and records message', async () => {
+  it('setError() records errorMessage without changing status', async () => {
     const { useDaemonStore } = await import('../daemon')
     const store = useDaemonStore()
+    // setError() stores the message for the UI but does NOT force status to
+    // 'error' — the WebSocket connect() call that follows determines real status.
     store.setError('Daemon failed to start')
-    expect(store.status).toBe('error')
     expect(store.errorMessage).toBe('Daemon failed to start')
+    // Status should remain at its initial value ('disconnected'), unchanged.
+    expect(store.status).toBe('disconnected')
+  })
+
+  it('setStatus("connected") clears errorMessage', async () => {
+    const { useDaemonStore } = await import('../daemon')
+    const store = useDaemonStore()
+    store.setError('Daemon not running')
+    store.setStatus('connected')
+    expect(store.errorMessage).toBeNull()
+    expect(store.status).toBe('connected')
+  })
+
+  it('setStatus("connecting") preserves errorMessage', async () => {
+    const { useDaemonStore } = await import('../daemon')
+    const store = useDaemonStore()
+    store.setError('Daemon not running')
+    store.setStatus('connecting')
+    // errorMessage stays visible while we are still trying to connect
+    expect(store.errorMessage).toBe('Daemon not running')
+    expect(store.status).toBe('connecting')
   })
 
   it('setCurrentPlanId() stores the plan id', async () => {

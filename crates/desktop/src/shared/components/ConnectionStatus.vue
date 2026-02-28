@@ -18,6 +18,13 @@
       <span class="conn-label">Platform</span>
       <span class="conn-text" :class="platformStatus">{{ platformLabel }}</span>
     </div>
+
+    <!-- Helpful hint when offline: show the fix command if available -->
+    <div v-if="showOfflineHint" class="offline-hint" data-testid="offline-hint">
+      <span class="hint-text">{{ offlineHint }}</span>
+      <code v-if="showStartCommand" class="hint-cmd">d1 start</code>
+    </div>
+
     <button class="reconnect-btn" @click="onReconnect" title="Reconnect daemon">
       ↺ Reconnect
     </button>
@@ -50,6 +57,24 @@ const platformStatus = computed(() => {
 
 const platformLabel = computed(() => {
   return platformStatus.value === 'connected' ? 'Connected' : 'Offline'
+})
+
+/** Show the offline hint row only when disconnected/errored and there's info. */
+const showOfflineHint = computed(() => {
+  return daemonStatus.value === 'disconnected' && !!daemonStore.errorMessage
+})
+
+/** Whether the error message mentions starting the daemon. */
+const showStartCommand = computed(() => {
+  return !!daemonStore.errorMessage?.toLowerCase().includes('start')
+})
+
+/** A short human-friendly version of the error — strip redundant prefixes. */
+const offlineHint = computed(() => {
+  const msg = daemonStore.errorMessage ?? ''
+  // The Rust error is e.g. "Daemon not running. Start it with: d1 start"
+  // Strip the "Start it with: d1 start" part since we render the command separately.
+  return msg.replace(/\.\s*Start it with:.*$/i, '.').trim() || 'Daemon not reachable.'
 })
 
 function onReconnect(): void {
@@ -95,6 +120,29 @@ function onReconnect(): void {
 .conn-text.connected    { color: var(--success, #22c55e); }
 .conn-text.connecting   { color: var(--accent, #6366f1); }
 .conn-text.disconnected { color: var(--error, #ef4444); }
+
+.offline-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 10px var(--font-mono, monospace);
+  color: var(--text-secondary);
+  padding-top: 2px;
+}
+
+.hint-text {
+  opacity: 0.8;
+}
+
+.hint-cmd {
+  background: var(--muted, rgba(0, 0, 0, 0.15));
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font: 10px var(--font-mono, monospace);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
 
 .reconnect-btn {
   margin-top: 4px;

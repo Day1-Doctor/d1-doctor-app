@@ -216,9 +216,13 @@ export function useDaemonConnection() {
     try {
       await invoke('ensure_daemon_running')
     } catch (err) {
-      console.error('[useDaemonConnection] Failed to start daemon:', err)
-      daemonStore.setError('Daemon failed to start. Run: d1 start')
-      return
+      // In dev/debug builds ensure_daemon_running always returns Err when the
+      // daemon was not auto-started by the sidecar. That is expected — the
+      // daemon may still be running (started manually via `d1 start`).
+      // Log a warning and store the message for the UI, but DO NOT bail out:
+      // we always proceed to connect so the WebSocket result determines status.
+      console.warn('[useDaemonConnection] ensure_daemon_running:', err)
+      daemonStore.setError(String(err))
     }
     if (!isMounted) return
     connect()

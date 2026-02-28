@@ -1,12 +1,17 @@
 <template>
   <div>
+    <!--
+      Error banner: shown when ensure_daemon_running failed (errorMessage is set)
+      AND we are not yet connected. Dismissed manually or auto-hides on connect.
+    -->
     <div
-      v-if="daemonStore.status === 'error'"
+      v-if="showErrorBanner"
       class="daemon-error-banner"
       role="alert"
     >
-      <p>Day 1 Doctor daemon couldn't start.</p>
-      <code>Run: d1 start</code>
+      <p>{{ bannerMessage }}</p>
+      <code v-if="showStartCmd">d1 start</code>
+      <button class="banner-dismiss" @click="dismissBanner" aria-label="Dismiss">✕</button>
     </div>
     <Transition name="mode-switch" mode="out-in">
       <FullMode v-if="appStore.uiMode === 'full'" key="full" />
@@ -16,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useAppStore } from '@/shared/stores/app'
@@ -31,6 +36,36 @@ useAgentEvents() // auto-registers Tauri event listener on mount
 // Establishes WebSocket connection; return value not used at this level.
 useDaemonConnection()
 const daemonStore = useDaemonStore()
+
+/** User can dismiss the banner manually; it also hides on successful connect. */
+const bannerDismissed = ref(false)
+
+const showErrorBanner = computed(() => {
+  if (bannerDismissed.value) return false
+  if (!daemonStore.errorMessage) return false
+  // Hide once connected — error was transient (dev-mode warning)
+  if (daemonStore.status === 'connected') return false
+  return true
+})
+
+const bannerMessage = computed(() => {
+  const msg = daemonStore.errorMessage ?? ''
+  return msg.replace(/\.\s*Start it with:.*$/i, '.').trim()
+    || 'Day 1 Doctor daemon couldn\'t start.'
+})
+
+const showStartCmd = computed(() => {
+  return !!daemonStore.errorMessage?.toLowerCase().includes('start')
+})
+
+function dismissBanner() {
+  bannerDismissed.value = true
+}
+
+// Re-show the banner if a new error arrives (e.g. after a reconnect failure)
+watch(() => daemonStore.errorMessage, (newMsg) => {
+  if (newMsg) bannerDismissed.value = false
+})
 
 let unlistenNinja: UnlistenFn | null = null
 
@@ -74,6 +109,22 @@ onUnmounted(() => {
   background: rgba(0, 0, 0, 0.2);
   padding: 2px 6px;
   border-radius: 4px;
+}
+
+.banner-dismiss {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 4px;
+  transition: color 0.1s;
+}
+
+.banner-dismiss:hover {
+  color: #fff;
 }
 
 .mode-switch-enter-active,
