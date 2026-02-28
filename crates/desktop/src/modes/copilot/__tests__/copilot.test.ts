@@ -2,10 +2,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
-// Mock Tauri API
-vi.mock('@tauri-apps/api/core', () => ({
-  invoke: vi.fn().mockResolvedValue('copilot')
+const mockSubmitTask = vi.fn().mockReturnValue('tsk_test')
+vi.mock('@/shared/composables/useDaemonConnection', () => ({
+  useDaemonConnection: vi.fn(() => ({ submitTask: mockSubmitTask })),
 }))
+
+// Mock Tauri API
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('@tauri-apps/api/event', () => ({
   listen: vi.fn().mockResolvedValue(() => {}),
   emit: vi.fn()
@@ -323,6 +326,8 @@ describe('CopilotInput', () => {
   })
 
   it('submits on Enter key and appends message to store', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    useDaemonStore().setStatus('connected')
     const { useConversationStore } = await import('@/shared/stores/conversation')
     const store = useConversationStore()
     const initialCount = store.messages.length
@@ -349,6 +354,8 @@ describe('CopilotInput', () => {
   })
 
   it('clears textarea after submit via Enter', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    useDaemonStore().setStatus('connected')
     const w = mount(CopilotInput)
     const textarea = w.find('textarea')
 
@@ -359,6 +366,8 @@ describe('CopilotInput', () => {
   })
 
   it('clears textarea after clicking send button', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    useDaemonStore().setStatus('connected')
     const w = mount(CopilotInput)
     const textarea = w.find('textarea')
     const sendBtn = w.find('.send-btn')
@@ -383,6 +392,8 @@ describe('CopilotInput', () => {
   })
 
   it('appends message to conversation store on Enter submit', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    useDaemonStore().setStatus('connected')
     const w = mount(CopilotInput)
     const { useConversationStore } = await import('@/shared/stores/conversation')
     const store = useConversationStore()
@@ -398,6 +409,8 @@ describe('CopilotInput', () => {
   })
 
   it('generates message IDs via crypto.randomUUID()', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    useDaemonStore().setStatus('connected')
     const uuidSpy = vi.spyOn(crypto, 'randomUUID')
     const w = mount(CopilotInput)
     const textarea = w.find('textarea')
@@ -407,5 +420,26 @@ describe('CopilotInput', () => {
 
     expect(uuidSpy).toHaveBeenCalled()
     uuidSpy.mockRestore()
+  })
+
+  it('calls submitTask when Enter is pressed with content and daemon is connected', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    const daemonStore = useDaemonStore()
+    daemonStore.setStatus('connected')
+    mockSubmitTask.mockClear()
+    const w = mount(CopilotInput)
+    const textarea = w.find('textarea')
+    await textarea.setValue('Install Docker')
+    await textarea.trigger('keydown', { key: 'Enter', shiftKey: false })
+    expect(mockSubmitTask).toHaveBeenCalledWith('Install Docker')
+  })
+
+  it('send button is disabled when daemon is disconnected', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    const daemonStore = useDaemonStore()
+    daemonStore.setStatus('disconnected')
+    const w = mount(CopilotInput)
+    await w.find('textarea').setValue('Hello')
+    expect((w.find('.send-btn').element as HTMLButtonElement).disabled).toBe(true)
   })
 })
