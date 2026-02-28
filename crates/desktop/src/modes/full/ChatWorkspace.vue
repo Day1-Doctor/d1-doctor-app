@@ -30,6 +30,14 @@
       ↓ New messages
     </div>
 
+    <!-- Disconnection banner -->
+    <div
+      v-if="daemonStore.status !== 'connected'"
+      class="disconnection-banner"
+    >
+      ● Daemon offline — trying to reconnect…
+    </div>
+
     <!-- Input bar -->
     <div class="input-bar">
       <div class="input-pill">
@@ -42,7 +50,12 @@
           @keydown="onKeydown"
           @input="autoResize"
         />
-        <button class="send-btn" :disabled="!inputText.trim()" @click="submitMessage" title="Send">
+        <button
+          class="send-btn"
+          :disabled="!inputText.trim() || daemonStore.status !== 'connected'"
+          :title="daemonStore.status !== 'connected' ? 'Daemon offline' : 'Send'"
+          @click="submitMessage"
+        >
           ↩
         </button>
       </div>
@@ -53,6 +66,8 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import { useConversationStore } from '@/shared/stores/conversation'
+import { useDaemonConnection } from '@/shared/composables/useDaemonConnection'
+import { useDaemonStore } from '@/shared/stores/daemon'
 import MessageBubble from '@/shared/components/MessageBubble.vue'
 import PlanCard from '@/shared/components/PlanCard.vue'
 
@@ -60,6 +75,8 @@ const SCROLL_UNPIN_THRESHOLD_PX = 100
 const TEXTAREA_MAX_HEIGHT_PX = 160
 
 const conversationStore = useConversationStore()
+const daemonStore = useDaemonStore()
+const { submitTask } = useDaemonConnection()
 
 const listEl = ref<HTMLDivElement | null>(null)
 const textareaEl = ref<HTMLTextAreaElement | null>(null)
@@ -93,6 +110,7 @@ function onScroll(): void {
 function submitMessage(): void {
   const text = inputText.value.trim()
   if (!text) return
+  if (daemonStore.status !== 'connected') return  // guard: don't submit when offline
   lastMessage.value = text
   conversationStore.appendMessage({
     id: Date.now().toString(),
@@ -100,12 +118,10 @@ function submitMessage(): void {
     content: text,
     timestamp: Date.now(),
   })
+  submitTask(text)
   inputText.value = ''
-  // Reset textarea height
   nextTick(() => {
-    if (textareaEl.value) {
-      textareaEl.value.style.height = 'auto'
-    }
+    if (textareaEl.value) textareaEl.value.style.height = 'auto'
   })
 }
 
@@ -225,6 +241,16 @@ function onReject(): void {
 
 .new-messages-badge:hover {
   opacity: 0.85;
+}
+
+.disconnection-banner {
+  padding: 6px 16px;
+  background: var(--error-soft, rgba(239, 68, 68, 0.12));
+  border-top: 1px solid var(--error-border, rgba(239, 68, 68, 0.3));
+  color: var(--error, #ef4444);
+  font: 11px var(--font-mono, monospace);
+  flex-shrink: 0;
+  text-align: center;
 }
 
 /* Input bar */
