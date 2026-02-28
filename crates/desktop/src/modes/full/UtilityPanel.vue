@@ -93,7 +93,7 @@
             class="conn-dot"
             :class="backendStatusClass"
           />
-          <span class="conn-label">{{ capitalize(agentStore.connectionStatus) }}</span>
+          <span class="conn-label">{{ backendLabel }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Gateway</span>
@@ -111,11 +111,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAgentStore } from '@/shared/stores/agent'
+import { useDaemonStore } from '@/shared/stores/daemon'
 import AgentAvatar from '@/shared/components/AgentAvatar.vue'
 
 const HEALTH_POLL_INTERVAL_MS = 5_000
 
 const agentStore = useAgentStore()
+const daemonStore = useDaemonStore()
 
 // Collapse state — all expanded by default, in memory only
 const open = ref({
@@ -153,24 +155,33 @@ onUnmounted(() => {
   }
 })
 
-function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
 const backendStatusClass = computed(() =>
-  agentStore.connectionStatus === 'connected'
+  daemonStore.status === 'connected'
     ? 'connected'
-    : agentStore.connectionStatus === 'connecting'
+    : daemonStore.status === 'connecting'
       ? 'connecting'
       : 'disconnected'
 )
 
+const backendLabel = computed(() => {
+  switch (daemonStore.status) {
+    case 'connected':    return 'Connected'
+    case 'connecting':   return 'Connecting\u2026'
+    case 'disconnected': return 'Disconnected'
+    default:             return 'Disconnected'
+  }
+})
+
 const gatewayStatusClass = computed(() =>
-  agentStore.connectionStatus === 'connected' ? 'connected' : 'disconnected'
+  daemonStore.status === 'connected' && daemonStore.orchestratorConnected
+    ? 'connected'
+    : 'disconnected'
 )
 
 const gatewayLabel = computed(() =>
-  agentStore.connectionStatus === 'connected' ? 'Online' : 'Offline'
+  daemonStore.status === 'connected' && daemonStore.orchestratorConnected
+    ? 'Online'
+    : 'Offline'
 )
 </script>
 

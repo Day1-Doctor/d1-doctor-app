@@ -7,6 +7,7 @@ vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn().mockResolvedValue(() =
 
 import UtilityPanel from '../UtilityPanel.vue'
 import { useAgentStore } from '@/shared/stores/agent'
+import { useDaemonStore } from '@/shared/stores/daemon'
 
 describe('UtilityPanel', () => {
   beforeEach(() => {
@@ -105,9 +106,9 @@ describe('UtilityPanel', () => {
     expect(avatars).toHaveLength(2)
   })
 
-  it('shows connection status from agent store', () => {
-    const store = useAgentStore()
-    store.setConnectionStatus('connected')
+  it('shows connection status from daemon store', () => {
+    const store = useDaemonStore()
+    store.setStatus('connected')
     const w = mount(UtilityPanel)
     expect(w.text()).toContain('Connected')
   })
