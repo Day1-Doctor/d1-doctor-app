@@ -5,7 +5,7 @@
       <div class="traffic-dot minimize" title="Minimize" @click="minimizeWindow" />
       <div class="traffic-dot maximize" title="Maximize" @click="toggleMaximize" />
     </div>
-    <span class="window-title">Day 1 Doctor — Workspace</span>
+    <span class="window-title">Day1 Doctor — Workspace</span>
     <div class="title-actions">
       <button class="icon-btn" title="Grid view" aria-label="Grid view">⊞</button>
       <button class="icon-btn" title="Search" aria-label="Search">🔍</button>

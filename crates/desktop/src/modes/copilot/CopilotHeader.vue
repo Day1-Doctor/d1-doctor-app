@@ -5,8 +5,8 @@
       <div class="traffic-dot minimize" title="Minimize" @click="minimizeWindow" />
       <div class="traffic-dot maximize" title="Maximize" @click="toggleMaximize" />
     </div>
-    <div class="app-logo" aria-label="Day 1 Doctor">D1</div>
-    <span class="title">Day 1 Doctor</span>
+    <div class="app-logo" aria-label="Day1 Doctor">dr. D1</div>
+    <span class="title">Day1 Doctor</span>
     <div class="header-actions">
       <button class="icon-btn" disabled aria-label="Settings (coming soon)" title="Settings">⚙</button>
       <button class="icon-btn" disabled aria-label="Switch mode (coming soon)" title="Switch mode">⊞</button>

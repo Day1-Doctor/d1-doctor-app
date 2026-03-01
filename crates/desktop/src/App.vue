@@ -51,7 +51,7 @@ const showErrorBanner = computed(() => {
 const bannerMessage = computed(() => {
   const msg = daemonStore.errorMessage ?? ''
   return msg.replace(/\.\s*Start it with:.*$/i, '.').trim()
-    || 'Day 1 Doctor daemon couldn\'t start.'
+    || 'Day1 Doctor daemon couldn\'t start.'
 })
 
 const showStartCmd = computed(() => {

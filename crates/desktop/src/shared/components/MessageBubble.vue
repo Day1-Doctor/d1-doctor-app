@@ -1,7 +1,7 @@
 <template>
   <div class="message-bubble" :class="role">
     <div v-if="role === 'agent'" class="bubble-header">
-      <span class="role-label">Day 1 Doctor</span>
+      <span class="role-label">Dr. Day1</span>
       <span class="timestamp">{{ formattedTime }}</span>
     </div>
     <div class="bubble-content">{{ content }}</div>

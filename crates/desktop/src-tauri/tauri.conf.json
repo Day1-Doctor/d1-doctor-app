@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/v2",
-  "productName": "Day 1 Doctor",
-  "version": "2.4.0",
+  "productName": "Day1 Doctor",
+  "version": "2.4.2",
   "identifier": "com.day1doctor.app",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Day 1 Doctor",
+        "title": "Day1 Doctor",
         "url": "index.html",
         "width": 1200,
         "height": 760,
@@ -26,7 +26,7 @@
       },
       {
         "label": "ninja-bar",
-        "title": "Day 1 Doctor — Ninja",
+        "title": "Day1 Doctor — Ninja",
         "url": "ninja.html",
         "width": 680,
         "height": 64,
@@ -45,6 +45,13 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": []
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png",
+      "icons/icon.ico",
+      "icons/icon.icns"
+    ]
   }
 }

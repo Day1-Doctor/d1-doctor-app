@@ -16,7 +16,7 @@
         class="empty-state"
       >
         <div class="empty-title">Ask me anything</div>
-        <div class="empty-sub">Day 1 Doctor is ready to help.</div>
+        <div class="empty-sub">Dr. Day1 is ready to help.</div>
       </div>
       <template v-else>
         <MessageBubble
@@ -56,6 +56,8 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useConversationStore } from '@/shared/stores/conversation'
 import { useAgentStore } from '@/shared/stores/agent'
+import { useDaemonConnection } from '@/shared/composables/useDaemonConnection'
+import { useDaemonStore } from '@/shared/stores/daemon'
 import ModeBar from '@/shared/components/ModeBar.vue'
 import CopilotHeader from './CopilotHeader.vue'
 import SessionBar from './SessionBar.vue'
@@ -66,6 +68,8 @@ import CreditBar from '@/shared/components/CreditBar.vue'
 
 const conversationStore = useConversationStore()
 const agentStore = useAgentStore()
+const daemonStore = useDaemonStore()
+const { approvePlan } = useDaemonConnection()
 
 const listEl = ref<HTMLDivElement | null>(null)
 
@@ -103,12 +107,22 @@ function onScroll(): void {
 function onApprove(): void {
   if (conversationStore.currentPlan) {
     conversationStore.approvePlan(true)
+    const taskId = daemonStore.currentTaskId
+    const planId = daemonStore.currentPlanId
+    if (taskId && planId) {
+      approvePlan(taskId, planId, 'APPROVE')
+    }
   }
 }
 
 function onReject(): void {
   if (conversationStore.currentPlan) {
     conversationStore.approvePlan(false)
+    const taskId = daemonStore.currentTaskId
+    const planId = daemonStore.currentPlanId
+    if (taskId && planId) {
+      approvePlan(taskId, planId, 'REJECT')
+    }
   }
 }
 </script>

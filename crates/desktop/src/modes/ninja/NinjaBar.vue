@@ -1,7 +1,7 @@
 <template>
   <div class="ninja-bar-wrapper">
     <div class="ninja-bar">
-      <div class="ninja-logo">D1</div>
+      <div class="ninja-logo">dr. D1</div>
       <input
         ref="inputRef"
         v-model="query"

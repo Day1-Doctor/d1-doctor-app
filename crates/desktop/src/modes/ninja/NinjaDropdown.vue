@@ -3,7 +3,7 @@
     <!-- Header section -->
     <div class="dropdown-header">
       <div class="query-echo">&gt; {{ query }}</div>
-      <div class="agent-label">● Day 1 Doctor &nbsp; [Planner Agent]</div>
+      <div class="agent-label">● Day1 Doctor &nbsp; [Planner Agent]</div>
     </div>
 
     <!-- Step timeline -->

@@ -34,7 +34,7 @@ describe('TitleBar', () => {
 
   it('renders the window title text', () => {
     const w = mount(TitleBar)
-    expect(w.text()).toContain('Day 1 Doctor')
+    expect(w.text()).toContain('Day1 Doctor')
     expect(w.text()).toContain('Workspace')
   })
 

@@ -166,9 +166,9 @@ describe('CopilotHeader', () => {
     expect(w.find('.traffic-dot.maximize').exists()).toBe(true)
   })
 
-  it('renders title "Day 1 Doctor"', () => {
+  it('renders title "Day1 Doctor"', () => {
     const w = mount(CopilotHeader)
-    expect(w.text()).toContain('Day 1 Doctor')
+    expect(w.text()).toContain('Day1 Doctor')
   })
 
   it('has .copilot-header root element', () => {

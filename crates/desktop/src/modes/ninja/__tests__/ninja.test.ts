@@ -234,7 +234,7 @@ describe('NinjaDropdown', () => {
     const wrapper = mount(NinjaDropdown, { props: baseProps })
     const label = wrapper.find('.agent-label')
     expect(label.exists()).toBe(true)
-    expect(label.text()).toContain('Day 1 Doctor')
+    expect(label.text()).toContain('Day1 Doctor')
   })
 
   it('renders progress bar in footer', () => {

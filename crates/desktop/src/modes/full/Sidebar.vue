@@ -2,10 +2,10 @@
   <aside class="sidebar">
     <!-- Logo section -->
     <div class="sidebar-logo">
-      <div class="logo-circle">D1</div>
+      <div class="logo-circle">dr. D1</div>
       <div class="logo-text">
-        <span class="logo-name">Day 1 Doctor</span>
-        <span class="logo-version">v2.4.0</span>
+        <span class="logo-name">Day1 Doctor</span>
+        <span class="logo-version">v2.4.2</span>
       </div>
     </div>
 

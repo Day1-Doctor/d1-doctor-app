@@ -38,16 +38,16 @@ describe('Sidebar', () => {
     expect(w.find('.sidebar').exists()).toBe(true)
   })
 
-  it('renders logo circle with D1 text', () => {
+  it('renders logo circle with dr. D1 text', () => {
     const w = mount(Sidebar)
     expect(w.find('.logo-circle').exists()).toBe(true)
-    expect(w.find('.logo-circle').text()).toBe('D1')
+    expect(w.find('.logo-circle').text()).toBe('dr. D1')
   })
 
   it('renders app name and version badge', () => {
     const w = mount(Sidebar)
-    expect(w.text()).toContain('Day 1 Doctor')
-    expect(w.text()).toContain('v2.4.0')
+    expect(w.text()).toContain('Day1 Doctor')
+    expect(w.text()).toContain('v2.4.2')
   })
 
   it('renders all four nav items', () => {

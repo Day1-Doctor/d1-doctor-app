@@ -1,4 +1,4 @@
-// Day 1 Doctor — Dr. Bob loading state phrases
+// Day1 Doctor — Dr. Bob loading state phrases
 // Format: "Bob is [a/an] {noun}, {pronoun} is {verb+ing} …"
 // Selected randomly per step_started event. Static array — no backend involvement.
 // Spec: progress/v2.4.1.md §Dr. Bob Character Loading States

@@ -5,7 +5,7 @@
       <div v-if="conversationStore.messages.length === 0 && !conversationStore.currentPlan" class="empty-state">
         <div class="empty-icon">💬</div>
         <div class="empty-title">Start a conversation</div>
-        <div class="empty-subtitle">Ask Day 1 Doctor anything to get started.</div>
+        <div class="empty-subtitle">Ask Day1 Doctor anything to get started.</div>
       </div>
 
       <template v-else>
@@ -76,7 +76,7 @@ const TEXTAREA_MAX_HEIGHT_PX = 160
 
 const conversationStore = useConversationStore()
 const daemonStore = useDaemonStore()
-const { submitTask } = useDaemonConnection()
+const { submitTask, approvePlan } = useDaemonConnection()
 
 const listEl = ref<HTMLDivElement | null>(null)
 const textareaEl = ref<HTMLTextAreaElement | null>(null)
@@ -150,10 +150,20 @@ function autoResize(): void {
 
 function onApprove(): void {
   conversationStore.approvePlan(true)
+  const taskId = daemonStore.currentTaskId
+  const planId = daemonStore.currentPlanId
+  if (taskId && planId) {
+    approvePlan(taskId, planId, 'APPROVE')
+  }
 }
 
 function onReject(): void {
   conversationStore.approvePlan(false)
+  const taskId = daemonStore.currentTaskId
+  const planId = daemonStore.currentPlanId
+  if (taskId && planId) {
+    approvePlan(taskId, planId, 'REJECT')
+  }
 }
 </script>
 
