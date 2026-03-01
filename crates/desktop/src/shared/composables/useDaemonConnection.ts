@@ -1,4 +1,4 @@
-// Day 1 Doctor — Daemon WebSocket connection composable
+// Day1 Doctor — Daemon WebSocket connection composable
 // Connects to ws://localhost:9876/ws, handles all daemon message types.
 
 import { onMounted, onUnmounted } from 'vue'
@@ -51,15 +51,18 @@ export function useDaemonConnection() {
         const p = msg.payload
         daemonStore.setCurrentTaskId(p.task_id ?? null)
         daemonStore.setCurrentPlanId(p.plan_id ?? null)
-        conversationStore.setPlan({
-          steps: p.steps.map((s, i) => ({
-            id: s.step_id ?? `step-${i}`,
-            label: s.description ?? '',
-            state: 'pending' as const,
-            index: i,
-          })),
-          approved: null,
-        })
+        // Only show PlanCard when backend requires user approval
+        if (p.requires_approval) {
+          conversationStore.setPlan({
+            steps: p.steps.map((s, i) => ({
+              id: s.step_id ?? `step-${i}`,
+              label: s.description ?? '',
+              state: 'pending' as const,
+              index: i,
+            })),
+            approved: null,
+          })
+        }
         break
       }
       case 'step.started': {
@@ -92,12 +95,17 @@ export function useDaemonConnection() {
       }
       case 'task.completed': {
         const p = msg.payload
-        conversationStore.appendMessage({
-          id: crypto.randomUUID(),
-          role: 'agent',
-          content: p.summary,
-          timestamp: Date.now(),
-        })
+        // Only append summary if non-empty (agent.message already has the response)
+        if (p.summary) {
+          conversationStore.appendMessage({
+            id: crypto.randomUUID(),
+            role: 'agent',
+            content: p.summary,
+            timestamp: Date.now(),
+          })
+        }
+        // Clear plan widget after task ends (whether approved, rejected, or conversation)
+        conversationStore.clearPlan()
         daemonStore.decrementActiveTasks()
         break
       }
@@ -133,7 +141,7 @@ export function useDaemonConnection() {
       case 'error': {
         console.error('[useDaemonConnection] Protocol error:', msg.payload)
         if (msg.payload.code === 'PROTOCOL_VERSION_MISMATCH') {
-          daemonStore.setError('Day 1 Doctor app is out of date. Please update.')
+          daemonStore.setError('Day1 Doctor app is out of date. Please update.')
         }
         break
       }

@@ -200,6 +200,7 @@ describe('useDaemonConnection', () => {
       payload: {
         task_id: 'tsk-abc',
         plan_id: 'pln_test123',
+        requires_approval: true,
         steps: [
           { step_id: 'stp-1', description: 'Install dependencies', order: 0 },
           { step_id: 'stp-2', description: 'Run tests', order: 1 },

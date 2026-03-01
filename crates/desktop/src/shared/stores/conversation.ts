@@ -36,5 +36,9 @@ export const useConversationStore = defineStore('conversation', () => {
     currentPlan.value = { ...currentPlan.value, approved }
   }
 
-  return { messages, currentPlan, scrollPinned, appendMessage, setPlan, updateStep, clearMessages, setScrollPinned, approvePlan }
+  function clearPlan(): void {
+    currentPlan.value = null
+  }
+
+  return { messages, currentPlan, scrollPinned, appendMessage, setPlan, updateStep, clearMessages, setScrollPinned, approvePlan, clearPlan }
 })
