@@ -1,0 +1,16 @@
+# Day1 Doctor — MCP Server Configuration
+#
+# Place this file at ~/.d1doctor/mcp_servers.toml to register custom MCP
+# tool servers that the daemon will spawn and manage automatically.
+#
+# Each [[servers]] entry describes one MCP-compatible server process.
+# The daemon communicates with servers over stdio (stdin/stdout).
+
+[[servers]]
+name = "my-custom-tool"
+command = "/usr/local/bin/my-tool"
+args = ["--stdio"]
+enabled = true
+
+[servers.env]
+API_KEY = "your-key-here"
