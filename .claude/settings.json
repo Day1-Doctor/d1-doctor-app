@@ -1,0 +1,29 @@
+{
+  "_note": "Project-level settings for a product repo. Commit this to git.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/lint-on-write.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/pre-pr-gate.sh",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
