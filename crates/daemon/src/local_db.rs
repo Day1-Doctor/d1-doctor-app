@@ -159,6 +159,36 @@ CREATE TABLE IF NOT EXISTS audit_log (
     new_value   TEXT,
     created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
 );
+
+-- Archive table for task_memory: stores original rows before compression
+CREATE TABLE IF NOT EXISTS task_memory_archive (
+    id                TEXT PRIMARY KEY,
+    task_description  TEXT NOT NULL,
+    task_category     TEXT,
+    outcome           TEXT,
+    procedure_steps   TEXT,  -- JSON array (original, uncompressed)
+    error_patterns    TEXT,  -- JSON array
+    fix_patterns      TEXT,  -- JSON array
+    duration_seconds  INTEGER,
+    system_context    TEXT,  -- JSON object
+    session_id        TEXT,
+    created_at        TEXT NOT NULL,
+    archived_at       TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
+
+-- Archive table for agent_memory: stores original rows before compression
+CREATE TABLE IF NOT EXISTS agent_memory_archive (
+    id          TEXT PRIMARY KEY,
+    agent_name  TEXT NOT NULL,
+    memory_type TEXT NOT NULL,
+    content     TEXT NOT NULL,
+    confidence  REAL NOT NULL DEFAULT 1.0,
+    use_count   INTEGER NOT NULL DEFAULT 0,
+    last_used_at TEXT,
+    created_at  TEXT NOT NULL,
+    updated_at  TEXT NOT NULL,
+    archived_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+);
 "#;
 
 #[cfg(test)]
@@ -189,6 +219,8 @@ mod tests {
         assert!(objects.contains(&"task_memory".to_string()), "missing task_memory");
         assert!(objects.contains(&"agent_memory".to_string()), "missing agent_memory");
         assert!(objects.contains(&"audit_log".to_string()), "missing audit_log");
+        assert!(objects.contains(&"task_memory_archive".to_string()), "missing task_memory_archive");
+        assert!(objects.contains(&"agent_memory_archive".to_string()), "missing agent_memory_archive");
 
         // FTS5 virtual table (shows up as a table in sqlite_master)
         let mut stmt = db

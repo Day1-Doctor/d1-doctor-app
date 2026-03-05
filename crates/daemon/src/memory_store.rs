@@ -7,6 +7,7 @@
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
+use chrono::Utc;
 use rusqlite::params;
 use tracing::debug;
 use uuid::Uuid;
@@ -400,6 +401,221 @@ impl MemoryStore {
         anyhow::ensure!(updated == 1, "agent_memory row not found: {agent_memory_id}");
         debug!(%agent_memory_id, "Incremented use count");
         Ok(())
+    }
+
+    // -- Retention policy methods -------------------------------------------
+
+    /// Compress old task_memory and agent_memory entries.
+    ///
+    /// For each entry whose `created_at` (task_memory) or `last_used_at`/`updated_at`
+    /// (agent_memory) is older than `compress_after_days` days ago:
+    /// 1. Copy the full original row into the corresponding `_archive` table.
+    /// 2. Truncate `procedure_steps` (task) or `content` (agent) to the first
+    ///    100 characters followed by "…" as an in-place summary.
+    ///
+    /// Profile memory is **never** compressed (no TTL).
+    pub fn run_compression(&self, compress_after_days: i64) -> Result<u64> {
+        let conn = self.db.conn();
+        let cutoff = (Utc::now() - chrono::Duration::days(compress_after_days))
+            .format("%Y-%m-%dT%H:%M:%SZ")
+            .to_string();
+
+        let mut total_compressed: u64 = 0;
+
+        // --- task_memory compression ---
+        {
+            let mut select = conn.prepare(
+                "SELECT id, task_description, task_category, outcome, procedure_steps,
+                        error_patterns, fix_patterns, duration_seconds, system_context,
+                        session_id, created_at
+                 FROM task_memory
+                 WHERE created_at < ?1",
+            )?;
+
+            let rows: Vec<(
+                String,
+                String,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<String>,
+                Option<i64>,
+                Option<String>,
+                Option<String>,
+                String,
+            )> = select
+                .query_map(params![cutoff], |row| {
+                    Ok((
+                        row.get(0)?,
+                        row.get(1)?,
+                        row.get(2)?,
+                        row.get(3)?,
+                        row.get(4)?,
+                        row.get(5)?,
+                        row.get(6)?,
+                        row.get(7)?,
+                        row.get(8)?,
+                        row.get(9)?,
+                        row.get(10)?,
+                    ))
+                })?
+                .collect::<std::result::Result<Vec<_>, _>>()?;
+
+            for (id, desc, cat, outcome, steps, errors, fixes, dur, ctx, sess, created) in &rows {
+                // 1. Archive the original
+                conn.execute(
+                    "INSERT OR REPLACE INTO task_memory_archive
+                        (id, task_description, task_category, outcome, procedure_steps,
+                         error_patterns, fix_patterns, duration_seconds, system_context,
+                         session_id, created_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+                    params![id, desc, cat, outcome, steps, errors, fixes, dur, ctx, sess, created],
+                )
+                .context("archive task_memory row")?;
+
+                // 2. Summarize procedure_steps in place
+                let summary = match steps {
+                    Some(s) if s.len() > 100 => format!("{}...", &s[..100]),
+                    Some(s) => s.clone(),
+                    None => String::new(),
+                };
+
+                conn.execute(
+                    "UPDATE task_memory SET procedure_steps = ?1 WHERE id = ?2",
+                    params![summary, id],
+                )
+                .context("compress task_memory procedure_steps")?;
+
+                total_compressed += 1;
+            }
+
+            debug!(count = rows.len(), "Compressed task_memory entries");
+        }
+
+        // --- agent_memory compression ---
+        {
+            let mut select = conn.prepare(
+                "SELECT id, agent_name, memory_type, content, confidence, use_count,
+                        last_used_at, created_at, updated_at
+                 FROM agent_memory
+                 WHERE COALESCE(last_used_at, updated_at) < ?1",
+            )?;
+
+            let rows: Vec<(
+                String,
+                String,
+                String,
+                String,
+                f64,
+                i64,
+                Option<String>,
+                String,
+                String,
+            )> = select
+                .query_map(params![cutoff], |row| {
+                    Ok((
+                        row.get(0)?,
+                        row.get(1)?,
+                        row.get(2)?,
+                        row.get(3)?,
+                        row.get(4)?,
+                        row.get(5)?,
+                        row.get(6)?,
+                        row.get(7)?,
+                        row.get(8)?,
+                    ))
+                })?
+                .collect::<std::result::Result<Vec<_>, _>>()?;
+
+            for (id, agent, mtype, content, conf, use_cnt, last_used, created, updated) in &rows {
+                // 1. Archive the original
+                conn.execute(
+                    "INSERT OR REPLACE INTO agent_memory_archive
+                        (id, agent_name, memory_type, content, confidence, use_count,
+                         last_used_at, created_at, updated_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+                    params![id, agent, mtype, content, conf, use_cnt, last_used, created, updated],
+                )
+                .context("archive agent_memory row")?;
+
+                // 2. Summarize content in place
+                let summary = if content.len() > 100 {
+                    format!("{}...", &content[..100])
+                } else {
+                    content.clone()
+                };
+
+                conn.execute(
+                    "UPDATE agent_memory SET content = ?1 WHERE id = ?2",
+                    params![summary, id],
+                )
+                .context("compress agent_memory content")?;
+
+                total_compressed += 1;
+            }
+
+            debug!(count = rows.len(), "Compressed agent_memory entries");
+        }
+
+        debug!(total_compressed, "Retention compression complete");
+        Ok(total_compressed)
+    }
+
+    /// Archive old session memory entries.
+    ///
+    /// For each `session_id` whose most recent entry is older than `max_age_hours`,
+    /// all rows are deleted and replaced with a single summary row containing the
+    /// count of deleted events.
+    ///
+    /// Profile memory is **never** archived (no TTL).
+    pub fn archive_old_sessions(&self, max_age_hours: i64) -> Result<u64> {
+        let conn = self.db.conn();
+        let cutoff = (Utc::now() - chrono::Duration::hours(max_age_hours))
+            .format("%Y-%m-%dT%H:%M:%SZ")
+            .to_string();
+
+        // Find session_ids where the newest entry is older than the cutoff.
+        let mut stmt = conn.prepare(
+            "SELECT session_id, COUNT(*) as cnt, MIN(created_at) as first_at
+             FROM session_memory
+             GROUP BY session_id
+             HAVING MAX(created_at) < ?1",
+        )?;
+
+        let expired: Vec<(String, i64, String)> = stmt
+            .query_map(params![cutoff], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+            })?
+            .collect::<std::result::Result<Vec<_>, _>>()?;
+
+        let mut total_archived: u64 = 0;
+
+        for (session_id, count, first_at) in &expired {
+            // Delete all rows for this session
+            let deleted = conn
+                .execute(
+                    "DELETE FROM session_memory WHERE session_id = ?1",
+                    params![session_id],
+                )
+                .context("delete expired session_memory rows")?;
+
+            // Insert a single summary row
+            let summary_id = Uuid::new_v4().to_string();
+            let summary_content = format!("[archived] {count} events from session {session_id}");
+            conn.execute(
+                "INSERT INTO session_memory
+                    (id, session_id, step_number, agent_name, event_type, content, created_at)
+                 VALUES (?1, ?2, 0, 'system', 'archive_summary', ?3, ?4)",
+                params![summary_id, session_id, summary_content, first_at],
+            )
+            .context("insert session archive summary")?;
+
+            total_archived += deleted as u64;
+        }
+
+        debug!(total_archived, sessions = expired.len(), "Session archival complete");
+        Ok(total_archived)
     }
 
     // -- Private helpers ----------------------------------------------------
@@ -934,5 +1150,313 @@ mod tests {
 
         let empty = store.recall_profile("nonexistent").unwrap();
         assert!(empty.is_empty());
+    }
+
+    // -- run_compression ----------------------------------------------------
+
+    #[test]
+    fn test_run_compression_task_memory() {
+        let store = test_store();
+        let conn = store.db.conn();
+
+        // Insert a task_memory row with a created_at timestamp 100 days ago
+        let old_steps = r#"["step one is to check the configuration","step two is to restart the daemon process","step three is to verify logs and confirm that everything is running correctly after restart"]"#;
+        conn.execute(
+            "INSERT INTO task_memory
+                (id, task_description, task_category, outcome, procedure_steps,
+                 error_patterns, fix_patterns, duration_seconds, system_context,
+                 session_id, created_at)
+             VALUES ('tm-old', 'Old task', 'test', 'success', ?1,
+                     '[\"err\"]', '[\"fix\"]', 10, '{}', 's1',
+                     strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-100 days'))",
+            params![old_steps],
+        )
+        .unwrap();
+
+        // Insert a recent task_memory row (should NOT be compressed)
+        conn.execute(
+            "INSERT INTO task_memory
+                (id, task_description, task_category, outcome, procedure_steps,
+                 error_patterns, fix_patterns, duration_seconds, system_context,
+                 session_id, created_at)
+             VALUES ('tm-new', 'New task', 'test', 'success', '[\"recent steps\"]',
+                     '[]', '[]', 5, '{}', 's2',
+                     strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))",
+            [],
+        )
+        .unwrap();
+
+        // Run compression with 90-day threshold
+        let compressed = store.run_compression(90).unwrap();
+        assert_eq!(compressed, 1, "should compress exactly 1 task_memory entry");
+
+        // Verify archive contains the original full row
+        let archived_steps: String = conn
+            .query_row(
+                "SELECT procedure_steps FROM task_memory_archive WHERE id = 'tm-old'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(archived_steps, old_steps, "archive should have original procedure_steps");
+
+        // Verify the live row was summarized (truncated to 100 chars + "...")
+        let summary: String = conn
+            .query_row(
+                "SELECT procedure_steps FROM task_memory WHERE id = 'tm-old'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert!(
+            summary.len() <= 103,
+            "summary should be at most 103 chars (100 + '...'), got {}",
+            summary.len()
+        );
+        assert!(summary.ends_with("..."), "summary should end with '...'");
+
+        // Verify the recent row was NOT touched
+        let recent_steps: String = conn
+            .query_row(
+                "SELECT procedure_steps FROM task_memory WHERE id = 'tm-new'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(recent_steps, r#"["recent steps"]"#);
+
+        // Verify no archive row for the recent task
+        let archive_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM task_memory_archive WHERE id = 'tm-new'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(archive_count, 0);
+    }
+
+    #[test]
+    fn test_run_compression_agent_memory() {
+        let store = test_store();
+        let conn = store.db.conn();
+
+        // Insert an agent_memory row with old updated_at (100 days ago), no last_used_at
+        let long_content = "A".repeat(200);
+        conn.execute(
+            "INSERT INTO agent_memory
+                (id, agent_name, memory_type, content, confidence, use_count,
+                 created_at, updated_at)
+             VALUES ('am-old', 'dr_bob', 'fact', ?1, 0.9, 3,
+                     strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-100 days'),
+                     strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-100 days'))",
+            params![long_content],
+        )
+        .unwrap();
+
+        // Insert a recent agent_memory row (should NOT be compressed)
+        conn.execute(
+            "INSERT INTO agent_memory
+                (id, agent_name, memory_type, content, confidence, use_count,
+                 created_at, updated_at)
+             VALUES ('am-new', 'dr_bob', 'fact', 'recent memory', 0.8, 0,
+                     strftime('%Y-%m-%dT%H:%M:%SZ', 'now'),
+                     strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))",
+            [],
+        )
+        .unwrap();
+
+        let compressed = store.run_compression(90).unwrap();
+        assert_eq!(compressed, 1, "should compress exactly 1 agent_memory entry");
+
+        // Verify archive has original content
+        let archived_content: String = conn
+            .query_row(
+                "SELECT content FROM agent_memory_archive WHERE id = 'am-old'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(archived_content, long_content);
+
+        // Verify live row was summarized
+        let summary: String = conn
+            .query_row(
+                "SELECT content FROM agent_memory WHERE id = 'am-old'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(summary.len(), 103, "should be 100 chars + '...'");
+        assert!(summary.ends_with("..."));
+
+        // Recent row untouched
+        let recent: String = conn
+            .query_row(
+                "SELECT content FROM agent_memory WHERE id = 'am-new'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(recent, "recent memory");
+    }
+
+    #[test]
+    fn test_run_compression_skips_short_content() {
+        let store = test_store();
+        let conn = store.db.conn();
+
+        // Insert a task_memory row with short procedure_steps (under 100 chars)
+        conn.execute(
+            "INSERT INTO task_memory
+                (id, task_description, procedure_steps, created_at)
+             VALUES ('tm-short', 'Short task', '[\"one\"]',
+                     strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-100 days'))",
+            [],
+        )
+        .unwrap();
+
+        let compressed = store.run_compression(90).unwrap();
+        assert_eq!(compressed, 1, "row should still be processed");
+
+        // The procedure_steps should remain unchanged (no '...' since < 100 chars)
+        let steps: String = conn
+            .query_row(
+                "SELECT procedure_steps FROM task_memory WHERE id = 'tm-short'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(steps, r#"["one"]"#, "short content should stay unchanged");
+
+        // But the archive should still have a copy
+        let archive_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM task_memory_archive WHERE id = 'tm-short'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(archive_count, 1, "should still archive the original");
+    }
+
+    #[test]
+    fn test_profile_memory_never_compressed() {
+        let store = test_store();
+        let conn = store.db.conn();
+
+        // Insert a profile_memory row with old timestamps
+        conn.execute(
+            "INSERT INTO profile_memory
+                (id, category, key, value, confidence, source,
+                 created_at, updated_at)
+             VALUES ('pm-old', 'system', 'os', 'macOS', 1.0, 'agent',
+                     strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-200 days'),
+                     strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-200 days'))",
+            [],
+        )
+        .unwrap();
+
+        let compressed = store.run_compression(90).unwrap();
+        // Profile memory has no TTL, so it should not be affected
+        // (run_compression only touches task_memory and agent_memory)
+
+        // Verify profile row still exists with original value
+        let val: String = conn
+            .query_row(
+                "SELECT value FROM profile_memory WHERE id = 'pm-old'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(val, "macOS");
+        assert_eq!(compressed, 0, "profile memory should never be compressed");
+    }
+
+    // -- archive_old_sessions -----------------------------------------------
+
+    #[test]
+    fn test_archive_old_sessions() {
+        let store = test_store();
+        let conn = store.db.conn();
+
+        // Insert session events with old timestamps (48 hours ago)
+        for i in 0..3 {
+            conn.execute(
+                "INSERT INTO session_memory
+                    (id, session_id, step_number, agent_name, event_type, content, created_at)
+                 VALUES (?1, 'old-sess', ?2, 'dr_bob', 'action', ?3,
+                         strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-48 hours'))",
+                params![
+                    format!("sm-old-{}", i),
+                    i,
+                    format!("old step {}", i)
+                ],
+            )
+            .unwrap();
+        }
+
+        // Insert session events with recent timestamps (should NOT be archived)
+        for i in 0..2 {
+            conn.execute(
+                "INSERT INTO session_memory
+                    (id, session_id, step_number, agent_name, event_type, content, created_at)
+                 VALUES (?1, 'new-sess', ?2, 'dr_bob', 'action', ?3,
+                         strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))",
+                params![
+                    format!("sm-new-{}", i),
+                    i,
+                    format!("new step {}", i)
+                ],
+            )
+            .unwrap();
+        }
+
+        // Archive sessions older than 24 hours
+        let archived = store.archive_old_sessions(24).unwrap();
+        assert_eq!(archived, 3, "should archive 3 old session rows");
+
+        // Old session should have exactly 1 summary row
+        let old_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM session_memory WHERE session_id = 'old-sess'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(old_count, 1, "old session should have 1 summary row");
+
+        let (event_type, content): (String, String) = conn
+            .query_row(
+                "SELECT event_type, content FROM session_memory WHERE session_id = 'old-sess'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(event_type, "archive_summary");
+        assert!(content.contains("3 events"), "summary should mention the event count");
+
+        // New session should be untouched
+        let new_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM session_memory WHERE session_id = 'new-sess'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(new_count, 2, "new session should be untouched");
+    }
+
+    #[test]
+    fn test_archive_old_sessions_no_expired() {
+        let store = test_store();
+
+        // Insert only recent sessions
+        store
+            .store_session("recent-sess", 0, "dr_bob", "action", "hello", None)
+            .unwrap();
+
+        let archived = store.archive_old_sessions(24).unwrap();
+        assert_eq!(archived, 0, "nothing should be archived");
     }
 }
