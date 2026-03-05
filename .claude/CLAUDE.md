@@ -30,7 +30,7 @@ benchmark/      Performance benchmarks
 4. Verify: `git diff --stat main` — no unrelated files
 
 ## Linear & GitHub
-- Linear Project ID: TBD
+- Linear Project ID: d7e9b106-10c4-4b6d-9607-28a732861d19
 - GitHub Repo: Day1-Doctor/d1-doctor-app
 - Branch naming: `feature/{TEAM-ID}-short-description`
 - Default branch: `main`
