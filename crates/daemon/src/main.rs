@@ -6,6 +6,7 @@
 mod ws_client;
 mod local_db;
 mod memory_store;
+mod mcp_memory;
 mod executor;
 mod health;
 
