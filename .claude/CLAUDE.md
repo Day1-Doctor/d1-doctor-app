@@ -32,7 +32,7 @@ benchmark/      Performance benchmarks
 ## Linear & GitHub
 - Linear Project ID: d7e9b106-10c4-4b6d-9607-28a732861d19
 - GitHub Repo: Day1-Doctor/d1-doctor-app
-- Branch naming: `feature/{TEAM-ID}-short-description`
+- Branch naming: `feature/D1D-{N}-short-description`
 - Default branch: `main`
 
 ## Worker Notes
