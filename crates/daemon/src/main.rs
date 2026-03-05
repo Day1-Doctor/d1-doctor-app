@@ -7,6 +7,8 @@ mod ws_client;
 mod local_db;
 mod executor;
 mod health;
+mod filesystem;
+mod mcp_filesystem;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

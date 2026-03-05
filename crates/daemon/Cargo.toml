@@ -10,7 +10,7 @@ name = "d1-daemon"
 path = "src/main.rs"
 
 [dependencies]
-d1-common.workspace = true
+d1-common = { path = "../common" }
 
 tokio.workspace = true
 tokio-tungstenite.workspace = true
@@ -30,3 +30,9 @@ sysinfo.workspace = true
 
 clap = { version = "4.4", features = ["derive", "cargo"] }
 futures = "0.3"
+glob = "0.3"
+regex = "1"
+dirs = "5.0"
+
+[dev-dependencies]
+tempfile = "3"
