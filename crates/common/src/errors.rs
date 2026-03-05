@@ -73,6 +73,12 @@ pub enum D1Error {
     Anyhow(#[from] anyhow::Error),
 }
 
+impl From<toml::ser::Error> for D1Error {
+    fn from(e: toml::ser::Error) -> Self {
+        D1Error::Config(e.to_string())
+    }
+}
+
 impl D1Error {
     /// Create a config error
     pub fn config(msg: impl Into<String>) -> Self {

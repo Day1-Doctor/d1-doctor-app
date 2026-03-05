@@ -7,6 +7,8 @@ mod ws_client;
 mod local_db;
 mod executor;
 mod health;
+mod rest_api;
+mod profile_detect;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
