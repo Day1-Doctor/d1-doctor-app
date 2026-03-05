@@ -1,5 +1,5 @@
 [package]
-name = "d1-common"
+name = "d1-doctor-common"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

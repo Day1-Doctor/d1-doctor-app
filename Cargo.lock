@@ -302,31 +302,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "d1-common"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "base64",
- "bytes",
- "chrono",
- "dirs",
- "rusqlite",
- "serde",
- "serde_json",
- "thiserror",
- "toml",
- "tracing",
- "uuid",
-]
-
-[[package]]
 name = "d1-daemon"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
  "clap",
- "d1-common",
+ "d1-doctor-common",
  "futures",
  "rusqlite",
  "serde",
@@ -347,11 +329,29 @@ dependencies = [
  "anyhow",
  "clap",
  "crossterm",
- "d1-common",
+ "d1-doctor-common",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "d1-doctor-common"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64",
+ "bytes",
+ "chrono",
+ "dirs",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "toml",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -360,7 +360,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "d1-common",
+ "d1-doctor-common",
  "serde",
  "serde_json",
 ]

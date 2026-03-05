@@ -10,7 +10,7 @@ name = "d1-daemon"
 path = "src/main.rs"
 
 [dependencies]
-d1-common.workspace = true
+d1-doctor-common.workspace = true
 
 tokio.workspace = true
 tokio-tungstenite.workspace = true
