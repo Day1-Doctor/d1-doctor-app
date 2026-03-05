@@ -9,7 +9,7 @@ mod memory_store;
 mod mcp_memory;
 mod executor;
 mod health;
-mod mcp_shell;
+mod security;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

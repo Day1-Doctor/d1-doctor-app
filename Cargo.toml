@@ -16,7 +16,7 @@ repository = "https://github.com/day1-doctor/d1-doctor-app"
 
 [workspace.dependencies]
 # Internal crates
-d1-doctor-common = { path = "crates/common" }
+d1-common = { path = "crates/common" }
 
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
