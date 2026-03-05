@@ -11,8 +11,6 @@ mod executor;
 mod health;
 mod rest_api;
 mod profile_detect;
-mod qmd;
-mod mcp_qmd;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -15,7 +15,7 @@ use std::net::SocketAddr;
 
 /// Query parameters for memory search
 #[derive(Debug, Deserialize)]
-pub struct MemorySearchParams {
+pub struct SearchParams {
     /// Search query string
     pub q: String,
     /// Scope filter (e.g., "system", "user", "session")
@@ -24,9 +24,9 @@ pub struct MemorySearchParams {
     pub limit: Option<usize>,
 }
 
-/// A single memory entry returned from search
+/// A single memory search result
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MemoryEntry {
+pub struct MemorySearchResult {
     /// Unique identifier for the memory entry
     pub id: String,
     /// The memory key or category
@@ -56,10 +56,9 @@ pub fn build_router() -> Router {
         .route("/api/health", get(health_check))
 }
 
-/// Start the REST API server on the given port
-pub async fn start_rest_server(port: u16) -> anyhow::Result<()> {
+/// Start the REST API server on the given address
+pub async fn start_rest_server(addr: SocketAddr) -> anyhow::Result<()> {
     let app = build_router();
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
     tracing::info!(%addr, "REST API server starting");
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
@@ -70,7 +69,7 @@ pub async fn start_rest_server(port: u16) -> anyhow::Result<()> {
 
 /// Handler for GET /api/memory/search?q=...&scope=...&limit=...
 async fn memory_search(
-    Query(params): Query<MemorySearchParams>,
+    Query(params): Query<SearchParams>,
 ) -> impl IntoResponse {
     let limit = params.limit.unwrap_or(10).min(100);
     let scope = params.scope.as_deref().unwrap_or("all");
@@ -106,13 +105,13 @@ async fn health_check() -> impl IntoResponse {
 /// This is a placeholder implementation that returns matches
 /// based on simple substring matching. A real implementation
 /// would use SQLite FTS5 or vector similarity search.
-fn search_memory(query: &str, scope: &str, limit: usize) -> Vec<MemoryEntry> {
+fn search_memory(query: &str, scope: &str, limit: usize) -> Vec<MemorySearchResult> {
     let query_lower = query.to_lowercase();
 
     // Seed entries from profile detection and system facts
     let all_entries = get_seed_entries();
 
-    let mut results: Vec<MemoryEntry> = all_entries
+    let mut results: Vec<MemorySearchResult> = all_entries
         .into_iter()
         .filter(|entry| {
             // Scope filter
@@ -137,7 +136,7 @@ fn search_memory(query: &str, scope: &str, limit: usize) -> Vec<MemoryEntry> {
 }
 
 /// Compute a simple relevance score based on match quality
-fn compute_relevance(entry: &MemoryEntry, query: &str) -> f64 {
+fn compute_relevance(entry: &MemorySearchResult, query: &str) -> f64 {
     let key_lower = entry.key.to_lowercase();
     let value_lower = entry.value.to_lowercase();
 
@@ -156,8 +155,8 @@ fn compute_relevance(entry: &MemoryEntry, query: &str) -> f64 {
 
 /// Return seed memory entries (system profile facts).
 /// In a full implementation, these would come from the local database.
-fn get_seed_entries() -> Vec<MemoryEntry> {
-    use crate::profile_detect::{detect_system_profile, ProfileFact};
+fn get_seed_entries() -> Vec<MemorySearchResult> {
+    use crate::profile_detect::detect_system_profile;
 
     let facts = detect_system_profile();
     let now = chrono::Utc::now().timestamp();
@@ -165,7 +164,7 @@ fn get_seed_entries() -> Vec<MemoryEntry> {
     facts
         .into_iter()
         .enumerate()
-        .map(|(i, fact)| MemoryEntry {
+        .map(|(i, fact)| MemorySearchResult {
             id: format!("profile-{}", i),
             key: fact.key,
             value: fact.value,
@@ -215,7 +214,7 @@ mod tests {
 
     #[test]
     fn test_compute_relevance_exact_match() {
-        let entry = MemoryEntry {
+        let entry = MemorySearchResult {
             id: "1".to_string(),
             key: "os".to_string(),
             value: "macOS".to_string(),
