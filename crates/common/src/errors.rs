@@ -18,11 +18,11 @@ pub enum D1Error {
     #[error("Configuration error: {0}")]
     Config(String),
 
-    #[error("TOML parsing error: {0}")]
-    TomlDeserialize(#[from] toml::de::Error),
+    #[error("TOML parse error: {0}")]
+    TomlDeError(#[from] toml::de::Error),
 
-    #[error("TOML serialization error: {0}")]
-    TomlSerialize(#[from] toml::ser::Error),
+    #[error("TOML serialize error: {0}")]
+    TomlSerError(#[from] toml::ser::Error),
 
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),

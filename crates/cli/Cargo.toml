@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-d1-common.workspace = true
+d1-common = { path = "../common" }
 tokio.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -9,7 +9,8 @@ mod memory_store;
 mod mcp_memory;
 mod executor;
 mod health;
-mod security;
+mod filesystem;
+mod mcp_filesystem;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
