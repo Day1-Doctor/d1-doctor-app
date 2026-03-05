@@ -30,3 +30,4 @@ sysinfo.workspace = true
 
 clap = { version = "4.4", features = ["derive", "cargo"] }
 futures = "0.3"
+dirs = "5.0"
