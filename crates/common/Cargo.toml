@@ -19,4 +19,4 @@ rusqlite.workspace = true
 toml.workspace = true
 rusqlite.workspace = true
 dirs = "5.0"
-rusqlite.workspace = true
+rusqlite = { version = "0.31", features = ["bundled"] }

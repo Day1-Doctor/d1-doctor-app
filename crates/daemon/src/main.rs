@@ -9,7 +9,10 @@ mod memory_store;
 mod mcp_memory;
 mod executor;
 mod health;
-mod mcp_registry;
+mod rest_api;
+mod profile_detect;
+mod qmd;
+mod mcp_qmd;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

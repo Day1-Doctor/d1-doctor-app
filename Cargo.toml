@@ -15,7 +15,6 @@ license = "MIT"
 repository = "https://github.com/day1-doctor/d1-doctor-app"
 
 [workspace.dependencies]
-# Internal crates
 d1-common = { path = "crates/common" }
 
 # Async runtime
@@ -39,7 +38,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 toml = "0.8"
 
 # Database
-rusqlite = { version = "0.30", features = ["bundled", "chrono"] }
+rusqlite = { version = "0.31", features = ["bundled", "chrono"] }
 
 # System info
 sysinfo = "0.30"
