@@ -71,6 +71,21 @@ pub struct TaskEntry {
 // MemoryStore
 // ---------------------------------------------------------------------------
 
+/// Truncate a UTF-8 string to at most `max_bytes` bytes on a character
+/// boundary, appending `"..."` if truncation occurred.
+fn truncate_utf8(s: &str, max_bytes: usize) -> String {
+    if s.len() <= max_bytes {
+        return s.to_string();
+    }
+    let end = s
+        .char_indices()
+        .take_while(|(i, _)| *i < max_bytes)
+        .last()
+        .map(|(i, c)| i + c.len_utf8())
+        .unwrap_or(0);
+    format!("{}...", &s[..end])
+}
+
 /// High-level CRUD + recall wrapper around [`LocalDb`].
 pub struct MemoryStore {
     db: Arc<LocalDb>,
@@ -476,7 +491,7 @@ impl MemoryStore {
 
                 // 2. Summarize procedure_steps in place
                 let summary = match steps {
-                    Some(s) if s.len() > 100 => format!("{}...", &s[..100]),
+                    Some(s) if s.len() > 100 => truncate_utf8(s, 100),
                     Some(s) => s.clone(),
                     None => String::new(),
                 };
@@ -541,7 +556,7 @@ impl MemoryStore {
 
                 // 2. Summarize content in place
                 let summary = if content.len() > 100 {
-                    format!("{}...", &content[..100])
+                    truncate_utf8(content, 100)
                 } else {
                     content.clone()
                 };
