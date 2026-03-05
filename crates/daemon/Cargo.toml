@@ -27,6 +27,7 @@ chrono.workspace = true
 uuid.workspace = true
 
 sysinfo.workspace = true
+toml.workspace = true
 
 clap = { version = "4.4", features = ["derive", "cargo"] }
 futures = "0.3"
