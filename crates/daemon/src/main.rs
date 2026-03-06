@@ -11,6 +11,7 @@ mod executor;
 mod health;
 mod rest_api;
 mod profile_detect;
+pub mod fingerprint;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -15,7 +15,7 @@ license = "MIT"
 repository = "https://github.com/day1-doctor/d1-doctor-app"
 
 [workspace.dependencies]
-d1-common = { path = "crates/common" }
+d1-common = { path = "crates/common", package = "d1-doctor-common" }
 
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
@@ -58,6 +58,9 @@ chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.6", features = ["v4", "serde"] }
 bytes = "1.5"
 base64 = "0.21"
+sha2 = "0.10"
+hex = "0.4"
+hostname = "0.4"
 
 [profile.release]
 opt-level = 3
