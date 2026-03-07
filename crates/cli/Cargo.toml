@@ -13,3 +13,5 @@ anyhow.workspace = true
 tracing.workspace = true
 clap = { version = "4", features = ["derive"] }
 crossterm = "0.28"
+reqwest.workspace = true
+chrono.workspace = true

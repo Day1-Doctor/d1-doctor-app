@@ -78,7 +78,9 @@ fn get_os_version() -> Option<String> {
             .ok()
             .and_then(|o| {
                 if o.status.success() {
-                    String::from_utf8(o.stdout).ok().map(|s| s.trim().to_string())
+                    String::from_utf8(o.stdout)
+                        .ok()
+                        .map(|s| s.trim().to_string())
                 } else {
                     None
                 }
@@ -93,7 +95,11 @@ fn get_os_version() -> Option<String> {
                 content
                     .lines()
                     .find(|l| l.starts_with("PRETTY_NAME="))
-                    .map(|l| l.trim_start_matches("PRETTY_NAME=").trim_matches('"').to_string())
+                    .map(|l| {
+                        l.trim_start_matches("PRETTY_NAME=")
+                            .trim_matches('"')
+                            .to_string()
+                    })
             })
     }
 
@@ -163,11 +169,7 @@ fn detect_tools(facts: &mut Vec<ProfileFact>) {
 
     for (name, cmd) in &tools {
         if let Some(version) = get_tool_version(cmd) {
-            facts.push(ProfileFact::new(
-                format!("tool:{}", name),
-                version,
-                "which",
-            ));
+            facts.push(ProfileFact::new(format!("tool:{}", name), version, "which"));
         }
     }
 }

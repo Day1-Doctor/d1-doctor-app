@@ -14,6 +14,11 @@ pub enum Commands {
     Status,
     /// Upgrade Day 1 Doctor
     Upgrade,
+    /// Manage authentication (login, logout, whoami)
+    Auth {
+        #[command(subcommand)]
+        command: crate::auth::AuthCommand,
+    },
 }
 
 pub async fn handle(cmd: Commands) -> anyhow::Result<()> {
@@ -26,5 +31,6 @@ pub async fn handle(cmd: Commands) -> anyhow::Result<()> {
         Commands::Files => todo!("Implement files"),
         Commands::Status => todo!("Implement status"),
         Commands::Upgrade => todo!("Implement upgrade"),
+        Commands::Auth { command } => crate::auth::handle_auth(command).await,
     }
 }
