@@ -52,6 +52,7 @@
       <CreditBar
         :credits="agentStore.credits.current"
         :max="agentStore.credits.max"
+        :is-queued="isQueued"
         variant="full"
         @buy="onBuyCredits"
       />
@@ -70,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { useAgentStore } from '@/shared/stores/agent'
 import CreditBar from '@/shared/components/CreditBar.vue'
@@ -91,6 +92,9 @@ interface RecentTask {
 }
 
 const agentStore = useAgentStore()
+
+/** When credits reach 0, the user falls into the shared queue. */
+const isQueued = computed(() => agentStore.credits.current <= 0)
 
 const activeNav = ref<string>('chat')
 
