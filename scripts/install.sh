@@ -1,67 +1,134 @@
 #!/bin/bash
-# Day 1 Doctor Installer Script
-# 
-# Usage: curl -fsSL https://install.day1doctor.com | sh
+# Day1 Doctor CLI Installer
+#
+# Usage:
+#   curl -fsSL https://raw.githubusercontent.com/Day1-Doctor/d1-doctor-app/main/scripts/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/Day1-Doctor/d1-doctor-app/main/scripts/install.sh | sh -s -- --version v0.2.0
+#
+# Environment variables:
+#   D1_INSTALL_DIR  — Override install directory (default: ~/.local/bin)
+#   D1_VERSION      — Install a specific version tag (default: latest)
 
 set -e
 
-# Colors for output
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+CYAN='\033[0;36m'
+NC='\033[0m'
 
-# Configuration
-INSTALL_DIR="${HOME}/.local/bin"
-DAEMON_SERVICE_DIR="${HOME}/.config/systemd/user"
-RELEASE_API="https://api.github.com/repos/day1doctor/d1-doctor-app/releases/latest"
+REPO="Day1-Doctor/d1-doctor-app"
+BINARY_NAME="d1-doctor-cli"
+INSTALL_DIR="${D1_INSTALL_DIR:-${HOME}/.local/bin}"
 
-# Detect OS and architecture
+# Parse arguments
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --version) D1_VERSION="$2"; shift 2 ;;
+        --dir)     INSTALL_DIR="$2"; shift 2 ;;
+        --help)
+            echo "Usage: install.sh [--version VERSION] [--dir INSTALL_DIR]"
+            exit 0
+            ;;
+        *) echo -e "${RED}Unknown option: $1${NC}"; exit 1 ;;
+    esac
+done
+
+# Detect OS
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
 
-case "$ARCH" in
-    x86_64) ARCH="x86_64" ;;
-    aarch64|arm64) ARCH="aarch64" ;;
-    *) echo -e "${RED}Unsupported architecture: $ARCH${NC}"; exit 1 ;;
-esac
-
 case "$OS" in
-    linux) OS="linux" ;;
-    darwin) OS="macos" ;;
-    *) echo -e "${RED}Unsupported OS: $OS${NC}"; exit 1 ;;
+    linux)  OS_LABEL="linux" ;;
+    darwin) OS_LABEL="macos" ;;
+    *)      echo -e "${RED}Unsupported OS: $OS${NC}"; exit 1 ;;
 esac
 
-echo -e "${GREEN}Day 1 Doctor Installer${NC}"
-echo "OS: $OS, Architecture: $ARCH"
+case "$ARCH" in
+    x86_64|amd64)   ARCH_LABEL="x86_64" ;;
+    aarch64|arm64)   ARCH_LABEL="arm64" ;;
+    *)               echo -e "${RED}Unsupported architecture: $ARCH${NC}"; exit 1 ;;
+esac
 
-# Create install directory
+# macOS: prefer universal binary
+if [ "$OS_LABEL" = "macos" ]; then
+    ARTIFACT="d1-macos-universal"
+else
+    ARTIFACT="d1-${OS_LABEL}-${ARCH_LABEL}"
+fi
+
+echo -e "${CYAN}Day1 Doctor CLI Installer${NC}"
+echo "  Platform: ${OS_LABEL}/${ARCH_LABEL}"
+echo "  Artifact: ${ARTIFACT}"
+echo ""
+
+# Resolve version
+if [ -z "$D1_VERSION" ]; then
+    echo -e "${YELLOW}Resolving latest release...${NC}"
+    D1_VERSION=$(curl -fsSL "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
+    if [ -z "$D1_VERSION" ]; then
+        echo -e "${RED}Failed to determine latest version.${NC}"
+        echo "Try specifying a version: install.sh --version v0.1.0"
+        exit 1
+    fi
+fi
+echo "  Version:  ${D1_VERSION}"
+echo ""
+
+# Build download URL
+DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${D1_VERSION}/${ARTIFACT}.tar.gz"
+
+# Download
+TMPDIR=$(mktemp -d)
+trap 'rm -rf "$TMPDIR"' EXIT
+
+echo -e "${YELLOW}Downloading ${DOWNLOAD_URL}${NC}"
+HTTP_CODE=$(curl -fSL -w '%{http_code}' -o "${TMPDIR}/${ARTIFACT}.tar.gz" "$DOWNLOAD_URL" 2>/dev/null) || true
+
+if [ "$HTTP_CODE" != "200" ] && [ ! -s "${TMPDIR}/${ARTIFACT}.tar.gz" ]; then
+    echo -e "${RED}Download failed (HTTP ${HTTP_CODE}).${NC}"
+    echo "Check that release ${D1_VERSION} exists and has artifact ${ARTIFACT}.tar.gz"
+    exit 1
+fi
+
+# Extract
+echo -e "${YELLOW}Extracting...${NC}"
+tar xzf "${TMPDIR}/${ARTIFACT}.tar.gz" -C "${TMPDIR}"
+
+# Install
 mkdir -p "$INSTALL_DIR"
+mv "${TMPDIR}/${BINARY_NAME}" "${INSTALL_DIR}/d1"
+chmod +x "${INSTALL_DIR}/d1"
 
-# Fetch latest release
-echo -e "${YELLOW}Fetching latest release...${NC}"
-RELEASE_INFO=$(curl -s "$RELEASE_API")
-DOWNLOAD_URL=$(echo "$RELEASE_INFO" | grep "browser_download_url.*d1-doctor-${OS}-${ARCH}" | cut -d'"' -f4)
-
-if [ -z "$DOWNLOAD_URL" ]; then
-    echo -e "${RED}Failed to find release for ${OS}-${ARCH}${NC}"
-    exit 1
+# Verify
+if "${INSTALL_DIR}/d1" --version >/dev/null 2>&1; then
+    INSTALLED_VERSION=$("${INSTALL_DIR}/d1" --version 2>&1 || true)
+    echo ""
+    echo -e "${GREEN}Installed successfully!${NC}"
+    echo "  Binary:  ${INSTALL_DIR}/d1"
+    echo "  Version: ${INSTALLED_VERSION}"
+else
+    echo ""
+    echo -e "${GREEN}Binary installed to ${INSTALL_DIR}/d1${NC}"
+    echo "  (version check skipped — binary may require runtime dependencies)"
 fi
 
-echo -e "${YELLOW}Downloading from: $DOWNLOAD_URL${NC}"
-curl -fL "$DOWNLOAD_URL" -o "$INSTALL_DIR/d1-doctor"
-chmod +x "$INSTALL_DIR/d1-doctor"
+# PATH check
+case ":$PATH:" in
+    *":${INSTALL_DIR}:"*) ;;
+    *)
+        echo ""
+        echo -e "${YELLOW}NOTE:${NC} ${INSTALL_DIR} is not in your PATH."
+        echo "Add it by appending this to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+        echo ""
+        echo "  export PATH=\"${INSTALL_DIR}:\$PATH\""
+        echo ""
+        ;;
+esac
 
-# Verify installation
-if ! "$INSTALL_DIR/d1-doctor" --version >/dev/null 2>&1; then
-    echo -e "${RED}Installation failed - binary check failed${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}Installation complete!${NC}"
 echo ""
-echo "Next steps:"
-echo "  1. Ensure $INSTALL_DIR is in your PATH"
-echo "  2. Run: d1-doctor daemon start"
-echo "  3. Run: d1-doctor auth login"
-echo ""
+echo "Get started:"
+echo "  d1 --help"
+echo "  d1 auth login"
+echo "  d1 daemon start"
