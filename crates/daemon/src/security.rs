@@ -74,20 +74,38 @@ const BLOCKED_PATTERNS: &[&str] = &[
 
 /// Commands considered LOW risk (read-only / informational).
 const LOW_COMMANDS: &[&str] = &[
-    "ls", "cat", "head", "tail", "echo", "env", "whoami", "pwd", "which",
-    "file", "wc", "du", "df", "uname", "date", "hostname",
+    "ls", "cat", "head", "tail", "echo", "env", "whoami", "pwd", "which", "file", "wc", "du", "df",
+    "uname", "date", "hostname",
 ];
 
 /// Commands considered MEDIUM risk (write / install / build).
 const MEDIUM_COMMANDS: &[&str] = &[
-    "cp", "mv", "mkdir", "touch", "chmod", "chown",
-    "brew install", "apt install", "pip install", "npm install", "cargo build",
+    "cp",
+    "mv",
+    "mkdir",
+    "touch",
+    "chmod",
+    "chown",
+    "brew install",
+    "apt install",
+    "pip install",
+    "npm install",
+    "cargo build",
 ];
 
 /// Commands considered HIGH risk (destructive / privileged).
 const HIGH_COMMANDS: &[&str] = &[
-    "rm", "sudo", "kill", "pkill", "systemctl", "launchctl",
-    "chroot", "mount", "umount", "iptables", "route",
+    "rm",
+    "sudo",
+    "kill",
+    "pkill",
+    "systemctl",
+    "launchctl",
+    "chroot",
+    "mount",
+    "umount",
+    "iptables",
+    "route",
 ];
 
 // ---------------------------------------------------------------------------
@@ -115,13 +133,10 @@ impl SecurityLayer {
     /// Create a new `SecurityLayer` with the user's home directory as the
     /// sandbox root and sensible defaults.
     pub fn new() -> Self {
-        let sandbox_root = dirs::home_dir()
-            .unwrap_or_else(|| PathBuf::from("/tmp"));
+        let sandbox_root = dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp"));
 
-        let blocked_commands: Vec<String> = BLOCKED_PATTERNS
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
+        let blocked_commands: Vec<String> =
+            BLOCKED_PATTERNS.iter().map(|s| s.to_string()).collect();
 
         Self {
             sandbox_root,
@@ -132,10 +147,8 @@ impl SecurityLayer {
 
     /// Create a `SecurityLayer` with a custom sandbox root (useful for tests).
     pub fn with_sandbox_root(sandbox_root: PathBuf) -> Self {
-        let blocked_commands: Vec<String> = BLOCKED_PATTERNS
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
+        let blocked_commands: Vec<String> =
+            BLOCKED_PATTERNS.iter().map(|s| s.to_string()).collect();
 
         Self {
             sandbox_root,
@@ -221,16 +234,14 @@ impl SecurityLayer {
 
         // Canonicalize to resolve symlinks and `..` components
         let canonical = absolute.canonicalize().map_err(|e| {
-            D1Error::permission_denied(format!(
-                "Cannot resolve path '{}': {}",
-                path, e
-            ))
+            D1Error::permission_denied(format!("Cannot resolve path '{}': {}", path, e))
         })?;
 
         // Canonicalize sandbox_root too (handles macOS /var -> /private/var etc.)
-        let canonical_sandbox = self.sandbox_root.canonicalize().unwrap_or_else(|_| {
-            self.sandbox_root.clone()
-        });
+        let canonical_sandbox = self
+            .sandbox_root
+            .canonicalize()
+            .unwrap_or_else(|_| self.sandbox_root.clone());
 
         // Check if within sandbox_root
         if canonical.starts_with(&canonical_sandbox) {
@@ -240,11 +251,13 @@ impl SecurityLayer {
 
         // Check allowed system paths (also canonicalized)
         for allowed in &self.allowed_system_paths {
-            let canonical_allowed = allowed.canonicalize().unwrap_or_else(|_| {
-                allowed.clone()
-            });
+            let canonical_allowed = allowed.canonicalize().unwrap_or_else(|_| allowed.clone());
             if canonical.starts_with(&canonical_allowed) {
-                debug!(?canonical, ?allowed, "Path validated via allowed system path");
+                debug!(
+                    ?canonical,
+                    ?allowed,
+                    "Path validated via allowed system path"
+                );
                 return Ok(canonical);
             }
         }
@@ -306,10 +319,7 @@ impl SecurityLayer {
 
         // For single-word commands, match the first token or match after a
         // pipe / semicolon / && so that "echo hello | cat" matches "cat".
-        let first_token = lower_command
-            .split_whitespace()
-            .next()
-            .unwrap_or("");
+        let first_token = lower_command.split_whitespace().next().unwrap_or("");
 
         if first_token == pattern {
             return true;
@@ -359,10 +369,24 @@ mod tests {
     #[test]
     fn test_classify_low_commands() {
         let layer = test_layer();
-        let low_cmds = ["ls -la", "cat /etc/hosts", "head -n 10 file.txt",
-                        "tail -f log.txt", "echo hello", "env", "whoami",
-                        "pwd", "which rustc", "file foo.bin", "wc -l a.txt",
-                        "du -sh .", "df -h", "uname -a", "date", "hostname"];
+        let low_cmds = [
+            "ls -la",
+            "cat /etc/hosts",
+            "head -n 10 file.txt",
+            "tail -f log.txt",
+            "echo hello",
+            "env",
+            "whoami",
+            "pwd",
+            "which rustc",
+            "file foo.bin",
+            "wc -l a.txt",
+            "du -sh .",
+            "df -h",
+            "uname -a",
+            "date",
+            "hostname",
+        ];
         for cmd in &low_cmds {
             let result = layer.classify_command(cmd);
             assert_eq!(
@@ -382,12 +406,19 @@ mod tests {
     #[test]
     fn test_classify_medium_commands() {
         let layer = test_layer();
-        let medium_cmds = ["cp a.txt b.txt", "mv old new", "mkdir -p dir",
-                           "touch newfile", "chmod 755 script.sh",
-                           "chown user:group file",
-                           "brew install ripgrep", "apt install curl",
-                           "pip install flask", "npm install express",
-                           "cargo build --release"];
+        let medium_cmds = [
+            "cp a.txt b.txt",
+            "mv old new",
+            "mkdir -p dir",
+            "touch newfile",
+            "chmod 755 script.sh",
+            "chown user:group file",
+            "brew install ripgrep",
+            "apt install curl",
+            "pip install flask",
+            "npm install express",
+            "cargo build --release",
+        ];
         for cmd in &medium_cmds {
             let result = layer.classify_command(cmd);
             assert_eq!(
@@ -406,11 +437,19 @@ mod tests {
     #[test]
     fn test_classify_high_commands() {
         let layer = test_layer();
-        let high_cmds = ["rm file.txt", "sudo apt update", "kill -9 1234",
-                         "pkill nginx", "systemctl restart sshd",
-                         "launchctl load plist", "chroot /newroot",
-                         "mount /dev/sda1 /mnt", "umount /mnt",
-                         "iptables -A INPUT -j DROP", "route add default gw 10.0.0.1"];
+        let high_cmds = [
+            "rm file.txt",
+            "sudo apt update",
+            "kill -9 1234",
+            "pkill nginx",
+            "systemctl restart sshd",
+            "launchctl load plist",
+            "chroot /newroot",
+            "mount /dev/sda1 /mnt",
+            "umount /mnt",
+            "iptables -A INPUT -j DROP",
+            "route add default gw 10.0.0.1",
+        ];
         for cmd in &high_cmds {
             let result = layer.classify_command(cmd);
             assert_eq!(
@@ -514,7 +553,11 @@ mod tests {
         layer.allowed_system_paths.push(PathBuf::from("/etc"));
 
         let result = layer.validate_path("/etc/hosts");
-        assert!(result.is_ok(), "Expected Ok for allowed system path, got: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Expected Ok for allowed system path, got: {:?}",
+            result
+        );
 
         // Clean up
         let _ = fs::remove_dir(&sandbox);
@@ -526,7 +569,9 @@ mod tests {
     fn test_is_sudo_command() {
         assert!(SecurityLayer::is_sudo_command("sudo apt update"));
         assert!(SecurityLayer::is_sudo_command("  sudo rm -rf /tmp/foo"));
-        assert!(SecurityLayer::is_sudo_command("echo hello | sudo tee /etc/file"));
+        assert!(SecurityLayer::is_sudo_command(
+            "echo hello | sudo tee /etc/file"
+        ));
         assert!(SecurityLayer::is_sudo_command("ls && sudo rm foo"));
         assert!(SecurityLayer::is_sudo_command("ls; sudo rm foo"));
 
@@ -555,7 +600,10 @@ mod tests {
     fn test_permission_decision_high() {
         let layer = test_layer();
         let decision = layer.check_permission("rm file.txt");
-        assert!(matches!(decision, PermissionDecision::RequireApproval { .. }));
+        assert!(matches!(
+            decision,
+            PermissionDecision::RequireApproval { .. }
+        ));
     }
 
     #[test]
