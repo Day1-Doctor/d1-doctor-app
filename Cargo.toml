@@ -53,6 +53,9 @@ clap = { version = "4.4", features = ["derive", "cargo"] }
 # Auth
 reqwest = { version = "0.11", features = ["json"] }
 
+# Trait utilities
+async-trait = "0.1"
+
 # Utilities
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.6", features = ["v4", "serde"] }
