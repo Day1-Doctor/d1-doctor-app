@@ -393,13 +393,10 @@ dependencies = [
  "d1-doctor-common",
  "dirs",
  "futures",
- "hex",
- "hostname",
  "reqwest",
  "rusqlite",
  "serde",
  "serde_json",
- "sha2",
  "sysinfo",
  "thiserror",
  "tokio",
@@ -416,13 +413,19 @@ name = "d1-doctor-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "clap",
  "crossterm",
  "d1-doctor-common",
+ "dirs",
+ "futures-util",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
+ "tokio-tungstenite",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -441,48 +444,6 @@ dependencies = [
  "toml",
  "tracing",
  "uuid",
-]
-
-[[package]]
-name = "d1-daemon"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "chrono",
- "clap",
- "d1-common",
- "dirs",
- "futures",
- "reqwest",
- "rusqlite",
- "serde",
- "serde_json",
- "sysinfo",
- "thiserror",
- "tokio",
- "tokio-tungstenite",
- "toml",
- "tower 0.4.13",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
-name = "d1-doctor-cli"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "clap",
- "crossterm",
- "d1-common",
- "reqwest",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -830,6 +791,17 @@ dependencies = [
  "cfg-if",
  "libc",
  "windows-link",
+]
+
+[[package]]
+name = "http"
+version = "0.2.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "601cbb57e577e2f5ef5be8e7b83f0f63994f25aa94d673e54a92d5c516d101f1"
+dependencies = [
+ "bytes",
+ "fnv",
+ "itoa",
 ]
 
 [[package]]

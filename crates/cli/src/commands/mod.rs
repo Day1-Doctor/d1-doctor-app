@@ -4,6 +4,12 @@ use clap::Subcommand;
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Start an interactive chat session with Dr. Bob
+    Run {
+        /// WebSocket URL to connect to (defaults to local daemon)
+        #[arg(long)]
+        target: Option<String>,
+    },
     /// Install and configure software
     Install { package: String },
     /// Run system diagnostics
@@ -23,6 +29,7 @@ pub enum Commands {
 
 pub async fn handle(cmd: Commands) -> anyhow::Result<()> {
     match cmd {
+        Commands::Run { target } => crate::chat::run_interactive(target).await,
         Commands::Install { package } => {
             println!("Installing {}...", package);
             todo!("Implement install command")
