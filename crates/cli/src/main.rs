@@ -1,7 +1,6 @@
 //! Day 1 Doctor — CLI Client
 
 mod auth;
-mod chat;
 mod commands;
 mod credits;
 mod tui;
