@@ -1,0 +1,132 @@
+{
+  "app": {
+    "name": "Day1 Doctor",
+    "shortName": "dr. D1",
+    "version": "v2.4.2"
+  },
+  "login": {
+    "title": "Day1 Doctor",
+    "subtitle": "Sign in to continue",
+    "emailLabel": "Email",
+    "emailPlaceholder": "you{'@'}example.com",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "signingIn": "Signing in...",
+    "signIn": "Sign In",
+    "or": "or",
+    "continueWithGoogle": "Continue with Google",
+    "dismissError": "Dismiss error",
+    "emailRequired": "Email is required.",
+    "emailInvalid": "Please enter a valid email address.",
+    "passwordRequired": "Password is required."
+  },
+  "titleBar": {
+    "title": "Day1 Doctor — Workspace",
+    "close": "Close",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "gridView": "Grid view",
+    "search": "Search"
+  },
+  "sidebar": {
+    "chat": "Chat",
+    "tasks": "Tasks",
+    "knowledge": "Knowledge",
+    "settings": "Settings",
+    "recent": "RECENT",
+    "noRecentTasks": "No recent tasks",
+    "user": "User",
+    "signOut": "Sign Out"
+  },
+  "chat": {
+    "emptyTitle": "Start a conversation",
+    "emptySubtitle": "Ask Day1 Doctor anything to get started.",
+    "newMessages": "New messages",
+    "daemonOffline": "Daemon offline — trying to reconnect…",
+    "placeholder": "Ask anything...",
+    "sendTitle": "Send",
+    "sendTitleOffline": "Daemon offline"
+  },
+  "copilot": {
+    "emptyTitle": "Ask me anything",
+    "emptySubtitle": "Dr. Day1 is ready to help.",
+    "newMessages": "New messages",
+    "activeSession": "Active Session",
+    "settingsComingSoon": "Settings (coming soon)",
+    "switchModeComingSoon": "Switch mode (coming soon)"
+  },
+  "ninja": {
+    "placeholder": "Ask anything...",
+    "send": "Send",
+    "shortcuts": "Toggle · Esc Dismiss · Enter Send",
+    "agentLabel": "Day1 Doctor  [Planner Agent]",
+    "approve": "Approve",
+    "dismiss": "Dismiss"
+  },
+  "plan": {
+    "label": "Plan",
+    "approve": "Approve",
+    "reject": "Reject"
+  },
+  "connection": {
+    "connected": "Connected",
+    "connecting": "Connecting...",
+    "offline": "Offline",
+    "localOnly": "Local only",
+    "disconnected": "Disconnected",
+    "daemon": "Daemon",
+    "platform": "Platform",
+    "daemonNotReachable": "Daemon not reachable.",
+    "reconnect": "Reconnect"
+  },
+  "credits": {
+    "label": "Credits",
+    "remaining": "{current}/{max} credits remaining",
+    "buy": "Buy",
+    "sharedQueue": "Shared queue - responses may be slower"
+  },
+  "update": {
+    "ready": "v{version} ready — Restart to update",
+    "restartNow": "Restart Now",
+    "later": "Later"
+  },
+  "utility": {
+    "taskInfo": "Task Info",
+    "task": "Task",
+    "status": "Status",
+    "duration": "Duration",
+    "creditsEst": "Credits est.",
+    "idle": "Idle",
+    "agents": "Agents",
+    "noActiveAgents": "No active agents",
+    "active": "Active",
+    "permissions": "Permissions",
+    "noPermissions": "No permissions requested",
+    "systemHealth": "System Health",
+    "os": "OS",
+    "macOS": "macOS",
+    "running": "Running",
+    "stopped": "Stopped",
+    "lastCheck": "Last check: {time}",
+    "connectionSection": "Connection",
+    "backend": "Backend",
+    "gateway": "Gateway",
+    "online": "Online"
+  },
+  "modes": {
+    "label": "MODE",
+    "full": "Full",
+    "copilot": "Copilot",
+    "ninja": "Ninja",
+    "fullMode": "Full mode",
+    "copilotMode": "Copilot mode",
+    "ninjaMode": "Ninja mode"
+  },
+  "agent": {
+    "drDay1": "Dr. Day1"
+  },
+  "banner": {
+    "daemonError": "Day1 Doctor daemon couldn't start.",
+    "dismiss": "Dismiss"
+  }
+}

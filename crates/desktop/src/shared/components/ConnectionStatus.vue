@@ -16,7 +16,7 @@
         :data-status="daemonStatus"
         :class="daemonStatus"
       />
-      <span class="conn-label">Daemon</span>
+      <span class="conn-label">{{ $t('connection.daemon') }}</span>
       <span class="conn-text" :class="daemonStatus">{{ daemonLabel }}</span>
     </div>
     <div class="conn-row" data-row="platform">
@@ -25,7 +25,7 @@
         :data-status="platformStatus"
         :class="platformStatus"
       />
-      <span class="conn-label">Platform</span>
+      <span class="conn-label">{{ $t('connection.platform') }}</span>
       <span class="conn-text" :class="platformStatus">{{ platformLabel }}</span>
     </div>
 
@@ -35,18 +35,20 @@
       <code v-if="showStartCommand" class="hint-cmd">d1 start</code>
     </div>
 
-    <button class="reconnect-btn" @click="onReconnect" title="Reconnect daemon">
-      ↺ Reconnect
+    <button class="reconnect-btn" @click="onReconnect" :title="$t('connection.reconnect')">
+      &#x21ba; {{ $t('connection.reconnect') }}
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDaemonStore } from '@/shared/stores/daemon'
 
 export type OverallConnectionStatus = 'connected' | 'local-only' | 'offline'
 
+const { t } = useI18n()
 const daemonStore = useDaemonStore()
 
 const daemonStatus = computed(() => {
@@ -56,9 +58,9 @@ const daemonStatus = computed(() => {
 })
 
 const daemonLabel = computed(() => {
-  if (daemonStore.status === 'connected') return 'Connected'
-  if (daemonStore.status === 'connecting') return 'Connecting...'
-  return 'Offline'
+  if (daemonStore.status === 'connected') return t('connection.connected')
+  if (daemonStore.status === 'connecting') return t('connection.connecting')
+  return t('connection.offline')
 })
 
 // Platform is only reachable if daemon is connected
@@ -68,7 +70,7 @@ const platformStatus = computed(() => {
 })
 
 const platformLabel = computed(() => {
-  return platformStatus.value === 'connected' ? 'Connected' : 'Offline'
+  return platformStatus.value === 'connected' ? t('connection.connected') : t('connection.offline')
 })
 
 /**
@@ -85,9 +87,9 @@ const overallStatus = computed<OverallConnectionStatus>(() => {
 
 const overallLabel = computed(() => {
   switch (overallStatus.value) {
-    case 'connected':  return 'Connected'
-    case 'local-only': return 'Local only'
-    case 'offline':    return 'Offline'
+    case 'connected':  return t('connection.connected')
+    case 'local-only': return t('connection.localOnly')
+    case 'offline':    return t('connection.offline')
   }
 })
 
@@ -104,7 +106,7 @@ const showStartCommand = computed(() => {
 /** A short human-friendly version of the error -- strip redundant prefixes. */
 const offlineHint = computed(() => {
   const msg = daemonStore.errorMessage ?? ''
-  return msg.replace(/\.\s*Start it with:.*$/i, '.').trim() || 'Daemon not reachable.'
+  return msg.replace(/\.\s*Start it with:.*$/i, '.').trim() || t('connection.daemonNotReachable')
 })
 
 function onReconnect(): void {

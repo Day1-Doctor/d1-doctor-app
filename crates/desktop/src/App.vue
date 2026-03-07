@@ -22,7 +22,7 @@
         >
           <p>{{ bannerMessage }}</p>
           <code v-if="showStartCmd">d1 start</code>
-          <button class="banner-dismiss" @click="dismissBanner" aria-label="Dismiss">&#x2715;</button>
+          <button class="banner-dismiss" @click="dismissBanner" :aria-label="$t('banner.dismiss')">&#x2715;</button>
         </div>
         <Transition name="mode-switch" mode="out-in">
           <FullMode v-if="appStore.uiMode === 'full'" key="full" />
@@ -35,6 +35,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useAppStore } from '@/shared/stores/app'
@@ -48,6 +49,7 @@ import CopilotMode from '@/modes/copilot/CopilotMode.vue'
 import UpdateBanner from '@/shared/components/UpdateBanner.vue'
 import LoginScreen from '@/shared/components/LoginScreen.vue'
 
+const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 useAgentEvents() // auto-registers Tauri event listener on mount
@@ -82,7 +84,7 @@ const showErrorBanner = computed(() => {
 const bannerMessage = computed(() => {
   const msg = daemonStore.errorMessage ?? ''
   return msg.replace(/\.\s*Start it with:.*$/i, '.').trim()
-    || 'Day1 Doctor daemon couldn\'t start.'
+    || t('banner.daemonError')
 })
 
 const showStartCmd = computed(() => {
