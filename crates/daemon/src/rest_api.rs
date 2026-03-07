@@ -4,7 +4,7 @@
 //! and check daemon health status.
 
 use axum::{
-    extract::Query,
+    extract::{Query, State},
     http::StatusCode,
     response::IntoResponse,
     routing::get,
@@ -12,6 +12,9 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
+use std::sync::Arc;
+
+use crate::connection_state::{ConnectionState, ConnectionStateMachine};
 
 /// Query parameters for memory search
 #[derive(Debug, Deserialize)]
@@ -49,11 +52,33 @@ pub struct HealthResponse {
     pub uptime_seconds: u64,
 }
 
-/// Build the REST API router
+/// Connection status response for GET /api/connection/status
+#[derive(Debug, Serialize)]
+pub struct ConnectionStatusResponse {
+    pub state: ConnectionState,
+    pub queued_messages: usize,
+}
+
+/// Shared application state passed to route handlers.
+#[derive(Clone)]
+pub struct AppState {
+    pub connection: Arc<ConnectionStateMachine>,
+}
+
+/// Build the REST API router (without connection state).
 pub fn build_router() -> Router {
     Router::new()
         .route("/api/memory/search", get(memory_search))
         .route("/api/health", get(health_check))
+}
+
+/// Build the REST API router with shared application state.
+pub fn build_router_with_state(state: AppState) -> Router {
+    Router::new()
+        .route("/api/memory/search", get(memory_search))
+        .route("/api/health", get(health_check))
+        .route("/api/connection/status", get(connection_status))
+        .with_state(state)
 }
 
 /// Start the REST API server on the given address
@@ -68,9 +93,7 @@ pub async fn start_rest_server(addr: SocketAddr) -> anyhow::Result<()> {
 }
 
 /// Handler for GET /api/memory/search?q=...&scope=...&limit=...
-async fn memory_search(
-    Query(params): Query<SearchParams>,
-) -> impl IntoResponse {
+async fn memory_search(Query(params): Query<SearchParams>) -> impl IntoResponse {
     let limit = params.limit.unwrap_or(10).min(100);
     let scope = params.scope.as_deref().unwrap_or("all");
 
@@ -95,6 +118,19 @@ async fn health_check() -> impl IntoResponse {
         status: "ok".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
         uptime_seconds: 0, // TODO: track actual uptime
+    };
+
+    (StatusCode::OK, Json(response))
+}
+
+/// Handler for GET /api/connection/status
+async fn connection_status(State(state): State<AppState>) -> impl IntoResponse {
+    let conn_state = state.connection.state().await;
+    let queued = state.connection.queue_len().await;
+
+    let response = ConnectionStatusResponse {
+        state: conn_state,
+        queued_messages: queued,
     };
 
     (StatusCode::OK, Json(response))
@@ -130,7 +166,11 @@ fn search_memory(query: &str, scope: &str, limit: usize) -> Vec<MemorySearchResu
         .collect();
 
     // Sort by relevance descending
-    results.sort_by(|a, b| b.relevance.partial_cmp(&a.relevance).unwrap_or(std::cmp::Ordering::Equal));
+    results.sort_by(|a, b| {
+        b.relevance
+            .partial_cmp(&a.relevance)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     results.truncate(limit);
     results
 }
