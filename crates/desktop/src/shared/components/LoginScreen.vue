@@ -3,36 +3,36 @@
     <div class="login-card">
       <div class="login-header">
         <div class="logo-mark">D1</div>
-        <h1 class="app-title">Day1 Doctor</h1>
-        <p class="app-subtitle">Sign in to continue</p>
+        <h1 class="app-title">{{ $t('login.title') }}</h1>
+        <p class="app-subtitle">{{ $t('login.subtitle') }}</p>
       </div>
       <Transition name="error-fade">
         <div v-if="authStore.error" class="error-banner" role="alert">
           <span class="error-icon">!</span>
           <span class="error-message">{{ authStore.error.message }}</span>
-          <button class="error-dismiss" @click="authStore.clearError()" aria-label="Dismiss error">&#x2715;</button>
+          <button class="error-dismiss" @click="authStore.clearError()" :aria-label="$t('login.dismissError')">&#x2715;</button>
         </div>
       </Transition>
       <form class="login-form" @submit.prevent="handleSubmit" novalidate>
         <div class="field" :class="{ 'field--error': emailError }">
-          <label for="login-email" class="field-label">Email</label>
-          <input id="login-email" v-model.trim="email" type="email" class="field-input" placeholder="you@example.com" autocomplete="email" :disabled="authStore.loading" @blur="validateEmail" @input="clearFieldError('email')" />
+          <label for="login-email" class="field-label">{{ $t('login.emailLabel') }}</label>
+          <input id="login-email" v-model.trim="email" type="email" class="field-input" :placeholder="$t('login.emailPlaceholder')" autocomplete="email" :disabled="authStore.loading" @blur="validateEmail" @input="clearFieldError('email')" />
           <p v-if="emailError" class="field-error">{{ emailError }}</p>
         </div>
         <div class="field" :class="{ 'field--error': passwordError }">
-          <label for="login-password" class="field-label">Password</label>
-          <input id="login-password" v-model="password" type="password" class="field-input" placeholder="Enter your password" autocomplete="current-password" :disabled="authStore.loading" @blur="validatePassword" @input="clearFieldError('password')" />
+          <label for="login-password" class="field-label">{{ $t('login.passwordLabel') }}</label>
+          <input id="login-password" v-model="password" type="password" class="field-input" :placeholder="$t('login.passwordPlaceholder')" autocomplete="current-password" :disabled="authStore.loading" @blur="validatePassword" @input="clearFieldError('password')" />
           <p v-if="passwordError" class="field-error">{{ passwordError }}</p>
         </div>
         <button type="submit" class="btn btn-primary" :disabled="authStore.loading">
           <span v-if="authStore.loading" class="spinner" aria-hidden="true"></span>
-          <span v-if="authStore.loading">Signing in...</span>
-          <span v-else>Sign In</span>
+          <span v-if="authStore.loading">{{ $t('login.signingIn') }}</span>
+          <span v-else>{{ $t('login.signIn') }}</span>
         </button>
       </form>
       <div class="divider">
         <span class="divider-line"></span>
-        <span class="divider-text">or</span>
+        <span class="divider-text">{{ $t('login.or') }}</span>
         <span class="divider-line"></span>
       </div>
       <button class="btn btn-google" :disabled="authStore.loading" @click="handleGoogleSSO">
@@ -42,7 +42,7 @@
           <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
           <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
         </svg>
-        <span>Continue with Google</span>
+        <span>{{ $t('login.continueWithGoogle') }}</span>
       </button>
     </div>
   </div>
@@ -50,8 +50,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/shared/stores/auth'
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 
 const email = ref('')
@@ -63,11 +65,11 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function validateEmail(): boolean {
   if (!email.value) {
-    emailError.value = 'Email is required.'
+    emailError.value = t('login.emailRequired')
     return false
   }
   if (!EMAIL_REGEX.test(email.value)) {
-    emailError.value = 'Please enter a valid email address.'
+    emailError.value = t('login.emailInvalid')
     return false
   }
   emailError.value = ''
@@ -76,7 +78,7 @@ function validateEmail(): boolean {
 
 function validatePassword(): boolean {
   if (!password.value) {
-    passwordError.value = 'Password is required.'
+    passwordError.value = t('login.passwordRequired')
     return false
   }
   passwordError.value = ''

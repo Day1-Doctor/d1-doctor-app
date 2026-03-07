@@ -1,21 +1,21 @@
 <template>
   <div class="credit-bar" :class="[variant, { depleted: isDepleted }]">
-    <span v-if="variant === 'full'" class="credit-label">Credits</span>
+    <span v-if="variant === 'full'" class="credit-label">{{ $t('credits.label') }}</span>
     <div class="bar-track">
       <div class="bar-fill" :class="{ 'bar-fill--depleted': isDepleted }" :style="{ width: pct + '%' }" />
     </div>
     <span class="credit-value">{{ credits }}<template v-if="variant === 'full'">/{{ max }}</template></span>
     <span v-if="variant === 'full'" class="credit-remaining" data-testid="credit-remaining">
-      {{ credits }}/{{ max }} credits remaining
+      {{ $t('credits.remaining', { current: credits, max: max }) }}
     </span>
-    <a v-if="variant === 'full'" href="#" class="buy-link" @click.prevent="emit('buy')">Buy</a>
+    <a v-if="variant === 'full'" href="#" class="buy-link" @click.prevent="emit('buy')">{{ $t('credits.buy') }}</a>
     <!-- Shared queue notice when credits are depleted -->
     <div
       v-if="isDepleted && isQueued"
       class="shared-queue-notice"
       data-testid="shared-queue-notice"
     >
-      Shared queue - responses may be slower
+      {{ $t('credits.sharedQueue') }}
     </div>
   </div>
 </template>

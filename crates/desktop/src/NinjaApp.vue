@@ -24,7 +24,7 @@
       <span
         class="connection-dot"
         :class="daemonStore.status"
-        :title="`Daemon: ${daemonStore.status}`"
+        :title="`${$t('connection.daemon')}: ${daemonStore.status}`"
         data-testid="connection-dot"
       />
     </div>

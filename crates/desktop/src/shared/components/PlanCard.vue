@@ -1,7 +1,7 @@
 <template>
   <div class="plan-card">
     <div class="plan-header">
-      <span class="plan-label">Plan</span>
+      <span class="plan-label">{{ $t('plan.label') }}</span>
       <span class="plan-count">{{ doneCount }}/{{ steps.length }}</span>
     </div>
     <div class="step-list">
@@ -11,8 +11,8 @@
       <div class="progress-fill" :style="{ width: progressPct + '%' }" />
     </div>
     <div class="plan-actions">
-      <button class="btn-approve" @click="emit('approve')">✓ Approve</button>
-      <button class="btn-reject" @click="emit('reject')">✕ Reject</button>
+      <button class="btn-approve" @click="emit('approve')">&#x2713; {{ $t('plan.approve') }}</button>
+      <button class="btn-reject" @click="emit('reject')">&#x2715; {{ $t('plan.reject') }}</button>
     </div>
   </div>
 </template>
