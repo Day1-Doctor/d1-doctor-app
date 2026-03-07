@@ -3,13 +3,7 @@
 //! Provides HTTP endpoints for the client to query agent memory
 //! and check daemon health status.
 
-use axum::{
-    extract::Query,
-    http::StatusCode,
-    response::IntoResponse,
-    routing::get,
-    Json, Router,
-};
+use axum::{extract::Query, http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 
@@ -68,9 +62,7 @@ pub async fn start_rest_server(addr: SocketAddr) -> anyhow::Result<()> {
 }
 
 /// Handler for GET /api/memory/search?q=...&scope=...&limit=...
-async fn memory_search(
-    Query(params): Query<SearchParams>,
-) -> impl IntoResponse {
+async fn memory_search(Query(params): Query<SearchParams>) -> impl IntoResponse {
     let limit = params.limit.unwrap_or(10).min(100);
     let scope = params.scope.as_deref().unwrap_or("all");
 
@@ -130,7 +122,11 @@ fn search_memory(query: &str, scope: &str, limit: usize) -> Vec<MemorySearchResu
         .collect();
 
     // Sort by relevance descending
-    results.sort_by(|a, b| b.relevance.partial_cmp(&a.relevance).unwrap_or(std::cmp::Ordering::Equal));
+    results.sort_by(|a, b| {
+        b.relevance
+            .partial_cmp(&a.relevance)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     results.truncate(limit);
     results
 }

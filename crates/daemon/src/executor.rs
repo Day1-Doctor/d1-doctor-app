@@ -17,16 +17,14 @@ const DEFAULT_TIMEOUT_MS: u64 = 30_000;
 
 /// Commands considered destructive for risk assessment in dry-run mode.
 const DESTRUCTIVE_COMMANDS: &[&str] = &[
-    "rm", "rmdir", "mkfs", "dd", "shred", "kill", "killall", "pkill",
-    "shutdown", "reboot", "halt", "poweroff", "fdisk", "parted",
-    "chmod", "chown", "chgrp", "mv", "truncate",
+    "rm", "rmdir", "mkfs", "dd", "shred", "kill", "killall", "pkill", "shutdown", "reboot", "halt",
+    "poweroff", "fdisk", "parted", "chmod", "chown", "chgrp", "mv", "truncate",
 ];
 
 /// Commands that modify system state but are generally lower risk.
 const MUTATING_COMMANDS: &[&str] = &[
-    "cp", "mkdir", "touch", "ln", "install", "sed", "awk",
-    "tee", "patch", "git", "npm", "cargo", "pip", "brew",
-    "apt", "yum", "dnf", "pacman",
+    "cp", "mkdir", "touch", "ln", "install", "sed", "awk", "tee", "patch", "git", "npm", "cargo",
+    "pip", "brew", "apt", "yum", "dnf", "pacman",
 ];
 
 /// Result of executing a command.
@@ -87,9 +85,8 @@ impl Executor {
         timeout_ms: Option<u64>,
         cwd: Option<&str>,
     ) -> anyhow::Result<ExecResult> {
-        let timeout = std::time::Duration::from_millis(
-            timeout_ms.unwrap_or(self.default_timeout_ms),
-        );
+        let timeout =
+            std::time::Duration::from_millis(timeout_ms.unwrap_or(self.default_timeout_ms));
 
         let mut cmd = Command::new("sh");
         cmd.arg("-c").arg(command);
@@ -128,8 +125,10 @@ impl Executor {
                 Ok(ExecResult {
                     success: false,
                     stdout: String::new(),
-                    stderr: format!("command timed out after {timeout_ms} ms",
-                        timeout_ms = timeout.as_millis()),
+                    stderr: format!(
+                        "command timed out after {timeout_ms} ms",
+                        timeout_ms = timeout.as_millis()
+                    ),
                     exit_code: -1,
                     duration_ms,
                     timed_out: true,
@@ -188,11 +187,7 @@ impl Executor {
         };
 
         // Extract just the binary name (strip path prefix).
-        let binary_name = binary
-            .rsplit('/')
-            .next()
-            .unwrap_or(&binary)
-            .to_string();
+        let binary_name = binary.rsplit('/').next().unwrap_or(&binary).to_string();
 
         let risk_level = assess_risk(&binary_name, &args);
         let description = describe_command(&binary_name, &args);
@@ -260,9 +255,9 @@ fn assess_risk(binary: &str, args: &[String]) -> String {
     if DESTRUCTIVE_COMMANDS.contains(&binary) {
         // `rm -rf /` is higher risk than `rm file.txt`
         let has_force = args.iter().any(|a| a.contains('f') && a.starts_with('-'));
-        let has_recursive = args.iter().any(|a| {
-            (a.contains('r') || a.contains('R')) && a.starts_with('-')
-        });
+        let has_recursive = args
+            .iter()
+            .any(|a| (a.contains('r') || a.contains('R')) && a.starts_with('-'));
         if has_force || has_recursive {
             return "high".to_string();
         }

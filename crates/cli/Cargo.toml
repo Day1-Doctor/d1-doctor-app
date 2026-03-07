@@ -13,3 +13,6 @@ anyhow.workspace = true
 tracing.workspace = true
 clap = { version = "4", features = ["derive"] }
 crossterm = "0.28"
+
+[dev-dependencies]
+serde_json.workspace = true

@@ -372,16 +372,10 @@ impl MemoryStore {
             "task_memory",
             "agent_memory",
         ];
-        anyhow::ensure!(
-            valid_tables.contains(&table),
-            "invalid table name: {table}"
-        );
+        anyhow::ensure!(valid_tables.contains(&table), "invalid table name: {table}");
 
         let deleted = conn
-            .execute(
-                &format!("DELETE FROM {table} WHERE id = ?1"),
-                params![id],
-            )
+            .execute(&format!("DELETE FROM {table} WHERE id = ?1"), params![id])
             .context("forget delete")?;
 
         if deleted > 0 {
@@ -413,7 +407,10 @@ impl MemoryStore {
             )
             .context("increment_use_count update")?;
 
-        anyhow::ensure!(updated == 1, "agent_memory row not found: {agent_memory_id}");
+        anyhow::ensure!(
+            updated == 1,
+            "agent_memory row not found: {agent_memory_id}"
+        );
         debug!(%agent_memory_id, "Incremented use count");
         Ok(())
     }
@@ -629,7 +626,11 @@ impl MemoryStore {
             total_archived += deleted as u64;
         }
 
-        debug!(total_archived, sessions = expired.len(), "Session archival complete");
+        debug!(
+            total_archived,
+            sessions = expired.len(),
+            "Session archival complete"
+        );
         Ok(total_archived)
     }
 
@@ -758,7 +759,9 @@ mod tests {
     #[test]
     fn test_store_profile_insert() {
         let store = test_store();
-        let id = store.store_profile("system", "os", "macOS", "agent").unwrap();
+        let id = store
+            .store_profile("system", "os", "macOS", "agent")
+            .unwrap();
         assert!(!id.is_empty());
 
         let entries = store.recall_profile("system").unwrap();
@@ -773,10 +776,14 @@ mod tests {
         let store = test_store();
 
         // First insert
-        store.store_profile("system", "os", "macOS", "agent").unwrap();
+        store
+            .store_profile("system", "os", "macOS", "agent")
+            .unwrap();
 
         // Replace — should audit the old value
-        let id2 = store.store_profile("system", "os", "Linux", "user").unwrap();
+        let id2 = store
+            .store_profile("system", "os", "Linux", "user")
+            .unwrap();
         assert!(!id2.is_empty());
 
         // Verify replacement
@@ -821,7 +828,9 @@ mod tests {
         assert!(!id2.is_empty());
 
         // Verify via recall
-        let results = store.recall("npm install", MemoryScope::Session, 10).unwrap();
+        let results = store
+            .recall("npm install", MemoryScope::Session, 10)
+            .unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].level, "session");
     }
@@ -890,7 +899,9 @@ mod tests {
     fn test_recall_profile_scope() {
         let store = test_store();
         store.store_profile("env", "shell", "zsh", "agent").unwrap();
-        store.store_profile("env", "editor", "nvim", "agent").unwrap();
+        store
+            .store_profile("env", "editor", "nvim", "agent")
+            .unwrap();
 
         let results = store.recall("zsh", MemoryScope::Profile, 10).unwrap();
         assert_eq!(results.len(), 1);
@@ -945,7 +956,11 @@ mod tests {
             .unwrap();
 
         let results = store.recall("rust", MemoryScope::All, 20).unwrap();
-        assert!(results.len() >= 3, "expected results from multiple scopes, got {}", results.len());
+        assert!(
+            results.len() >= 3,
+            "expected results from multiple scopes, got {}",
+            results.len()
+        );
 
         let levels: Vec<&str> = results.iter().map(|e| e.level.as_str()).collect();
         assert!(levels.contains(&"profile"), "missing profile result");
@@ -1122,7 +1137,10 @@ mod tests {
             )
             .unwrap();
         assert_eq!(use_count2, 1);
-        assert!(last_used2.is_some(), "last_used_at should be set after increment");
+        assert!(
+            last_used2.is_some(),
+            "last_used_at should be set after increment"
+        );
 
         // Increment again
         store.increment_use_count(&id).unwrap();
@@ -1152,9 +1170,15 @@ mod tests {
     fn test_recall_profile_by_category() {
         let store = test_store();
 
-        store.store_profile("system", "os", "macOS", "agent").unwrap();
-        store.store_profile("system", "arch", "arm64", "agent").unwrap();
-        store.store_profile("user", "name", "Alice", "user").unwrap();
+        store
+            .store_profile("system", "os", "macOS", "agent")
+            .unwrap();
+        store
+            .store_profile("system", "arch", "arm64", "agent")
+            .unwrap();
+        store
+            .store_profile("user", "name", "Alice", "user")
+            .unwrap();
 
         let system_entries = store.recall_profile("system").unwrap();
         assert_eq!(system_entries.len(), 2);
@@ -1213,7 +1237,10 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap();
-        assert_eq!(archived_steps, old_steps, "archive should have original procedure_steps");
+        assert_eq!(
+            archived_steps, old_steps,
+            "archive should have original procedure_steps"
+        );
 
         // Verify the live row was summarized (truncated to 100 chars + "...")
         let summary: String = conn
@@ -1282,7 +1309,10 @@ mod tests {
         .unwrap();
 
         let compressed = store.run_compression(90).unwrap();
-        assert_eq!(compressed, 1, "should compress exactly 1 agent_memory entry");
+        assert_eq!(
+            compressed, 1,
+            "should compress exactly 1 agent_memory entry"
+        );
 
         // Verify archive has original content
         let archived_content: String = conn
@@ -1402,11 +1432,7 @@ mod tests {
                     (id, session_id, step_number, agent_name, event_type, content, created_at)
                  VALUES (?1, 'old-sess', ?2, 'dr_bob', 'action', ?3,
                          strftime('%Y-%m-%dT%H:%M:%SZ', 'now', '-48 hours'))",
-                params![
-                    format!("sm-old-{}", i),
-                    i,
-                    format!("old step {}", i)
-                ],
+                params![format!("sm-old-{}", i), i, format!("old step {}", i)],
             )
             .unwrap();
         }
@@ -1418,11 +1444,7 @@ mod tests {
                     (id, session_id, step_number, agent_name, event_type, content, created_at)
                  VALUES (?1, 'new-sess', ?2, 'dr_bob', 'action', ?3,
                          strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))",
-                params![
-                    format!("sm-new-{}", i),
-                    i,
-                    format!("new step {}", i)
-                ],
+                params![format!("sm-new-{}", i), i, format!("new step {}", i)],
             )
             .unwrap();
         }
@@ -1449,7 +1471,10 @@ mod tests {
             )
             .unwrap();
         assert_eq!(event_type, "archive_summary");
-        assert!(content.contains("3 events"), "summary should mention the event count");
+        assert!(
+            content.contains("3 events"),
+            "summary should mention the event count"
+        );
 
         // New session should be untouched
         let new_count: i64 = conn
