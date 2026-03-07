@@ -1,9 +1,4 @@
 //! User input handling with multi-line (paste mode) support.
-//!
-//! - Single-line: type and press Enter
-//! - Multi-line: start with `{` on its own line, end with `}` on its own line
-//! - Ctrl+C: cancel current response
-//! - Ctrl+D: exit the session
 
 use std::io::{self, BufRead, Write};
 
@@ -18,9 +13,6 @@ pub enum UserInput {
 }
 
 /// Read a complete user input from the terminal.
-///
-/// Supports multi-line paste mode: if the first line is `{`,
-/// continues reading until a line containing only `}` is entered.
 pub fn read_user_input() -> Result<UserInput> {
     print!("\n\x1b[1;36myou>\x1b[0m ");
     io::stdout().flush()?;
@@ -30,18 +22,15 @@ pub fn read_user_input() -> Result<UserInput> {
 
     let bytes_read = stdin.lock().read_line(&mut first_line)?;
     if bytes_read == 0 {
-        // EOF (Ctrl+D)
         return Ok(UserInput::Exit);
     }
 
     let trimmed = first_line.trim();
 
-    // Check for exit commands
     if trimmed == "/exit" || trimmed == "/quit" {
         return Ok(UserInput::Exit);
     }
 
-    // Multi-line paste mode: opening brace
     if trimmed == "{" {
         return read_multiline();
     }
@@ -49,9 +38,11 @@ pub fn read_user_input() -> Result<UserInput> {
     Ok(UserInput::Message(first_line.trim().to_string()))
 }
 
-/// Read multi-line input until a line containing only `}` is entered.
 fn read_multiline() -> Result<UserInput> {
-    println!("\x1b[2m(paste mode — enter '}}' on a new line to send)\x1b[0m");
+    println!(
+        "\x1b[2m{}\x1b[0m",
+        crate::i18n::t("chat.paste_mode")
+    );
 
     let stdin = io::stdin();
     let mut lines = Vec::new();
@@ -88,7 +79,6 @@ mod tests {
 
     #[test]
     fn test_user_input_variants() {
-        // Verify the enum variants exist and can be constructed
         let msg = UserInput::Message("hello".to_string());
         let exit = UserInput::Exit;
 

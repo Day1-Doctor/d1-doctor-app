@@ -1,7 +1,4 @@
 //! Connection management for chat sessions.
-//!
-//! Supports connecting to the local daemon via WebSocket
-//! or directly to the cloud orchestrator.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -16,9 +13,7 @@ use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 /// Where to connect for the chat session.
 #[derive(Debug, Clone)]
 pub enum ConnectionTarget {
-    /// Connect to local daemon on the given port.
     Local(u16),
-    /// Connect to a cloud WebSocket URL.
     Cloud(String),
 }
 
@@ -33,7 +28,6 @@ impl std::fmt::Display for ConnectionTarget {
 
 type WsStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
-/// A WebSocket connection to the daemon or cloud.
 pub struct ChatConnection {
     ws: Option<WsStream>,
     #[allow(dead_code)]
@@ -41,7 +35,6 @@ pub struct ChatConnection {
 }
 
 impl ChatConnection {
-    /// Establish a WebSocket connection to the target.
     pub async fn connect(target: &ConnectionTarget) -> Result<Self> {
         let url = match target {
             ConnectionTarget::Local(port) => format!("ws://127.0.0.1:{}/chat", port),
@@ -50,7 +43,9 @@ impl ChatConnection {
 
         let (ws, _response) = tokio_tungstenite::connect_async(&url)
             .await
-            .with_context(|| format!("Failed to connect to {}", url))?;
+            .with_context(|| {
+                crate::i18n::t_args("errors.connection_failed", &[("url", &url)])
+            })?;
 
         Ok(Self {
             ws: Some(ws),
@@ -58,17 +53,16 @@ impl ChatConnection {
         })
     }
 
-    /// Send a user message and stream the response.
-    ///
-    /// Returns the full concatenated response text.
-    /// Checks `cancel` flag between chunks; if set, returns a cancellation error.
     pub async fn send_and_stream(
         &mut self,
         session_id: &str,
         message: &str,
         cancel: &Arc<AtomicBool>,
     ) -> Result<String> {
-        let ws = self.ws.as_mut().context("Not connected")?;
+        let ws = self
+            .ws
+            .as_mut()
+            .context(crate::i18n::t("errors.not_connected"))?;
 
         let request = UserRequest::new(session_id.to_string(), message.to_string());
         let envelope = Envelope::new("cli".to_string(), EnvelopePayload::UserRequest(request));
@@ -79,7 +73,10 @@ impl ChatConnection {
 
         while let Some(msg) = ws.next().await {
             if cancel.load(Ordering::Relaxed) {
-                return Err(anyhow::anyhow!("Response cancelled"));
+                return Err(anyhow::anyhow!(
+                    "{}",
+                    crate::i18n::t("errors.response_cancelled")
+                ));
             }
 
             match msg? {
@@ -94,10 +91,15 @@ impl ChatConnection {
                             break;
                         }
                         EnvelopePayload::Error(err) => {
-                            return Err(anyhow::anyhow!("Agent error: {}", err.message));
+                            return Err(anyhow::anyhow!(
+                                "{}",
+                                crate::i18n::t_args(
+                                    "errors.agent_error",
+                                    &[("message", &err.message)]
+                                )
+                            ));
                         }
                         _ => {
-                            // Accumulate any text-based payload
                             response.push_str(&text);
                         }
                     }
@@ -110,7 +112,6 @@ impl ChatConnection {
         Ok(response)
     }
 
-    /// Gracefully disconnect.
     pub async fn disconnect(&mut self) -> Result<()> {
         if let Some(mut ws) = self.ws.take() {
             let _ = ws.close(None).await;

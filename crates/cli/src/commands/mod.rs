@@ -56,7 +56,10 @@ pub async fn handle(cmd: Commands) -> anyhow::Result<()> {
     match cmd {
         Commands::Run { target } => crate::chat::run_interactive(target).await,
         Commands::Install { package } => {
-            println!("Installing {}...", package);
+            println!(
+                "{}",
+                crate::i18n::t_args("commands.installing", &[("package", &package)])
+            );
             todo!("Implement install command")
         }
         Commands::Diagnose => todo!("Implement diagnose"),
