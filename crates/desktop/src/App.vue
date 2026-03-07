@@ -1,29 +1,34 @@
 <template>
   <div>
-    <!-- Update banner: shown when a new version has been downloaded and is ready -->
-    <UpdateBanner
-      :visible="showUpdateBanner"
-      :version="updateVersion"
-      @restart="restartNow"
-      @dismiss="dismissUpdate"
-    />
-
-    <!--
-      Error banner: shown when ensure_daemon_running failed (errorMessage is set)
-      AND we are not yet connected. Dismissed manually or auto-hides on connect.
-    -->
-    <div
-      v-if="showErrorBanner"
-      class="daemon-error-banner"
-      role="alert"
-    >
-      <p>{{ bannerMessage }}</p>
-      <code v-if="showStartCmd">d1 start</code>
-      <button class="banner-dismiss" @click="dismissBanner" aria-label="Dismiss">&#x2715;</button>
-    </div>
     <Transition name="mode-switch" mode="out-in">
-      <FullMode v-if="appStore.uiMode === 'full'" key="full" />
-      <CopilotMode v-else-if="appStore.uiMode === 'copilot'" key="copilot" />
+      <LoginScreen v-if="authStore.isUnauthenticated" key="login" />
+      <div v-else key="app">
+        <!-- Update banner: shown when a new version has been downloaded and is ready -->
+        <UpdateBanner
+          :visible="showUpdateBanner"
+          :version="updateVersion"
+          @restart="restartNow"
+          @dismiss="dismissUpdate"
+        />
+
+        <!--
+          Error banner: shown when ensure_daemon_running failed (errorMessage is set)
+          AND we are not yet connected. Dismissed manually or auto-hides on connect.
+        -->
+        <div
+          v-if="showErrorBanner"
+          class="daemon-error-banner"
+          role="alert"
+        >
+          <p>{{ bannerMessage }}</p>
+          <code v-if="showStartCmd">d1 start</code>
+          <button class="banner-dismiss" @click="dismissBanner" aria-label="Dismiss">&#x2715;</button>
+        </div>
+        <Transition name="mode-switch" mode="out-in">
+          <FullMode v-if="appStore.uiMode === 'full'" key="full" />
+          <CopilotMode v-else-if="appStore.uiMode === 'copilot'" key="copilot" />
+        </Transition>
+      </div>
     </Transition>
   </div>
 </template>
@@ -33,6 +38,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useAppStore } from '@/shared/stores/app'
+import { useAuthStore } from '@/shared/stores/auth'
 import { useAgentEvents } from '@/shared/composables/useAgentEvents'
 import { useDaemonConnection } from '@/shared/composables/useDaemonConnection'
 import { useAutoUpdater } from '@/shared/composables/useAutoUpdater'
@@ -40,8 +46,10 @@ import { useDaemonStore } from '@/shared/stores/daemon'
 import FullMode from '@/modes/full/FullMode.vue'
 import CopilotMode from '@/modes/copilot/CopilotMode.vue'
 import UpdateBanner from '@/shared/components/UpdateBanner.vue'
+import LoginScreen from '@/shared/components/LoginScreen.vue'
 
 const appStore = useAppStore()
+const authStore = useAuthStore()
 useAgentEvents() // auto-registers Tauri event listener on mount
 // Establishes WebSocket connection; return value not used at this level.
 useDaemonConnection()
@@ -93,6 +101,7 @@ watch(() => daemonStore.errorMessage, (newMsg) => {
 let unlistenNinja: UnlistenFn | null = null
 
 onMounted(async () => {
+  await authStore.checkAuth()
   await appStore.init()
   // Always hide ninja-bar on startup — fixes the "always-showing" bug.
   const ninjaWindow = await WebviewWindow.getByLabel('ninja-bar')
