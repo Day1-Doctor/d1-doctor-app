@@ -4,10 +4,9 @@
 //! between CLI, daemon, and orchestrator. When the proto submodule is available,
 //! this will be replaced with generated prost types.
 
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc};
 use uuid::Uuid;
-use bytes::Bytes;
 
 /// Protocol version
 pub const PROTO_VERSION: u32 = 1;
@@ -229,11 +228,7 @@ impl Command {
 }
 
 impl CommandResult {
-    pub fn success(
-        command_id: String,
-        stdout: String,
-        duration_ms: u64,
-    ) -> Self {
+    pub fn success(command_id: String, stdout: String, duration_ms: u64) -> Self {
         Self {
             command_id,
             status: CommandStatus::Success,
@@ -245,12 +240,7 @@ impl CommandResult {
         }
     }
 
-    pub fn failure(
-        command_id: String,
-        stderr: String,
-        exit_code: i32,
-        duration_ms: u64,
-    ) -> Self {
+    pub fn failure(command_id: String, stderr: String, exit_code: i32, duration_ms: u64) -> Self {
         Self {
             command_id,
             status: CommandStatus::Failure,

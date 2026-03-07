@@ -106,7 +106,8 @@ impl MemoryServer {
             // -- recall_error_patterns --------------------------------------
             ToolDefinition {
                 name: "recall_error_patterns".into(),
-                description: "FTS5 search scoped to error_patterns and fix_patterns columns.".into(),
+                description: "FTS5 search scoped to error_patterns and fix_patterns columns."
+                    .into(),
                 input_schema: json!({
                     "type": "object",
                     "properties": {
@@ -189,7 +190,8 @@ impl MemoryServer {
             // -- store_task_outcome -----------------------------------------
             ToolDefinition {
                 name: "store_task_outcome".into(),
-                description: "Record a completed task outcome with procedure and error details.".into(),
+                description: "Record a completed task outcome with procedure and error details."
+                    .into(),
                 input_schema: json!({
                     "type": "object",
                     "properties": {
@@ -381,13 +383,16 @@ impl MemoryServer {
         let agent_name = param_str(&params, "agent_name")?;
         let event_type = param_str(&params, "event_type")?;
         let content = param_str(&params, "content")?;
-        let metadata = params
-            .get("metadata")
-            .and_then(|v| v.as_str());
+        let metadata = params.get("metadata").and_then(|v| v.as_str());
 
-        let id =
-            self.store
-                .store_session(session_id, step_number, agent_name, event_type, content, metadata)?;
+        let id = self.store.store_session(
+            session_id,
+            step_number,
+            agent_name,
+            event_type,
+            content,
+            metadata,
+        )?;
         Ok(json!({ "id": id }))
     }
 
@@ -581,7 +586,10 @@ mod tests {
                 }),
             )
             .unwrap();
-        assert!(result.get("id").is_some(), "store_profile should return an id");
+        assert!(
+            result.get("id").is_some(),
+            "store_profile should return an id"
+        );
 
         // Recall it.
         let result = server
@@ -784,10 +792,7 @@ mod tests {
 
         // Forget it.
         let forget_result = server
-            .handle_tool_call(
-                "forget",
-                json!({ "id": id, "table": "agent_memory" }),
-            )
+            .handle_tool_call("forget", json!({ "id": id, "table": "agent_memory" }))
             .unwrap();
         assert_eq!(forget_result["ok"], true);
 
@@ -821,10 +826,7 @@ mod tests {
 
         // recall without explicit limit should use default (10).
         let result = server
-            .handle_tool_call(
-                "recall",
-                json!({ "query": "anything", "scope": "all" }),
-            )
+            .handle_tool_call("recall", json!({ "query": "anything", "scope": "all" }))
             .unwrap();
         assert!(result.get("entries").is_some());
     }

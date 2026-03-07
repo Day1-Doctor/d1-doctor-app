@@ -200,7 +200,9 @@ mod tests {
     fn list_tables(db: &LocalDb) -> Vec<String> {
         let mut stmt = db
             .conn()
-            .prepare("SELECT name FROM sqlite_master WHERE type IN ('table', 'trigger') ORDER BY name")
+            .prepare(
+                "SELECT name FROM sqlite_master WHERE type IN ('table', 'trigger') ORDER BY name",
+            )
             .unwrap();
         stmt.query_map([], |row| row.get(0))
             .unwrap()
@@ -214,13 +216,34 @@ mod tests {
         let objects = list_tables(&db);
 
         // Tables
-        assert!(objects.contains(&"profile_memory".to_string()), "missing profile_memory");
-        assert!(objects.contains(&"session_memory".to_string()), "missing session_memory");
-        assert!(objects.contains(&"task_memory".to_string()), "missing task_memory");
-        assert!(objects.contains(&"agent_memory".to_string()), "missing agent_memory");
-        assert!(objects.contains(&"audit_log".to_string()), "missing audit_log");
-        assert!(objects.contains(&"task_memory_archive".to_string()), "missing task_memory_archive");
-        assert!(objects.contains(&"agent_memory_archive".to_string()), "missing agent_memory_archive");
+        assert!(
+            objects.contains(&"profile_memory".to_string()),
+            "missing profile_memory"
+        );
+        assert!(
+            objects.contains(&"session_memory".to_string()),
+            "missing session_memory"
+        );
+        assert!(
+            objects.contains(&"task_memory".to_string()),
+            "missing task_memory"
+        );
+        assert!(
+            objects.contains(&"agent_memory".to_string()),
+            "missing agent_memory"
+        );
+        assert!(
+            objects.contains(&"audit_log".to_string()),
+            "missing audit_log"
+        );
+        assert!(
+            objects.contains(&"task_memory_archive".to_string()),
+            "missing task_memory_archive"
+        );
+        assert!(
+            objects.contains(&"agent_memory_archive".to_string()),
+            "missing agent_memory_archive"
+        );
 
         // FTS5 virtual table (shows up as a table in sqlite_master)
         let mut stmt = db
@@ -236,9 +259,18 @@ mod tests {
         assert!(result.is_ok(), "task_memory_fts should be queryable");
 
         // Triggers
-        assert!(objects.contains(&"task_memory_ai".to_string()), "missing insert trigger");
-        assert!(objects.contains(&"task_memory_ad".to_string()), "missing delete trigger");
-        assert!(objects.contains(&"task_memory_au".to_string()), "missing update trigger");
+        assert!(
+            objects.contains(&"task_memory_ai".to_string()),
+            "missing insert trigger"
+        );
+        assert!(
+            objects.contains(&"task_memory_ad".to_string()),
+            "missing delete trigger"
+        );
+        assert!(
+            objects.contains(&"task_memory_au".to_string()),
+            "missing update trigger"
+        );
     }
 
     #[test]

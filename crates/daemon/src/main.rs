@@ -3,7 +3,7 @@
 //! The daemon runs on the user's machine and executes commands from the
 //! cloud orchestrator. It communicates via WebSocket using Protobuf messages.
 
-mod cloud_ws;
+mod chat_relay;
 mod executor;
 mod health;
 mod local_db;

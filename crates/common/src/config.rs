@@ -3,7 +3,7 @@
 //! Reads from ~/.d1doctor/config.toml
 
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tracing::{debug, warn};
 
 use crate::errors::Result;
