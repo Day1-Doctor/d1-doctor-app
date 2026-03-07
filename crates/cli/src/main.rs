@@ -1,7 +1,7 @@
 //! Day 1 Doctor — CLI Client
 
-mod commands;
 mod auth;
+mod commands;
 mod credits;
 mod tui;
 
@@ -18,7 +18,7 @@ struct Cli {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    
+
     match cli.command {
         Some(cmd) => commands::handle(cmd).await?,
         None => {
@@ -26,6 +26,6 @@ async fn main() -> anyhow::Result<()> {
             println!("Run `d1-doctor --help` for usage");
         }
     }
-    
+
     Ok(())
 }
