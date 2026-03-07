@@ -18,6 +18,12 @@ pub use history::SessionHistory;
 pub async fn run_interactive(target: Option<String>) -> Result<()> {
     let config = Config::load().unwrap_or_default();
 
+    // Spawn a non-blocking version check (fire-and-forget).
+    let daemon_port = config.daemon_port;
+    tokio::spawn(async move {
+        crate::version_check::maybe_nudge(daemon_port).await;
+    });
+
     let target = match target {
         Some(url) => ConnectionTarget::Cloud(url),
         None => ConnectionTarget::Local(config.daemon_port),

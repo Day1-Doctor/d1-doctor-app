@@ -11,6 +11,7 @@ serde.workspace = true
 serde_json.workspace = true
 anyhow.workspace = true
 tracing.workspace = true
+reqwest.workspace = true
 clap = { version = "4", features = ["derive"] }
 crossterm = "0.28"
 

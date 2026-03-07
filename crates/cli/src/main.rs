@@ -4,6 +4,7 @@ mod auth;
 mod commands;
 mod credits;
 mod tui;
+pub mod version_check;
 
 use clap::Parser;
 
