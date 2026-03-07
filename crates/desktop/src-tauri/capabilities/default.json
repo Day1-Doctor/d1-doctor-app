@@ -2,7 +2,10 @@
   "$schema": "https://schema.tauri.app/config/v2/capabilities.json",
   "identifier": "default",
   "description": "Default capability for Day1 Doctor",
-  "windows": ["main", "ninja-bar"],
+  "windows": [
+    "main",
+    "ninja-bar"
+  ],
   "permissions": [
     "core:default",
     "core:window:allow-close",
@@ -21,6 +24,10 @@
     "global-shortcut:allow-unregister",
     "window-state:allow-save-window-state",
     "window-state:allow-restore-state",
-    "shell:allow-execute"
+    "shell:allow-execute",
+    "process:allow-restart",
+    "updater:default",
+    "updater:allow-check",
+    "updater:allow-download-and-install"
   ]
 }

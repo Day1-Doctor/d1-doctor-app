@@ -39,7 +39,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:9876 ws://127.0.0.1:9876 http://localhost:9876 http://127.0.0.1:9876"
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:9876 ws://127.0.0.1:9876 http://localhost:9876 http://127.0.0.1:9876 https://releases.day1.doctor"
     }
   },
   "bundle": {
@@ -52,6 +52,19 @@
       "icons/icon.png",
       "icons/icon.ico",
       "icons/icon.icns"
-    ]
+    ],
+    "macOS": {
+      "signingIdentity": "-",
+      "entitlements": null,
+      "minimumSystemVersion": "10.15"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://releases.day1.doctor/update.json"
+      ],
+      "pubkey": ""
+    }
   }
 }
