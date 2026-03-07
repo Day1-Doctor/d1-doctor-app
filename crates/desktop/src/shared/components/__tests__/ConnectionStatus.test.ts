@@ -61,4 +61,46 @@ describe('ConnectionStatus', () => {
     const w = mount(ConnectionStatus)
     expect(w.find('.reconnect-btn').exists()).toBe(true)
   })
+
+  // --- D1D-75: overall connection status indicator (3 states) ---
+
+  it('renders conn-summary element', () => {
+    const w = mount(ConnectionStatus)
+    expect(w.find('[data-testid="conn-summary"]').exists()).toBe(true)
+  })
+
+  it('shows "Connected" (green) when daemon + platform are both connected', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    const store = useDaemonStore()
+    store.setStatus('connected')
+    store.setDaemonInfo({ daemonVersion: '1.0', orchestratorConnected: true, activeTasks: 0 })
+    const w = mount(ConnectionStatus)
+    const summary = w.find('[data-testid="conn-summary"]')
+    expect(summary.find('.status-dot').attributes('data-status')).toBe('connected')
+    expect(summary.find('.conn-summary-text').text()).toBe('Connected')
+    expect(summary.find('.conn-summary-text').classes()).toContain('connected')
+  })
+
+  it('shows "Local only" (yellow) when daemon connected but platform offline', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    const store = useDaemonStore()
+    store.setStatus('connected')
+    store.setDaemonInfo({ daemonVersion: '1.0', orchestratorConnected: false, activeTasks: 0 })
+    const w = mount(ConnectionStatus)
+    const summary = w.find('[data-testid="conn-summary"]')
+    expect(summary.find('.status-dot').attributes('data-status')).toBe('local-only')
+    expect(summary.find('.conn-summary-text').text()).toBe('Local only')
+    expect(summary.find('.conn-summary-text').classes()).toContain('local-only')
+  })
+
+  it('shows "Offline" (red) when daemon is disconnected', async () => {
+    const { useDaemonStore } = await import('@/shared/stores/daemon')
+    const store = useDaemonStore()
+    store.setStatus('disconnected')
+    const w = mount(ConnectionStatus)
+    const summary = w.find('[data-testid="conn-summary"]')
+    expect(summary.find('.status-dot').attributes('data-status')).toBe('offline')
+    expect(summary.find('.conn-summary-text').text()).toBe('Offline')
+    expect(summary.find('.conn-summary-text').classes()).toContain('offline')
+  })
 })

@@ -1,5 +1,15 @@
 <template>
   <div class="connection-status">
+    <!-- High-level connection indicator -->
+    <div class="conn-summary" data-testid="conn-summary">
+      <span
+        class="status-dot"
+        :data-status="overallStatus"
+        :class="overallStatus"
+      />
+      <span class="conn-summary-text" :class="overallStatus">{{ overallLabel }}</span>
+    </div>
+
     <div class="conn-row" data-row="daemon">
       <span
         class="status-dot"
@@ -35,6 +45,8 @@
 import { computed } from 'vue'
 import { useDaemonStore } from '@/shared/stores/daemon'
 
+export type OverallConnectionStatus = 'connected' | 'local-only' | 'offline'
+
 const daemonStore = useDaemonStore()
 
 const daemonStatus = computed(() => {
@@ -45,7 +57,7 @@ const daemonStatus = computed(() => {
 
 const daemonLabel = computed(() => {
   if (daemonStore.status === 'connected') return 'Connected'
-  if (daemonStore.status === 'connecting') return 'Connecting…'
+  if (daemonStore.status === 'connecting') return 'Connecting...'
   return 'Offline'
 })
 
@@ -59,6 +71,26 @@ const platformLabel = computed(() => {
   return platformStatus.value === 'connected' ? 'Connected' : 'Offline'
 })
 
+/**
+ * High-level connection status:
+ * - connected (green): daemon + platform both connected
+ * - local-only (yellow): daemon connected but platform offline
+ * - offline (red): daemon not connected
+ */
+const overallStatus = computed<OverallConnectionStatus>(() => {
+  if (daemonStore.status !== 'connected') return 'offline'
+  if (!daemonStore.orchestratorConnected) return 'local-only'
+  return 'connected'
+})
+
+const overallLabel = computed(() => {
+  switch (overallStatus.value) {
+    case 'connected':  return 'Connected'
+    case 'local-only': return 'Local only'
+    case 'offline':    return 'Offline'
+  }
+})
+
 /** Show the offline hint row only when disconnected/errored and there's info. */
 const showOfflineHint = computed(() => {
   return daemonStatus.value === 'disconnected' && !!daemonStore.errorMessage
@@ -69,16 +101,13 @@ const showStartCommand = computed(() => {
   return !!daemonStore.errorMessage?.toLowerCase().includes('start')
 })
 
-/** A short human-friendly version of the error — strip redundant prefixes. */
+/** A short human-friendly version of the error -- strip redundant prefixes. */
 const offlineHint = computed(() => {
   const msg = daemonStore.errorMessage ?? ''
-  // The Rust error is e.g. "Daemon not running. Start it with: d1 start"
-  // Strip the "Start it with: d1 start" part since we render the command separately.
   return msg.replace(/\.\s*Start it with:.*$/i, '.').trim() || 'Daemon not reachable.'
 })
 
 function onReconnect(): void {
-  // Page reload is the simplest way to trigger a fresh reconnect
   window.location.reload()
 }
 </script>
@@ -90,6 +119,22 @@ function onReconnect(): void {
   flex-direction: column;
   gap: 4px;
 }
+
+.conn-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 4px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--border);
+}
+
+.conn-summary-text {
+  font: 600 11px var(--font-mono, monospace);
+}
+.conn-summary-text.connected  { color: var(--success, #22c55e); }
+.conn-summary-text.local-only { color: var(--warning, #f59e0b); }
+.conn-summary-text.offline    { color: var(--error, #ef4444); }
 
 .conn-row {
   display: flex;
@@ -107,7 +152,9 @@ function onReconnect(): void {
 
 .status-dot.connected    { background: var(--success, #22c55e); }
 .status-dot.connecting   { background: var(--accent, #6366f1); animation: pulse 1s infinite; }
+.status-dot.local-only   { background: var(--warning, #f59e0b); }
 .status-dot.disconnected { background: var(--error, #ef4444); }
+.status-dot.offline      { background: var(--error, #ef4444); }
 
 .conn-label {
   color: var(--text-disabled);
