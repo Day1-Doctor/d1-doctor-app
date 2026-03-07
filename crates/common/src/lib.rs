@@ -7,7 +7,7 @@ pub mod config;
 pub mod errors;
 pub mod proto;
 
-pub use config::Config;
+pub use config::{Config, RedactionConfig};
 pub use errors::{D1Error, Result};
 pub use proto::*;
 

@@ -32,6 +32,10 @@ pub struct Config {
     /// Permission zones
     #[serde(default)]
     pub permissions: PermissionsConfig,
+
+    /// Redaction rules for cloud-bound messages
+    #[serde(default)]
+    pub redaction: RedactionConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -76,6 +80,72 @@ pub struct PermissionsConfig {
     pub cache_ttl: u64,
 }
 
+/// Configuration for sensitive data redaction in cloud-bound messages.
+///
+/// Each boolean flag enables or disables a category of redaction rules.
+/// When a category is enabled, matching patterns are replaced with a
+/// placeholder such as `[REDACTED:api_key]` before the message leaves
+/// the daemon.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RedactionConfig {
+    /// Master switch — when false, no redaction is performed.
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+
+    /// Redact API key patterns (sk-*, AKIA*, ghp_*, gho_*, xoxb-*, etc.)
+    #[serde(default = "default_true")]
+    pub redact_api_keys: bool,
+
+    /// Redact password-like patterns (password=, passwd=, secret=, etc.)
+    #[serde(default = "default_true")]
+    pub redact_passwords: bool,
+
+    /// Redact bearer / authorization tokens in headers.
+    #[serde(default = "default_true")]
+    pub redact_tokens: bool,
+
+    /// Redact .env file contents (KEY=VALUE lines).
+    #[serde(default = "default_true")]
+    pub redact_env_file: bool,
+
+    /// Redact absolute file paths (replace with basename or placeholder).
+    #[serde(default = "default_true")]
+    pub redact_file_paths: bool,
+
+    /// Limit system snapshot fields to: OS, arch, shell, hostname.
+    #[serde(default = "default_true")]
+    pub limit_system_info: bool,
+
+    /// Redact connection strings (postgres://, mysql://, mongodb://, redis://).
+    #[serde(default = "default_true")]
+    pub redact_connection_strings: bool,
+
+    /// Redact private key blocks (-----BEGIN * PRIVATE KEY-----).
+    #[serde(default = "default_true")]
+    pub redact_private_keys: bool,
+
+    /// Additional custom regex patterns to redact (user-supplied).
+    #[serde(default)]
+    pub custom_patterns: Vec<String>,
+}
+
+impl Default for RedactionConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            redact_api_keys: true,
+            redact_passwords: true,
+            redact_tokens: true,
+            redact_env_file: true,
+            redact_file_paths: true,
+            limit_system_info: true,
+            redact_connection_strings: true,
+            redact_private_keys: true,
+            custom_patterns: Vec::new(),
+        }
+    }
+}
+
 fn default_orchestrator_url() -> String {
     "wss://api.day1doctor.com/ws".to_string()
 }
@@ -113,6 +183,7 @@ impl Default for Config {
             database: DatabaseConfig::default(),
             logging: LoggingConfig::default(),
             permissions: PermissionsConfig::default(),
+            redaction: RedactionConfig::default(),
         }
     }
 }
@@ -194,6 +265,7 @@ impl Config {
         self.database = other.database;
         self.logging = other.logging;
         self.permissions = other.permissions;
+        self.redaction = other.redaction;
     }
 }
 

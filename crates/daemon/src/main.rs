@@ -9,7 +9,7 @@ mod local_db;
 mod mcp_memory;
 mod memory_store;
 mod profile_detect;
-mod rest_api;
+pub mod redactor;
 mod ws_client;
 
 #[tokio::main]
@@ -18,11 +18,12 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Day 1 Doctor daemon starting...");
 
     // TODO: Initialize components
-    // 1. Load configuration
-    // 2. Open local SQLite database
-    // 3. Connect to orchestrator via WebSocket
-    // 4. Start health monitoring
-    // 5. Enter main event loop
+    // 1. Load configuration (including RedactionConfig)
+    // 2. Create Redactor from config for cloud-bound message sanitisation
+    // 3. Open local SQLite database
+    // 4. Connect to orchestrator via WebSocket
+    // 5. Start health monitoring
+    // 6. Enter main event loop
 
     Ok(())
 }
