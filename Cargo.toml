@@ -15,7 +15,7 @@ license = "MIT"
 repository = "https://github.com/day1-doctor/d1-doctor-app"
 
 [workspace.dependencies]
-d1-common = { path = "crates/common", package = "d1-doctor-common" }
+d1-common = { path = "crates/common" }
 
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }

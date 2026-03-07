@@ -1,8 +1,10 @@
 //! Day 1 Doctor — CLI Client
 
 mod auth;
+mod chat;
 mod commands;
 mod credits;
+pub mod i18n;
 mod tui;
 
 use clap::Parser;
@@ -17,13 +19,18 @@ struct Cli {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    i18n::init_auto();
+
     let cli = Cli::parse();
 
     match cli.command {
         Some(cmd) => commands::handle(cmd).await?,
         None => {
-            println!("Day 1 Doctor CLI v{}", env!("CARGO_PKG_VERSION"));
-            println!("Run `d1-doctor --help` for usage");
+            println!(
+                "{}",
+                i18n::t_args("app.version_line", &[("version", env!("CARGO_PKG_VERSION"))])
+            );
+            println!("{}", i18n::t("app.usage_hint"));
         }
     }
 

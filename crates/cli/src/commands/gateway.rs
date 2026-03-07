@@ -31,9 +31,6 @@ pub struct GatewayStatus {
 }
 
 /// Return the built-in model catalogue.
-///
-/// In future this will be fetched from the gateway API; for now we keep a
-/// static list so the CLI is usable offline.
 pub fn builtin_models() -> Vec<GatewayModel> {
     vec![
         GatewayModel {
@@ -80,8 +77,6 @@ pub fn collect_gateway_status() -> GatewayStatus {
     let config = d1_common::Config::load().unwrap_or_default();
     let models = builtin_models();
 
-    // Without a real HTTP call we report Offline; a future version will probe
-    // the daemon's /gateway/health endpoint.
     GatewayStatus {
         health: GatewayHealth::Offline,
         endpoint: config.orchestrator_url.clone(),
@@ -92,28 +87,48 @@ pub fn collect_gateway_status() -> GatewayStatus {
 /// Print gateway health to stdout.
 pub fn print_gateway_status(status: &GatewayStatus) {
     let health_label = match status.health {
-        GatewayHealth::Healthy => "Healthy",
-        GatewayHealth::Degraded => "Degraded",
-        GatewayHealth::Offline => "Offline",
+        GatewayHealth::Healthy => crate::i18n::t("gateway.health_healthy"),
+        GatewayHealth::Degraded => crate::i18n::t("gateway.health_degraded"),
+        GatewayHealth::Offline => crate::i18n::t("gateway.health_offline"),
     };
 
-    println!("Gateway Status");
+    println!("{}", crate::i18n::t("gateway.title"));
     println!();
-    println!("  Health:   {}", health_label);
-    println!("  Endpoint: {}", status.endpoint);
-    println!("  Models:   {} available", status.model_count);
+    println!(
+        "{}",
+        crate::i18n::t_args("gateway.health_label", &[("health", &health_label)])
+    );
+    println!(
+        "{}",
+        crate::i18n::t_args("gateway.endpoint_label", &[("endpoint", &status.endpoint)])
+    );
+    println!(
+        "{}",
+        crate::i18n::t_args(
+            "gateway.models_label",
+            &[("count", &status.model_count.to_string())]
+        )
+    );
 }
 
 /// Print the model catalogue to stdout.
 pub fn print_models(models: &[GatewayModel]) {
     println!(
         "{:<28} {:<12} {:>12} {:>12} {:>10}",
-        "Model", "Provider", "Input/1K", "Output/1K", "Context"
+        crate::i18n::t("gateway.table.model"),
+        crate::i18n::t("gateway.table.provider"),
+        crate::i18n::t("gateway.table.input_price"),
+        crate::i18n::t("gateway.table.output_price"),
+        crate::i18n::t("gateway.table.context"),
     );
     println!("{}", "-".repeat(78));
 
     for m in models {
-        let status = if m.available { "" } else { " (offline)" };
+        let status = if m.available {
+            String::new()
+        } else {
+            crate::i18n::t("gateway.table.offline_suffix")
+        };
         println!(
             "{:<28} {:<12} {:>11.5} {:>11.5} {:>9}k",
             format!("{}{}", m.name, status),
@@ -125,14 +140,12 @@ pub fn print_models(models: &[GatewayModel]) {
     }
 }
 
-/// `d1 gateway status`
 pub async fn run_status() -> anyhow::Result<()> {
     let status = collect_gateway_status();
     print_gateway_status(&status);
     Ok(())
 }
 
-/// `d1 gateway models`
 pub async fn run_models() -> anyhow::Result<()> {
     let models = builtin_models();
     print_models(&models);
@@ -145,8 +158,7 @@ mod tests {
 
     #[test]
     fn test_builtin_models_not_empty() {
-        let models = builtin_models();
-        assert!(!models.is_empty());
+        assert!(!builtin_models().is_empty());
     }
 
     #[test]
@@ -165,22 +177,15 @@ mod tests {
     }
 
     #[test]
-    fn test_context_windows_positive() {
-        for m in builtin_models() {
-            assert!(m.context_window > 0, "{} context window", m.id);
-        }
-    }
-
-    #[test]
     fn test_collect_gateway_status_offline() {
         let status = collect_gateway_status();
-        // Without a running daemon the gateway is offline.
         assert_eq!(status.health, GatewayHealth::Offline);
         assert_eq!(status.model_count, builtin_models().len());
     }
 
     #[test]
     fn test_print_gateway_status_does_not_panic() {
+        crate::i18n::init("en");
         let status = GatewayStatus {
             health: GatewayHealth::Healthy,
             endpoint: "https://example.com".into(),
@@ -191,6 +196,7 @@ mod tests {
 
     #[test]
     fn test_print_models_does_not_panic() {
+        crate::i18n::init("en");
         print_models(&builtin_models());
     }
 

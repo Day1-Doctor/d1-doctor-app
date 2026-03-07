@@ -1,0 +1,73 @@
+# English message catalog for Day1 Doctor CLI
+
+[app]
+name = "Day 1 Doctor"
+version_line = "Day 1 Doctor CLI v{version}"
+usage_hint = "Run `d1-doctor --help` for usage"
+
+[auth]
+opening_browser = "Opening browser for authentication..."
+waiting_callback = "Waiting for authentication callback on port {port}..."
+login_success = "Successfully logged in as {email}"
+logout_success = "Logged out successfully."
+logged_in_as = "Logged in as: {email}"
+token_expired = "Warning: Token has expired. Run 'd1-doctor auth login' to re-authenticate."
+not_logged_in = "Not logged in. Run 'd1-doctor auth login' to authenticate."
+no_credentials = "No stored credentials found. Run 'd1-doctor auth login' to authenticate."
+auth_code_failed = "Failed to extract authorization code from callback"
+token_exchange_failed = "Token exchange failed ({status}): {body}"
+
+[chat]
+welcome_title = "--- Day 1 Doctor Chat ---"
+session_label = "Session: {id}"
+connected_to = "Connected to: {target}"
+input_hint = "  Type a message and press Enter to send."
+multiline_hint = "  Multi-line: start with '{', end with '}'."
+exit_hint = "  Ctrl+C to cancel response, Ctrl+D or /exit to quit."
+paste_mode = "(paste mode -- enter '}' on a new line to send)"
+thinking = "thinking..."
+response_cancelled = "(response cancelled)"
+goodbye = "Goodbye!"
+
+[status]
+title = "Day 1 Doctor v{version}"
+daemon_label = "  Daemon:  [{status}]  port {port}"
+cloud_label = "  Cloud:   [{status}]  {url}"
+
+[gateway]
+title = "Gateway Status"
+health_label = "  Health:   {health}"
+endpoint_label = "  Endpoint: {endpoint}"
+models_label = "  Models:   {count} available"
+health_healthy = "Healthy"
+health_degraded = "Degraded"
+health_offline = "Offline"
+
+[gateway.table]
+model = "Model"
+provider = "Provider"
+input_price = "Input/1K"
+output_price = "Output/1K"
+context = "Context"
+offline_suffix = " (offline)"
+
+[credits]
+title = "Credit Balance"
+plan_label = "  Plan:       {plan}"
+available_label = "  Available:  ${amount}"
+used_label = "  Used (mo.): ${amount}"
+no_usage = "  No recent usage."
+date_col = "Date"
+model_col = "Model"
+tokens_col = "Tokens"
+cost_col = "Cost"
+
+[commands]
+installing = "Installing {package}..."
+
+[errors]
+connection_failed = "Failed to connect to {url}"
+not_connected = "Not connected"
+agent_error = "Agent error: {message}"
+response_cancelled = "Response cancelled"
+home_dir_error = "Could not determine home directory"
