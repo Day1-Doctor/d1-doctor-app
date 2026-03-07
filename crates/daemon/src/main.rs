@@ -3,7 +3,7 @@
 //! The daemon runs on the user's machine and executes commands from the
 //! cloud orchestrator. It communicates via WebSocket using Protobuf messages.
 
-mod command_relay;
+pub mod connection_state;
 mod executor;
 mod health;
 mod local_db;
@@ -11,7 +11,6 @@ mod mcp_memory;
 mod memory_store;
 mod profile_detect;
 mod rest_api;
-mod security;
 mod ws_client;
 
 #[tokio::main]
