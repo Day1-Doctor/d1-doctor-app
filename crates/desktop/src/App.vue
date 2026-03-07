@@ -1,5 +1,13 @@
 <template>
   <div>
+    <!-- Update banner: shown when a new version has been downloaded and is ready -->
+    <UpdateBanner
+      :visible="showUpdateBanner"
+      :version="updateVersion"
+      @restart="restartNow"
+      @dismiss="dismissUpdate"
+    />
+
     <!--
       Error banner: shown when ensure_daemon_running failed (errorMessage is set)
       AND we are not yet connected. Dismissed manually or auto-hides on connect.
@@ -11,7 +19,7 @@
     >
       <p>{{ bannerMessage }}</p>
       <code v-if="showStartCmd">d1 start</code>
-      <button class="banner-dismiss" @click="dismissBanner" aria-label="Dismiss">✕</button>
+      <button class="banner-dismiss" @click="dismissBanner" aria-label="Dismiss">&#x2715;</button>
     </div>
     <Transition name="mode-switch" mode="out-in">
       <FullMode v-if="appStore.uiMode === 'full'" key="full" />
@@ -27,9 +35,11 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useAppStore } from '@/shared/stores/app'
 import { useAgentEvents } from '@/shared/composables/useAgentEvents'
 import { useDaemonConnection } from '@/shared/composables/useDaemonConnection'
+import { useAutoUpdater } from '@/shared/composables/useAutoUpdater'
 import { useDaemonStore } from '@/shared/stores/daemon'
 import FullMode from '@/modes/full/FullMode.vue'
 import CopilotMode from '@/modes/copilot/CopilotMode.vue'
+import UpdateBanner from '@/shared/components/UpdateBanner.vue'
 
 const appStore = useAppStore()
 useAgentEvents() // auto-registers Tauri event listener on mount
@@ -37,7 +47,20 @@ useAgentEvents() // auto-registers Tauri event listener on mount
 useDaemonConnection()
 const daemonStore = useDaemonStore()
 
-/** User can dismiss the banner manually; it also hides on successful connect. */
+// Auto-updater: checks for updates on launch, shows banner when ready
+const {
+  updateReady,
+  updateVersion,
+  bannerDismissed: updateDismissed,
+  restartNow,
+  dismissBanner: dismissUpdate,
+} = useAutoUpdater()
+
+const showUpdateBanner = computed(() => {
+  return updateReady.value && !updateDismissed.value
+})
+
+/** User can dismiss the daemon error banner manually; it also hides on successful connect. */
 const bannerDismissed = ref(false)
 
 const showErrorBanner = computed(() => {
