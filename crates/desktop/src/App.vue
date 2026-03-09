@@ -42,7 +42,6 @@ import { useAppStore } from '@/shared/stores/app'
 import { useAuthStore } from '@/shared/stores/auth'
 import { useAgentEvents } from '@/shared/composables/useAgentEvents'
 import { useDaemonConnection } from '@/shared/composables/useDaemonConnection'
-import { useAutoUpdater } from '@/shared/composables/useAutoUpdater'
 import { useDaemonStore } from '@/shared/stores/daemon'
 import FullMode from '@/modes/full/FullMode.vue'
 import CopilotMode from '@/modes/copilot/CopilotMode.vue'
@@ -57,26 +56,11 @@ useAgentEvents() // auto-registers Tauri event listener on mount
 useDaemonConnection()
 const daemonStore = useDaemonStore()
 
-// Auto-updater: checks for updates on launch, shows banner when ready
-const {
-  updateReady,
-  updateVersion,
-  bannerDismissed: updateDismissed,
-  restartNow,
-  dismissBanner: dismissUpdate,
-} = useAutoUpdater()
-
-const showUpdateBanner = computed(() => {
-  return updateReady.value && !updateDismissed.value
-})
-
-/** User can dismiss the daemon error banner manually; it also hides on successful connect. */
 const bannerDismissed = ref(false)
 
 const showErrorBanner = computed(() => {
   if (bannerDismissed.value) return false
   if (!daemonStore.errorMessage) return false
-  // Hide once connected — error was transient (dev-mode warning)
   if (daemonStore.status === 'connected') return false
   return true
 })
@@ -95,7 +79,6 @@ function dismissBanner() {
   bannerDismissed.value = true
 }
 
-// Re-show the banner if a new error arrives (e.g. after a reconnect failure)
 watch(() => daemonStore.errorMessage, (newMsg) => {
   if (newMsg) bannerDismissed.value = false
 })
@@ -105,7 +88,6 @@ let unlistenNinja: UnlistenFn | null = null
 onMounted(async () => {
   await authStore.checkAuth()
   await appStore.init()
-  // Always hide ninja-bar on startup — fixes the "always-showing" bug.
   const ninjaWindow = await WebviewWindow.getByLabel('ninja-bar')
   if (ninjaWindow) await ninjaWindow.hide()
 
@@ -134,17 +116,12 @@ onUnmounted(() => {
   gap: 12px;
   font: 12px var(--font-mono);
 }
-
-.daemon-error-banner p {
-  margin: 0;
-}
-
+.daemon-error-banner p { margin: 0; }
 .daemon-error-banner code {
   background: rgba(0, 0, 0, 0.2);
   padding: 2px 6px;
   border-radius: 4px;
 }
-
 .banner-dismiss {
   margin-left: auto;
   background: transparent;
@@ -156,17 +133,9 @@ onUnmounted(() => {
   padding: 0 4px;
   transition: color 0.1s;
 }
-
-.banner-dismiss:hover {
-  color: #fff;
-}
-
+.banner-dismiss:hover { color: #fff; }
 .mode-switch-enter-active,
-.mode-switch-leave-active {
-  transition: opacity 0.3s ease;
-}
+.mode-switch-leave-active { transition: opacity 0.3s ease; }
 .mode-switch-enter-from,
-.mode-switch-leave-to {
-  opacity: 0;
-}
+.mode-switch-leave-to { opacity: 0; }
 </style>
