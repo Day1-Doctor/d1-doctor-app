@@ -19,7 +19,7 @@ d1-common = { path = "crates/common" }
 
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
-tokio-tungstenite = "0.21"
+tokio-tungstenite = { version = "0.21", features = ["native-tls"] }
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }

@@ -33,6 +33,7 @@ pub mod redactor;
 pub mod rest_api;
 pub mod security;
 pub mod system_ops;
+pub mod ws_app;
 pub mod ws_client;
 
 // ---------------------------------------------------------------------------
@@ -111,6 +112,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let app = Router::new()
+        .route("/ws", get(ws_app_handler))
         .route("/chat", get(ws_chat_handler))
         .route("/api/health", get(rest_api::health_check))
         .route("/api/memory/search", get(rest_api::memory_search))
@@ -250,6 +252,16 @@ async fn main() -> anyhow::Result<()> {
 // ---------------------------------------------------------------------------
 // /chat WebSocket handler
 // ---------------------------------------------------------------------------
+
+/// Axum handler that upgrades HTTP to WebSocket for the /ws endpoint (Mac App).
+async fn ws_app_handler(
+    ws: WebSocketUpgrade,
+    State(state): State<DaemonState>,
+) -> impl IntoResponse {
+    ws.on_upgrade(move |socket| {
+        ws_app::handle_app_ws(socket, state.relay, state.redactor)
+    })
+}
 
 /// Axum handler that upgrades HTTP to WebSocket for the /chat endpoint.
 async fn ws_chat_handler(
