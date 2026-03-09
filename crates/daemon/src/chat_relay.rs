@@ -4,96 +4,18 @@
 //! agent WebSocket (wss://api.day1.doctor), forwarding user messages upstream
 //! and streaming agent responses back to all connected local clients.
 
-use chrono::Utc;
-use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc, RwLock};
-use uuid::Uuid;
+
+// Re-export wire types from d1_common so the rest of the daemon keeps working.
+pub use d1_common::chat_message::{ChatMessage, ChatMessageType, ChatPayload};
 
 /// Maximum number of messages to queue when cloud is disconnected.
 const MAX_QUEUE_SIZE: usize = 256;
 
 /// Broadcast channel capacity for local client fan-out.
 const BROADCAST_CAPACITY: usize = 512;
-
-// ---------------------------------------------------------------------------
-// Wire protocol — v1: { v, id, ts, type, payload }
-// ---------------------------------------------------------------------------
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ChatMessage {
-    /// Protocol version (always 1).
-    pub v: u32,
-    /// Unique message id.
-    pub id: String,
-    /// Unix-millis timestamp.
-    pub ts: i64,
-    /// Message type discriminator.
-    #[serde(rename = "type")]
-    pub msg_type: ChatMessageType,
-    /// Arbitrary JSON payload.
-    pub payload: ChatPayload,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum ChatMessageType {
-    /// User chat message (app → cloud).
-    UserMessage,
-    /// Full agent response (cloud → app).
-    AgentResponse,
-    /// Streaming token chunk (cloud → app).
-    StreamChunk,
-    /// Stream finished marker (cloud → app).
-    StreamEnd,
-    /// Session initialisation (app → cloud).
-    SessionInit,
-    /// Error notification (either direction).
-    Error,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ChatPayload {
-    pub session_id: String,
-    pub content: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub metadata: Option<serde_json::Value>,
-}
-
-impl ChatMessage {
-    pub fn new(msg_type: ChatMessageType, payload: ChatPayload) -> Self {
-        Self {
-            v: 1,
-            id: Uuid::new_v4().to_string(),
-            ts: Utc::now().timestamp_millis(),
-            msg_type,
-            payload,
-        }
-    }
-
-    pub fn error(session_id: String, message: String) -> Self {
-        Self::new(
-            ChatMessageType::Error,
-            ChatPayload {
-                session_id,
-                content: message,
-                metadata: None,
-            },
-        )
-    }
-
-    pub fn session_init(session_id: String, locale: String) -> Self {
-        Self::new(
-            ChatMessageType::SessionInit,
-            ChatPayload {
-                session_id,
-                content: String::new(),
-                metadata: Some(serde_json::json!({ "locale": locale })),
-            },
-        )
-    }
-}
 
 // ---------------------------------------------------------------------------
 // Cloud connection state

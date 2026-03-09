@@ -27,10 +27,28 @@ pub fn print_welcome(session_id: &str, target: &ConnectionTarget) {
     println!("\x1b[2m{}\x1b[0m", "-".repeat(40));
 }
 
-/// Print the agent's response.
+/// Print the agent's response (non-streaming fallback).
 pub fn print_response(response: &str) {
     println!();
     println!("\x1b[1;33mdr.bob>\x1b[0m {}", response);
+}
+
+/// Print the agent name prompt before streaming starts.
+pub fn print_stream_start() {
+    println!();
+    print!("\x1b[1;33mdr.bob>\x1b[0m ");
+    let _ = io::stdout().flush();
+}
+
+/// Print a streaming token (no newline).
+pub fn print_chunk(token: &str) {
+    print!("{}", token);
+    let _ = io::stdout().flush();
+}
+
+/// Print newline after stream ends.
+pub fn print_stream_end() {
+    println!();
 }
 
 /// Print cancellation notice.

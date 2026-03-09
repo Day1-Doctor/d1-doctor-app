@@ -3,10 +3,12 @@
 //! This crate provides shared types, configuration, error handling,
 //! and protocol definitions used across all d1-doctor components.
 
+pub mod chat_message;
 pub mod config;
 pub mod errors;
 pub mod proto;
 
+pub use chat_message::{ChatMessage, ChatMessageType, ChatPayload};
 pub use config::{Config, RedactionConfig};
 pub use errors::{D1Error, Result};
 pub use proto::*;

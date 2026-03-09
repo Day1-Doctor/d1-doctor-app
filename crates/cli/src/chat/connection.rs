@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
-use d1_common::proto::{Envelope, EnvelopePayload, UserRequest};
+use d1_common::chat_message::{ChatMessage, ChatMessageType, ChatPayload};
 use futures_util::{SinkExt, StreamExt};
 use tokio::net::TcpStream;
 use tokio_tungstenite::tungstenite::Message;
@@ -53,23 +53,48 @@ impl ChatConnection {
         })
     }
 
+    /// Send a session_init message so the server knows our session + locale.
+    pub async fn send_session_init(&mut self, session_id: &str, locale: &str) -> Result<()> {
+        let ws = self
+            .ws
+            .as_mut()
+            .context(crate::i18n::t("errors.not_connected"))?;
+
+        let msg = ChatMessage::session_init(session_id.to_string(), locale.to_string());
+        let json = serde_json::to_string(&msg)?;
+        ws.send(Message::Text(json)).await?;
+        Ok(())
+    }
+
+    /// Send a user message and stream back the agent response.
+    ///
+    /// `on_chunk` is invoked for every `StreamChunk` token received. The full
+    /// assembled response is returned when the stream finishes.
     pub async fn send_and_stream(
         &mut self,
         session_id: &str,
         message: &str,
         cancel: &Arc<AtomicBool>,
+        on_chunk: impl Fn(&str),
     ) -> Result<String> {
         let ws = self
             .ws
             .as_mut()
             .context(crate::i18n::t("errors.not_connected"))?;
 
-        let request = UserRequest::new(session_id.to_string(), message.to_string());
-        let envelope = Envelope::new("cli".to_string(), EnvelopePayload::UserRequest(request));
-        let json = serde_json::to_string(&envelope)?;
+        // Build a ChatMessage v1 user message.
+        let chat_msg = ChatMessage::new(
+            ChatMessageType::UserMessage,
+            ChatPayload {
+                session_id: session_id.to_string(),
+                content: message.to_string(),
+                metadata: None,
+            },
+        );
+        let json = serde_json::to_string(&chat_msg)?;
         ws.send(Message::Text(json)).await?;
 
-        let mut response = String::new();
+        let mut full_response = String::new();
 
         while let Some(msg) = ws.next().await {
             if cancel.load(Ordering::Relaxed) {
@@ -81,26 +106,30 @@ impl ChatConnection {
 
             match msg? {
                 Message::Text(text) => {
-                    let env: Envelope = serde_json::from_str(&text)?;
-                    match env.payload {
-                        EnvelopePayload::PlanProposal(plan) => {
-                            for step in &plan.steps {
-                                response.push_str(&step.description);
-                                response.push('\n');
-                            }
+                    let incoming: ChatMessage = serde_json::from_str(&text)?;
+                    match incoming.msg_type {
+                        ChatMessageType::StreamChunk => {
+                            on_chunk(&incoming.payload.content);
+                            full_response.push_str(&incoming.payload.content);
+                        }
+                        ChatMessageType::StreamEnd => {
                             break;
                         }
-                        EnvelopePayload::Error(err) => {
+                        ChatMessageType::AgentResponse => {
+                            full_response = incoming.payload.content;
+                            break;
+                        }
+                        ChatMessageType::Error => {
                             return Err(anyhow::anyhow!(
                                 "{}",
                                 crate::i18n::t_args(
                                     "errors.agent_error",
-                                    &[("message", &err.message)]
+                                    &[("message", &incoming.payload.content)]
                                 )
                             ));
                         }
                         _ => {
-                            response.push_str(&text);
+                            // Ignore other message types (e.g. SessionInit echo).
                         }
                     }
                 }
@@ -109,7 +138,7 @@ impl ChatConnection {
             }
         }
 
-        Ok(response)
+        Ok(full_response)
     }
 
     pub async fn disconnect(&mut self) -> Result<()> {

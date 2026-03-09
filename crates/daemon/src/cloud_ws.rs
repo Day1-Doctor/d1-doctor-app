@@ -10,7 +10,7 @@ use futures::stream::{SplitSink, SplitStream};
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpStream;
-use tokio::sync::{watch, RwLock};
+use tokio::sync::{mpsc, watch, RwLock};
 use tokio::time;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
@@ -140,10 +140,20 @@ impl CloudWsClient {
     ///
     /// Returns a `JoinHandle` for the task. The loop will keep reconnecting
     /// with exponential backoff until [`CloudWsClient::shutdown`] is called.
-    pub fn spawn(&self, config: CloudWsConfig) -> tokio::task::JoinHandle<()> {
+    ///
+    /// - `outbound_rx`: messages from the daemon to send to the cloud WS.
+    /// - `inbound_tx`: messages received from the cloud WS to forward into the daemon.
+    pub fn spawn(
+        &self,
+        config: CloudWsConfig,
+        outbound_rx: mpsc::Receiver<String>,
+        inbound_tx: mpsc::Sender<String>,
+    ) -> tokio::task::JoinHandle<()> {
         let state = Arc::clone(&self.state);
         let state_tx = self.state_tx.clone();
         let mut shutdown_rx = self.shutdown_tx.subscribe();
+        // mpsc::Receiver is not Clone — move it into the spawned task.
+        let mut outbound_rx = outbound_rx;
 
         tokio::spawn(async move {
             let mut backoff = BACKOFF_INITIAL;
@@ -164,8 +174,15 @@ impl CloudWsClient {
                         info!("cloud_ws: authenticated, entering message loop");
                         backoff = BACKOFF_INITIAL; // reset on success
 
-                        // Run the message loop (heartbeat + read).
-                        let reason = message_loop(&mut sink, &mut stream, &mut shutdown_rx).await;
+                        // Run the message loop (heartbeat + read + send).
+                        let reason = message_loop(
+                            &mut sink,
+                            &mut stream,
+                            &mut shutdown_rx,
+                            &mut outbound_rx,
+                            &inbound_tx,
+                        )
+                        .await;
 
                         info!(?reason, "cloud_ws: message loop ended");
                     }
@@ -287,11 +304,14 @@ enum LoopExit {
     Shutdown,
 }
 
-/// Main message loop: sends heartbeats and reads incoming messages.
+/// Main message loop: sends heartbeats, reads incoming messages, and sends
+/// outbound messages from the daemon to the cloud.
 async fn message_loop(
     sink: &mut WsSink,
     stream: &mut WsStream,
     shutdown_rx: &mut watch::Receiver<bool>,
+    outbound_rx: &mut mpsc::Receiver<String>,
+    inbound_tx: &mpsc::Sender<String>,
 ) -> LoopExit {
     let mut heartbeat_interval = time::interval(HEARTBEAT_INTERVAL);
     // Skip the first immediate tick.
@@ -317,7 +337,10 @@ async fn message_loop(
                 match msg {
                     Some(Ok(Message::Text(text))) => {
                         debug!(len = text.len(), "cloud_ws: received text message");
-                        // Future: dispatch incoming commands here.
+                        // Forward inbound cloud message to the daemon relay.
+                        if let Err(e) = inbound_tx.send(text).await {
+                            warn!("cloud_ws: failed to forward inbound message: {}", e);
+                        }
                     }
                     Some(Ok(Message::Ping(data))) => {
                         if let Err(e) = sink.send(Message::Pong(data)).await {
@@ -338,6 +361,13 @@ async fn message_loop(
                     }
                     _ => {} // Binary, Pong, Frame — ignore.
                 }
+            }
+            // Send outbound messages from the daemon to the cloud WS.
+            Some(text) = outbound_rx.recv() => {
+                if let Err(e) = sink.send(Message::Text(text)).await {
+                    return LoopExit::Error(format!("outbound send failed: {e}"));
+                }
+                debug!("cloud_ws: sent outbound message");
             }
             _ = shutdown_rx.changed() => {
                 info!("cloud_ws: shutdown signal received");
@@ -470,7 +500,9 @@ mod tests {
             device_fingerprint: "fp".to_string(),
         };
 
-        let handle = client.spawn(config);
+        let (_, outbound_rx) = mpsc::channel(1);
+        let (inbound_tx, _) = mpsc::channel(1);
+        let handle = client.spawn(config, outbound_rx, inbound_tx);
         // Give it a moment to start, then shut down.
         tokio::time::sleep(Duration::from_millis(50)).await;
         client.shutdown();
