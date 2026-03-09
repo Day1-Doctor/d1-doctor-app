@@ -36,6 +36,8 @@ vi.mock('@/modes/copilot/CopilotMode.vue', () => ({
 vi.mock('@/shared/components/LoginScreen.vue', () => ({
   default: { name: 'LoginScreen', template: '<div class="login-screen-stub" />' },
 }))
+
+// Stub useAgentEvents to avoid real Tauri event registration
 vi.mock('@/shared/composables/useAgentEvents', () => ({
   useAgentEvents: vi.fn(() => ({
     startListening: vi.fn(), stopListening: vi.fn(), onEvent: vi.fn(),
@@ -68,6 +70,7 @@ describe('App.vue', () => {
     await nextTick()
 
     expect(wrapper.find('.full-mode-stub').exists()).toBe(true)
+    expect(wrapper.find('.copilot-mode-stub').exists()).toBe(false)
     expect(wrapper.find('.login-screen-stub').exists()).toBe(false)
   })
 
@@ -100,6 +103,43 @@ describe('App.vue', () => {
 
     expect(wrapper.find('.login-screen-stub').exists()).toBe(true)
     expect(wrapper.find('.full-mode-stub').exists()).toBe(false)
+    expect(wrapper.find('.login-screen-stub').exists()).toBe(false)
+  })
+
+  it('renders LoginScreen when unauthenticated', async () => {
+    const { useAuthStore } = await import('@/shared/stores/auth')
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const authStore = useAuthStore()
+    authStore.status = 'unauthenticated'
+
+    const wrapper = mount(App, { global: { plugins: [pinia] } })
+    await nextTick()
+
+    expect(wrapper.find('.login-screen-stub').exists()).toBe(true)
+    expect(wrapper.find('.full-mode-stub').exists()).toBe(false)
+    expect(wrapper.find('.copilot-mode-stub').exists()).toBe(false)
+  })
+
+  it('listens for "ninja_dismissed" and calls switchMode with previousMode', async () => {
+    const { useAppStore } = await import('@/shared/stores/app')
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const appStore = useAppStore()
+    appStore.uiMode = 'ninja'
+    appStore.previousMode = 'full'
+
+    mount(App, { global: { plugins: [pinia] } })
+    await flushPromises()
+
+    expect(mockListen).toHaveBeenCalledWith('ninja_dismissed', expect.any(Function))
+    expect(mockNinjaListeners).toHaveLength(1)
+
+    const switchModeSpy = vi.spyOn(appStore, 'switchMode').mockResolvedValue(undefined)
+    mockNinjaListeners[0]()
+    await nextTick()
+
+    expect(switchModeSpy).toHaveBeenCalledWith('full')
   })
 
   it('hides ninja-bar window on startup regardless of saved mode', async () => {

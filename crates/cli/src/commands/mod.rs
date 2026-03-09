@@ -1,5 +1,6 @@
 //! CLI command definitions and handlers.
 
+pub mod account;
 pub mod gateway;
 pub mod status;
 
@@ -30,6 +31,17 @@ pub enum Commands {
     },
     /// Show credit balance and recent usage
     Credits,
+    /// Account management
+    Account {
+        #[command(subcommand)]
+        command: AccountCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum AccountCommands {
+    /// Permanently delete your account and all associated data
+    Delete,
 }
 
 #[derive(Subcommand)]
@@ -44,7 +56,10 @@ pub async fn handle(cmd: Commands) -> anyhow::Result<()> {
     match cmd {
         Commands::Run { target } => crate::chat::run_interactive(target).await,
         Commands::Install { package } => {
-            println!("Installing {}...", package);
+            println!(
+                "{}",
+                crate::i18n::t_args("commands.installing", &[("package", &package)])
+            );
             todo!("Implement install command")
         }
         Commands::Diagnose => todo!("Implement diagnose"),
@@ -59,5 +74,8 @@ pub async fn handle(cmd: Commands) -> anyhow::Result<()> {
             crate::credits::print_credits();
             Ok(())
         }
+        Commands::Account { command } => match command {
+            AccountCommands::Delete => account::run_delete().await,
+        },
     }
 }

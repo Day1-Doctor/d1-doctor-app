@@ -26,7 +26,7 @@ struct StoredCredentials {
 fn credentials_path() -> anyhow::Result<PathBuf> {
     let home = std::env::var("HOME")
         .or_else(|_| std::env::var("USERPROFILE"))
-        .map_err(|_| anyhow::anyhow!("Could not determine home directory"))?;
+        .map_err(|_| anyhow::anyhow!("{}", crate::i18n::t("errors.home_dir_error")))?;
     Ok(PathBuf::from(home)
         .join(".d1-doctor")
         .join("credentials.json"))
@@ -34,9 +34,8 @@ fn credentials_path() -> anyhow::Result<PathBuf> {
 
 fn load_credentials() -> anyhow::Result<StoredCredentials> {
     let path = credentials_path()?;
-    let content = std::fs::read_to_string(&path).map_err(|_| {
-        anyhow::anyhow!("No stored credentials found. Run 'd1-doctor auth login' to authenticate.")
-    })?;
+    let content = std::fs::read_to_string(&path)
+        .map_err(|_| anyhow::anyhow!("{}", crate::i18n::t("auth.no_credentials")))?;
     let creds: StoredCredentials = serde_json::from_str(&content)?;
     Ok(creds)
 }
@@ -48,7 +47,6 @@ fn store_credentials(creds: &StoredCredentials) -> anyhow::Result<()> {
     }
     let content = serde_json::to_string_pretty(creds)?;
     std::fs::write(&path, &content)?;
-    // Restrict file permissions on Unix so only the owner can read.
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -74,7 +72,6 @@ pub async fn handle_auth(cmd: AuthCommand) -> anyhow::Result<()> {
 }
 
 async fn login() -> anyhow::Result<()> {
-    // Bind a local server on a random available port for the OAuth callback.
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let port = listener.local_addr()?.port();
     let redirect_uri = format!("http://127.0.0.1:{}/callback", port);
@@ -84,11 +81,13 @@ async fn login() -> anyhow::Result<()> {
         redirect_uri
     );
 
-    println!("Opening browser for authentication...");
+    println!("{}", crate::i18n::t("auth.opening_browser"));
     open_browser(&auth_url)?;
-    println!("Waiting for authentication callback on port {port}...");
+    println!(
+        "{}",
+        crate::i18n::t_args("auth.waiting_callback", &[("port", &port.to_string())])
+    );
 
-    // Accept exactly one connection (the OAuth redirect).
     let (stream, _) = listener.accept().await?;
     stream.readable().await?;
     let mut buf = vec![0u8; 4096];
@@ -96,16 +95,14 @@ async fn login() -> anyhow::Result<()> {
     let request = String::from_utf8_lossy(&buf[..n]);
 
     let code = parse_auth_code(&request)
-        .ok_or_else(|| anyhow::anyhow!("Failed to extract authorization code from callback"))?;
+        .ok_or_else(|| anyhow::anyhow!("{}", crate::i18n::t("auth.auth_code_failed")))?;
 
-    // Respond to the browser so the user sees a success page.
     let html = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n\
         <html><body><h1>Authentication successful!</h1>\
         <p>You can close this tab and return to the terminal.</p></body></html>";
     stream.writable().await?;
     let _ = stream.try_write(html.as_bytes());
 
-    // Exchange the authorization code for tokens.
     let client = reqwest::Client::new();
     let resp = client
         .post("https://auth.day1doctor.com/token")
@@ -120,42 +117,51 @@ async fn login() -> anyhow::Result<()> {
     if !resp.status().is_success() {
         let status = resp.status();
         let body = resp.text().await.unwrap_or_default();
-        anyhow::bail!("Token exchange failed ({}): {}", status, body);
+        anyhow::bail!(
+            "{}",
+            crate::i18n::t_args(
+                "auth.token_exchange_failed",
+                &[("status", &status.to_string()), ("body", &body)]
+            )
+        );
     }
 
     let creds: StoredCredentials = resp.json().await?;
     let email = creds.email.clone();
     store_credentials(&creds)?;
 
-    println!("Successfully logged in as {email}");
+    println!(
+        "{}",
+        crate::i18n::t_args("auth.login_success", &[("email", &email)])
+    );
     Ok(())
 }
 
 async fn logout() -> anyhow::Result<()> {
     clear_credentials()?;
-    println!("Logged out successfully.");
+    println!("{}", crate::i18n::t("auth.logout_success"));
     Ok(())
 }
 
 async fn whoami() -> anyhow::Result<()> {
     match load_credentials() {
         Ok(creds) => {
-            println!("Logged in as: {}", creds.email);
+            println!(
+                "{}",
+                crate::i18n::t_args("auth.logged_in_as", &[("email", &creds.email)])
+            );
             let now = chrono::Utc::now().timestamp();
             if now > creds.expires_at {
-                println!(
-                    "Warning: Token has expired. Run 'd1-doctor auth login' to re-authenticate."
-                );
+                println!("{}", crate::i18n::t("auth.token_expired"));
             }
         }
         Err(_) => {
-            println!("Not logged in. Run 'd1-doctor auth login' to authenticate.");
+            println!("{}", crate::i18n::t("auth.not_logged_in"));
         }
     }
     Ok(())
 }
 
-/// Open a URL in the default system browser.
 fn open_browser(url: &str) -> anyhow::Result<()> {
     #[cfg(target_os = "macos")]
     {
@@ -174,8 +180,6 @@ fn open_browser(url: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Extract the `code` query parameter from an HTTP request line like
-/// `GET /callback?code=abc123 HTTP/1.1`.
 fn parse_auth_code(request: &str) -> Option<String> {
     let first_line = request.lines().next()?;
     let path = first_line.split_whitespace().nth(1)?;

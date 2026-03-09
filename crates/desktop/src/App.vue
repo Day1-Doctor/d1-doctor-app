@@ -3,6 +3,18 @@
     <Transition name="mode-switch" mode="out-in">
       <LoginScreen v-if="authStore.isUnauthenticated" key="login" />
       <div v-else key="app">
+        <!-- Update banner: shown when a new version has been downloaded and is ready -->
+        <UpdateBanner
+          :visible="showUpdateBanner"
+          :version="updateVersion"
+          @restart="restartNow"
+          @dismiss="dismissUpdate"
+        />
+
+        <!--
+          Error banner: shown when ensure_daemon_running failed (errorMessage is set)
+          AND we are not yet connected. Dismissed manually or auto-hides on connect.
+        -->
         <div
           v-if="showErrorBanner"
           class="daemon-error-banner"
@@ -10,7 +22,7 @@
         >
           <p>{{ bannerMessage }}</p>
           <code v-if="showStartCmd">d1 start</code>
-          <button class="banner-dismiss" @click="dismissBanner" aria-label="Dismiss">&#x2715;</button>
+          <button class="banner-dismiss" @click="dismissBanner" :aria-label="$t('banner.dismiss')">&#x2715;</button>
         </div>
         <Transition name="mode-switch" mode="out-in">
           <FullMode v-if="appStore.uiMode === 'full'" key="full" />
@@ -23,6 +35,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useAppStore } from '@/shared/stores/app'
@@ -32,11 +45,14 @@ import { useDaemonConnection } from '@/shared/composables/useDaemonConnection'
 import { useDaemonStore } from '@/shared/stores/daemon'
 import FullMode from '@/modes/full/FullMode.vue'
 import CopilotMode from '@/modes/copilot/CopilotMode.vue'
+import UpdateBanner from '@/shared/components/UpdateBanner.vue'
 import LoginScreen from '@/shared/components/LoginScreen.vue'
 
+const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
-useAgentEvents()
+useAgentEvents() // auto-registers Tauri event listener on mount
+// Establishes WebSocket connection; return value not used at this level.
 useDaemonConnection()
 const daemonStore = useDaemonStore()
 
@@ -52,7 +68,7 @@ const showErrorBanner = computed(() => {
 const bannerMessage = computed(() => {
   const msg = daemonStore.errorMessage ?? ''
   return msg.replace(/\.\s*Start it with:.*$/i, '.').trim()
-    || 'Day1 Doctor daemon couldn\'t start.'
+    || t('banner.daemonError')
 })
 
 const showStartCmd = computed(() => {
