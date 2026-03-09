@@ -252,12 +252,17 @@ async fn connect_and_auth(
     // Transition to Authenticating.
     set_state(state, state_tx, ConnectionState::Authenticating).await;
 
-    // Build and send AUTH message.
+    // Build and send AUTH message (ChatMessage v1 format: payload.content is JSON string).
     let auth_payload = AuthPayload {
         jwt: config.jwt.clone(),
         device_fingerprint: config.device_fingerprint.clone(),
     };
-    let auth_msg = WsMessage::new("AUTH", serde_json::to_value(&auth_payload)?);
+    let content_json = serde_json::to_string(&auth_payload)?;
+    let v1_payload = serde_json::json!({
+        "session_id": "",
+        "content": content_json,
+    });
+    let auth_msg = WsMessage::new("AUTH", v1_payload);
     let text = serde_json::to_string(&auth_msg)?;
     sink.send(Message::Text(text)).await?;
     debug!("cloud_ws: AUTH sent, waiting for response");
@@ -277,7 +282,7 @@ async fn connect_and_auth(
                 "AUTH_FAIL" => {
                     let reason = msg
                         .payload
-                        .get("reason")
+                        .get("content")
                         .and_then(|v| v.as_str())
                         .unwrap_or("unknown");
                     Err(anyhow::anyhow!("AUTH_FAIL: {}", reason))

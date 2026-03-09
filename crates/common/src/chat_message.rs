@@ -34,8 +34,13 @@ pub enum ChatMessageType {
     StreamEnd,
     /// Session initialisation (app -> cloud).
     SessionInit,
+    /// Session init acknowledgement (cloud -> app).
+    SessionInitAck,
     /// Error notification (either direction).
     Error,
+    /// Catch-all for unrecognised message types (e.g. HEARTBEAT_ACK).
+    #[serde(other)]
+    Unknown,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
