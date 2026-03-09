@@ -3,7 +3,7 @@
 //! Provides HTTP endpoints for the client to query agent memory
 //! and check daemon health status.
 
-use axum::{extract::Query, http::StatusCode, response::IntoResponse, routing::get, Json, Router};
+use axum::{extract::Query, extract::State, http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -87,7 +87,7 @@ pub async fn start_rest_server(addr: SocketAddr) -> anyhow::Result<()> {
 }
 
 /// Handler for GET /api/memory/search?q=...&scope=...&limit=...
-async fn memory_search(Query(params): Query<SearchParams>) -> impl IntoResponse {
+pub async fn memory_search(Query(params): Query<SearchParams>) -> impl IntoResponse {
     let limit = params.limit.unwrap_or(10).min(100);
     let scope = params.scope.as_deref().unwrap_or("all");
 
@@ -107,7 +107,7 @@ async fn memory_search(Query(params): Query<SearchParams>) -> impl IntoResponse 
 }
 
 /// Handler for GET /api/health
-async fn health_check() -> impl IntoResponse {
+pub async fn health_check() -> impl IntoResponse {
     let response = HealthResponse {
         status: "ok".to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
