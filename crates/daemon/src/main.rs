@@ -67,6 +67,19 @@ struct DaemonState {
 }
 
 // ---------------------------------------------------------------------------
+// CLI credentials
+// ---------------------------------------------------------------------------
+
+/// Try to read the CLI user's access token from ~/.d1-doctor/credentials.json.
+fn read_cli_credentials() -> Option<String> {
+    let home = std::env::var("HOME").ok()?;
+    let path = std::path::PathBuf::from(home).join(".d1-doctor").join("credentials.json");
+    let data = std::fs::read_to_string(&path).ok()?;
+    let parsed: serde_json::Value = serde_json::from_str(&data).ok()?;
+    parsed.get("access_token")?.as_str().map(|s| s.to_string())
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
@@ -115,11 +128,17 @@ async fn main() -> anyhow::Result<()> {
     });
 
     // 6. Spawn CloudWsClient
-    let jwt = config
-        .supabase
-        .as_ref()
-        .map(|s| s.anon_key.clone())
+    let jwt = read_cli_credentials()
+        .or_else(|| {
+            config.supabase.as_ref().map(|s| s.anon_key.clone())
+        })
         .unwrap_or_default();
+
+    if jwt.is_empty() {
+        warn!("No authentication token found — daemon will connect anonymously");
+    } else {
+        info!("Authentication token loaded");
+    }
 
     let device_fp = DeviceFingerprint::generate()
         .map(|fp| fp.fingerprint)

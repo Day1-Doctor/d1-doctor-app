@@ -35,7 +35,18 @@ pub async fn run_interactive(target: Option<String>) -> Result<()> {
 
     let session_id = uuid::Uuid::new_v4().to_string();
     let mut history = SessionHistory::new(&session_id)?;
-    let mut conn = ChatConnection::connect(&target).await?;
+    let mut conn = match ChatConnection::connect(&target).await {
+        Ok(c) => c,
+        Err(e) => {
+            let err_str = e.to_string();
+            if err_str.contains("Connection refused") || err_str.contains("os error 61") {
+                eprintln!("\x1b[1;31merror:\x1b[0m Could not connect to daemon at {}", target);
+                eprintln!("       Is the daemon running? Start it with: \x1b[1md1-doctor daemon start\x1b[0m");
+                return Err(e);
+            }
+            return Err(e);
+        }
+    };
 
     // Send session_init so the server knows our locale.
     let locale = std::env::var("LANG").unwrap_or_else(|_| "en".to_string());
