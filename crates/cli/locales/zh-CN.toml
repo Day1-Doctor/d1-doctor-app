@@ -1,0 +1,73 @@
+# Day1 Doctor CLI 中文消息目录
+
+[app]
+name = "Day1 Doctor"
+version_line = "Day1 Doctor CLI v{version}"
+usage_hint = "运行 `d1-doctor --help` 查看用法"
+
+[auth]
+opening_browser = "正在打开浏览器进行认证..."
+waiting_callback = "正在等待认证回调，端口 {port}..."
+login_success = "登录成功：{email}"
+logout_success = "已成功退出登录。"
+logged_in_as = "当前登录：{email}"
+token_expired = "警告：令牌已过期。运行 'd1-doctor auth login' 重新认证。"
+not_logged_in = "未登录。运行 'd1-doctor auth login' 进行认证。"
+no_credentials = "未找到已保存的凭据。运行 'd1-doctor auth login' 进行认证。"
+auth_code_failed = "无法从回调中提取授权码"
+token_exchange_failed = "令牌交换失败 ({status}): {body}"
+
+[chat]
+welcome_title = "--- Day1 Doctor 对话 ---"
+session_label = "会话：{id}"
+connected_to = "已连接：{target}"
+input_hint = "  输入消息后按 Enter 发送。"
+multiline_hint = "  多行模式：以 '{' 开始，以 '}' 结束。"
+exit_hint = "  Ctrl+C 取消回复，Ctrl+D 或 /exit 退出。"
+paste_mode = "(粘贴模式 -- 在新行输入 '}' 发送)"
+thinking = "思考中..."
+response_cancelled = "(回复已取消)"
+goodbye = "再见！"
+
+[status]
+title = "Day1 Doctor v{version}"
+daemon_label = "  守护进程：[{status}]  端口 {port}"
+cloud_label = "  云服务：  [{status}]  {url}"
+
+[gateway]
+title = "网关状态"
+health_label = "  健康状态：{health}"
+endpoint_label = "  端点：    {endpoint}"
+models_label = "  模型：    {count} 个可用"
+health_healthy = "正常"
+health_degraded = "降级"
+health_offline = "离线"
+
+[gateway.table]
+model = "模型"
+provider = "提供商"
+input_price = "输入/1K"
+output_price = "输出/1K"
+context = "上下文"
+offline_suffix = "（离线）"
+
+[credits]
+title = "积分余额"
+plan_label = "  套餐：    {plan}"
+available_label = "  可用：    ${amount}"
+used_label = "  本月用量：${amount}"
+no_usage = "  暂无使用记录。"
+date_col = "日期"
+model_col = "模型"
+tokens_col = "令牌数"
+cost_col = "费用"
+
+[commands]
+installing = "正在安装 {package}..."
+
+[errors]
+connection_failed = "连接失败：{url}"
+not_connected = "未连接"
+agent_error = "代理错误：{message}"
+response_cancelled = "回复已取消"
+home_dir_error = "无法确定主目录"

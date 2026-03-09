@@ -21,9 +21,6 @@ pub struct CreditBalance {
 }
 
 /// Fetch the current credit balance.
-///
-/// In future this calls the cloud API; for now returns a placeholder so the
-/// CLI renders correctly without network access.
 pub fn fetch_balance() -> CreditBalance {
     CreditBalance {
         available: 0.0,
@@ -37,20 +34,38 @@ pub fn fetch_balance() -> CreditBalance {
 pub fn print_credits() {
     let balance = fetch_balance();
 
-    println!("Credit Balance");
+    println!("{}", crate::i18n::t("credits.title"));
     println!();
-    println!("  Plan:       {}", balance.plan);
-    println!("  Available:  ${:.2}", balance.available);
-    println!("  Used (mo.): ${:.2}", balance.used_this_month);
+    println!(
+        "{}",
+        crate::i18n::t_args("credits.plan_label", &[("plan", &balance.plan)])
+    );
+    println!(
+        "{}",
+        crate::i18n::t_args(
+            "credits.available_label",
+            &[("amount", &format!("{:.2}", balance.available))]
+        )
+    );
+    println!(
+        "{}",
+        crate::i18n::t_args(
+            "credits.used_label",
+            &[("amount", &format!("{:.2}", balance.used_this_month))]
+        )
+    );
 
     if balance.recent_usage.is_empty() {
         println!();
-        println!("  No recent usage.");
+        println!("{}", crate::i18n::t("credits.no_usage"));
     } else {
         println!();
         println!(
             "  {:<12} {:<24} {:>10} {:>10}",
-            "Date", "Model", "Tokens", "Cost"
+            crate::i18n::t("credits.date_col"),
+            crate::i18n::t("credits.model_col"),
+            crate::i18n::t("credits.tokens_col"),
+            crate::i18n::t("credits.cost_col"),
         );
         println!("  {}", "-".repeat(60));
         for entry in &balance.recent_usage {
@@ -76,7 +91,7 @@ mod tests {
 
     #[test]
     fn test_print_credits_no_panic() {
-        // Should not panic even with empty usage.
+        crate::i18n::init("en");
         print_credits();
     }
 

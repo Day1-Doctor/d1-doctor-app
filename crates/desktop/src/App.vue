@@ -1,72 +1,66 @@
 <template>
   <div>
-    <!-- Update banner: shown when a new version has been downloaded and is ready -->
-    <UpdateBanner
-      :visible="showUpdateBanner"
-      :version="updateVersion"
-      @restart="restartNow"
-      @dismiss="dismissUpdate"
-    />
-
-    <!--
-      Error banner: shown when ensure_daemon_running failed (errorMessage is set)
-      AND we are not yet connected. Dismissed manually or auto-hides on connect.
-    -->
-    <div
-      v-if="showErrorBanner"
-      class="daemon-error-banner"
-      role="alert"
-    >
-      <p>{{ bannerMessage }}</p>
-      <code v-if="showStartCmd">d1 start</code>
-      <button class="banner-dismiss" @click="dismissBanner" aria-label="Dismiss">&#x2715;</button>
-    </div>
     <Transition name="mode-switch" mode="out-in">
-      <FullMode v-if="appStore.uiMode === 'full'" key="full" />
-      <CopilotMode v-else-if="appStore.uiMode === 'copilot'" key="copilot" />
+      <LoginScreen v-if="authStore.isUnauthenticated" key="login" />
+      <div v-else key="app">
+        <!-- Update banner: shown when a new version has been downloaded and is ready -->
+        <UpdateBanner
+          :visible="showUpdateBanner"
+          :version="updateVersion"
+          @restart="restartNow"
+          @dismiss="dismissUpdate"
+        />
+
+        <!--
+          Error banner: shown when ensure_daemon_running failed (errorMessage is set)
+          AND we are not yet connected. Dismissed manually or auto-hides on connect.
+        -->
+        <div
+          v-if="showErrorBanner"
+          class="daemon-error-banner"
+          role="alert"
+        >
+          <p>{{ bannerMessage }}</p>
+          <code v-if="showStartCmd">d1 start</code>
+          <button class="banner-dismiss" @click="dismissBanner" :aria-label="$t('banner.dismiss')">&#x2715;</button>
+        </div>
+        <Transition name="mode-switch" mode="out-in">
+          <FullMode v-if="appStore.uiMode === 'full'" key="full" />
+          <CopilotMode v-else-if="appStore.uiMode === 'copilot'" key="copilot" />
+        </Transition>
+      </div>
     </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { useAppStore } from '@/shared/stores/app'
+import { useAuthStore } from '@/shared/stores/auth'
 import { useAgentEvents } from '@/shared/composables/useAgentEvents'
 import { useDaemonConnection } from '@/shared/composables/useDaemonConnection'
-import { useAutoUpdater } from '@/shared/composables/useAutoUpdater'
 import { useDaemonStore } from '@/shared/stores/daemon'
 import FullMode from '@/modes/full/FullMode.vue'
 import CopilotMode from '@/modes/copilot/CopilotMode.vue'
 import UpdateBanner from '@/shared/components/UpdateBanner.vue'
+import LoginScreen from '@/shared/components/LoginScreen.vue'
 
+const { t } = useI18n()
 const appStore = useAppStore()
+const authStore = useAuthStore()
 useAgentEvents() // auto-registers Tauri event listener on mount
 // Establishes WebSocket connection; return value not used at this level.
 useDaemonConnection()
 const daemonStore = useDaemonStore()
 
-// Auto-updater: checks for updates on launch, shows banner when ready
-const {
-  updateReady,
-  updateVersion,
-  bannerDismissed: updateDismissed,
-  restartNow,
-  dismissBanner: dismissUpdate,
-} = useAutoUpdater()
-
-const showUpdateBanner = computed(() => {
-  return updateReady.value && !updateDismissed.value
-})
-
-/** User can dismiss the daemon error banner manually; it also hides on successful connect. */
 const bannerDismissed = ref(false)
 
 const showErrorBanner = computed(() => {
   if (bannerDismissed.value) return false
   if (!daemonStore.errorMessage) return false
-  // Hide once connected — error was transient (dev-mode warning)
   if (daemonStore.status === 'connected') return false
   return true
 })
@@ -74,7 +68,7 @@ const showErrorBanner = computed(() => {
 const bannerMessage = computed(() => {
   const msg = daemonStore.errorMessage ?? ''
   return msg.replace(/\.\s*Start it with:.*$/i, '.').trim()
-    || 'Day1 Doctor daemon couldn\'t start.'
+    || t('banner.daemonError')
 })
 
 const showStartCmd = computed(() => {
@@ -85,7 +79,6 @@ function dismissBanner() {
   bannerDismissed.value = true
 }
 
-// Re-show the banner if a new error arrives (e.g. after a reconnect failure)
 watch(() => daemonStore.errorMessage, (newMsg) => {
   if (newMsg) bannerDismissed.value = false
 })
@@ -93,8 +86,8 @@ watch(() => daemonStore.errorMessage, (newMsg) => {
 let unlistenNinja: UnlistenFn | null = null
 
 onMounted(async () => {
+  await authStore.checkAuth()
   await appStore.init()
-  // Always hide ninja-bar on startup — fixes the "always-showing" bug.
   const ninjaWindow = await WebviewWindow.getByLabel('ninja-bar')
   if (ninjaWindow) await ninjaWindow.hide()
 
@@ -123,17 +116,12 @@ onUnmounted(() => {
   gap: 12px;
   font: 12px var(--font-mono);
 }
-
-.daemon-error-banner p {
-  margin: 0;
-}
-
+.daemon-error-banner p { margin: 0; }
 .daemon-error-banner code {
   background: rgba(0, 0, 0, 0.2);
   padding: 2px 6px;
   border-radius: 4px;
 }
-
 .banner-dismiss {
   margin-left: auto;
   background: transparent;
@@ -145,17 +133,9 @@ onUnmounted(() => {
   padding: 0 4px;
   transition: color 0.1s;
 }
-
-.banner-dismiss:hover {
-  color: #fff;
-}
-
+.banner-dismiss:hover { color: #fff; }
 .mode-switch-enter-active,
-.mode-switch-leave-active {
-  transition: opacity 0.3s ease;
-}
+.mode-switch-leave-active { transition: opacity 0.3s ease; }
 .mode-switch-enter-from,
-.mode-switch-leave-to {
-  opacity: 0;
-}
+.mode-switch-leave-to { opacity: 0; }
 </style>

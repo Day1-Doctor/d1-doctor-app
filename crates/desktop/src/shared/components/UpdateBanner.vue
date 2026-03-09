@@ -8,7 +8,7 @@
       data-testid="update-banner"
     >
       <span class="update-banner__message">
-        v{{ version }} ready &mdash; Restart to update
+        {{ $t('update.ready', { version }) }}
       </span>
       <div class="update-banner__actions">
         <button
@@ -16,14 +16,14 @@
           data-testid="restart-btn"
           @click="$emit('restart')"
         >
-          Restart Now
+          {{ $t('update.restartNow') }}
         </button>
         <button
           class="update-banner__btn update-banner__btn--secondary"
           data-testid="later-btn"
           @click="$emit('dismiss')"
         >
-          Later
+          {{ $t('update.later') }}
         </button>
       </div>
     </div>

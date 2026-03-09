@@ -8,6 +8,7 @@ import { getRandomBobPhrase } from '@/constants/bob'
 import { useDaemonStore } from '@/shared/stores/daemon'
 import { useConversationStore } from '@/shared/stores/conversation'
 import { useAgentStore } from '@/shared/stores/agent'
+import { useAuthStore } from '@/shared/stores/auth'
 
 const DAEMON_WS_URL = 'ws://localhost:9876/ws'
 const HEARTBEAT_INTERVAL_MS = 30_000
@@ -19,6 +20,7 @@ export function useDaemonConnection() {
   const daemonStore = useDaemonStore()
   const conversationStore = useConversationStore()
   const agentStore = useAgentStore()
+  const authStore = useAuthStore()
 
   let ws: WebSocket | null = null
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null
@@ -51,7 +53,6 @@ export function useDaemonConnection() {
         const p = msg.payload
         daemonStore.setCurrentTaskId(p.task_id ?? null)
         daemonStore.setCurrentPlanId(p.plan_id ?? null)
-        // Only show PlanCard when backend requires user approval
         if (p.requires_approval) {
           conversationStore.setPlan({
             steps: p.steps.map((s, i) => ({
@@ -95,7 +96,6 @@ export function useDaemonConnection() {
       }
       case 'task.completed': {
         const p = msg.payload
-        // Only append summary if non-empty (agent.message already has the response)
         if (p.summary) {
           conversationStore.appendMessage({
             id: crypto.randomUUID(),
@@ -104,7 +104,6 @@ export function useDaemonConnection() {
             timestamp: Date.now(),
           })
         }
-        // Clear plan widget after task ends (whether approved, rejected, or conversation)
         conversationStore.clearPlan()
         daemonStore.decrementActiveTasks()
         break
@@ -142,6 +141,9 @@ export function useDaemonConnection() {
         console.error('[useDaemonConnection] Protocol error:', msg.payload)
         if (msg.payload.code === 'PROTOCOL_VERSION_MISMATCH') {
           daemonStore.setError('Day1 Doctor app is out of date. Please update.')
+        }
+        if (msg.payload.code === 'AUTH_ERROR') {
+          authStore.setUnauthenticated()
         }
         break
       }
@@ -194,7 +196,7 @@ export function useDaemonConnection() {
     const taskId = `tsk_${crypto.randomUUID().slice(0, 8)}`
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       console.warn('[useDaemonConnection] submitTask called while not connected')
-      return taskId  // Return without sending — caller should check daemon status first
+      return taskId
     }
     const msg = createMessage('task.submit', {
       task_id: taskId,
@@ -224,11 +226,6 @@ export function useDaemonConnection() {
     try {
       await invoke('ensure_daemon_running')
     } catch (err) {
-      // In dev/debug builds ensure_daemon_running always returns Err when the
-      // daemon was not auto-started by the sidecar. That is expected — the
-      // daemon may still be running (started manually via `d1 start`).
-      // Log a warning and store the message for the UI, but DO NOT bail out:
-      // we always proceed to connect so the WebSocket result determines status.
       console.warn('[useDaemonConnection] ensure_daemon_running:', err)
       daemonStore.setError(String(err))
     }

@@ -1,0 +1,132 @@
+{
+  "app": {
+    "name": "Day1 Doctor",
+    "shortName": "dr. D1",
+    "version": "v2.4.2"
+  },
+  "login": {
+    "title": "Day1 Doctor",
+    "subtitle": "登录以继续",
+    "emailLabel": "邮箱",
+    "emailPlaceholder": "you{'@'}example.com",
+    "passwordLabel": "密码",
+    "passwordPlaceholder": "输入密码",
+    "signingIn": "登录中...",
+    "signIn": "登录",
+    "or": "或",
+    "continueWithGoogle": "使用 Google 登录",
+    "dismissError": "关闭错误",
+    "emailRequired": "请输入邮箱地址。",
+    "emailInvalid": "请输入有效的邮箱地址。",
+    "passwordRequired": "请输入密码。"
+  },
+  "titleBar": {
+    "title": "Day1 Doctor — 工作区",
+    "close": "关闭",
+    "minimize": "最小化",
+    "maximize": "最大化",
+    "gridView": "网格视图",
+    "search": "搜索"
+  },
+  "sidebar": {
+    "chat": "对话",
+    "tasks": "任务",
+    "knowledge": "知识库",
+    "settings": "设置",
+    "recent": "最近",
+    "noRecentTasks": "暂无最近任务",
+    "user": "用户",
+    "signOut": "退出登录"
+  },
+  "chat": {
+    "emptyTitle": "开始对话",
+    "emptySubtitle": "向 Day1 Doctor 提问，开始使用。",
+    "newMessages": "新消息",
+    "daemonOffline": "守护进程离线 — 正在尝试重新连接…",
+    "placeholder": "输入任何问题...",
+    "sendTitle": "发送",
+    "sendTitleOffline": "守护进程离线"
+  },
+  "copilot": {
+    "emptyTitle": "随便问我",
+    "emptySubtitle": "Dr. Day1 已准备好为您服务。",
+    "newMessages": "新消息",
+    "activeSession": "当前会话",
+    "settingsComingSoon": "设置（即将推出）",
+    "switchModeComingSoon": "切换模式（即将推出）"
+  },
+  "ninja": {
+    "placeholder": "输入任何问题...",
+    "send": "发送",
+    "shortcuts": "切换 · Esc 关闭 · Enter 发送",
+    "agentLabel": "Day1 Doctor  [规划代理]",
+    "approve": "批准",
+    "dismiss": "关闭"
+  },
+  "plan": {
+    "label": "计划",
+    "approve": "批准",
+    "reject": "拒绝"
+  },
+  "connection": {
+    "connected": "已连接",
+    "connecting": "连接中...",
+    "offline": "离线",
+    "localOnly": "仅本地",
+    "disconnected": "已断开",
+    "daemon": "守护进程",
+    "platform": "平台",
+    "daemonNotReachable": "守护进程无法连接。",
+    "reconnect": "重新连接"
+  },
+  "credits": {
+    "label": "额度",
+    "remaining": "{current}/{max} 额度剩余",
+    "buy": "购买",
+    "sharedQueue": "共享队列 - 响应可能较慢"
+  },
+  "update": {
+    "ready": "v{version} 已就绪 — 重启以更新",
+    "restartNow": "立即重启",
+    "later": "稍后"
+  },
+  "utility": {
+    "taskInfo": "任务信息",
+    "task": "任务",
+    "status": "状态",
+    "duration": "时长",
+    "creditsEst": "预估额度",
+    "idle": "空闲",
+    "agents": "代理",
+    "noActiveAgents": "无活跃代理",
+    "active": "活跃",
+    "permissions": "权限",
+    "noPermissions": "暂无权限请求",
+    "systemHealth": "系统健康",
+    "os": "操作系统",
+    "macOS": "macOS",
+    "running": "运行中",
+    "stopped": "已停止",
+    "lastCheck": "上次检查：{time}",
+    "connectionSection": "连接",
+    "backend": "后端",
+    "gateway": "网关",
+    "online": "在线"
+  },
+  "modes": {
+    "label": "模式",
+    "full": "完整",
+    "copilot": "副驾驶",
+    "ninja": "忍者",
+    "fullMode": "完整模式",
+    "copilotMode": "副驾驶模式",
+    "ninjaMode": "忍者模式"
+  },
+  "agent": {
+    "drDay1": "Dr. Day1"
+  },
+  "banner": {
+    "daemonError": "Day1 Doctor 守护进程无法启动。",
+    "dismiss": "关闭"
+  }
+}

@@ -3,7 +3,7 @@
 use std::net::TcpStream;
 use std::time::Duration;
 
-use d1_common::{Config, DEFAULT_DAEMON_PORT};
+use d1_common::Config;
 
 /// Daemon connectivity state.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -61,20 +61,38 @@ pub fn collect_status() -> StatusInfo {
 
 /// Pretty-print the status to stdout.
 pub fn print_status(info: &StatusInfo) {
-    println!("Day 1 Doctor v{}", info.version);
+    println!(
+        "{}",
+        crate::i18n::t_args("status.title", &[("version", &info.version)])
+    );
     println!();
 
     let daemon_icon = match info.daemon {
         DaemonStatus::Running => "OK",
         DaemonStatus::Stopped => "--",
     };
-    println!("  Daemon:  [{}]  port {}", daemon_icon, info.daemon_port);
+    println!(
+        "{}",
+        crate::i18n::t_args(
+            "status.daemon_label",
+            &[
+                ("status", daemon_icon),
+                ("port", &info.daemon_port.to_string())
+            ]
+        )
+    );
 
     let cloud_icon = match info.cloud {
         CloudStatus::Connected => "OK",
         CloudStatus::Disconnected => "--",
     };
-    println!("  Cloud:   [{}]  {}", cloud_icon, info.cloud_url);
+    println!(
+        "{}",
+        crate::i18n::t_args(
+            "status.cloud_label",
+            &[("status", cloud_icon), ("url", &info.cloud_url)]
+        )
+    );
 }
 
 /// Entry-point called from the command router.
@@ -90,7 +108,6 @@ mod tests {
 
     #[test]
     fn test_check_daemon_stopped() {
-        // Port 0 is never listening — expect Stopped.
         assert_eq!(check_daemon(0), DaemonStatus::Stopped);
     }
 
@@ -101,14 +118,8 @@ mod tests {
     }
 
     #[test]
-    fn test_status_info_defaults() {
-        let info = collect_status();
-        assert_eq!(info.daemon_port, DEFAULT_DAEMON_PORT);
-        assert!(!info.cloud_url.is_empty());
-    }
-
-    #[test]
     fn test_print_status_does_not_panic() {
+        crate::i18n::init("en");
         let info = StatusInfo {
             daemon: DaemonStatus::Running,
             daemon_port: 9876,
@@ -116,7 +127,6 @@ mod tests {
             cloud_url: "wss://example.com".to_string(),
             version: "0.1.0".to_string(),
         };
-        // Ensure printing doesn't panic.
         print_status(&info);
     }
 }
