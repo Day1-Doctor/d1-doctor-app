@@ -101,6 +101,7 @@ wrote_config = "Wrote config to: {path}"
 done = "Setup complete! Restart your app to apply changes."
 unsupported_app = "Unsupported app: {app}. Supported: cursor, continue, openclaw, --generic"
 generic_instructions = "Add the following to your app's OpenAI-compatible configuration:"
+backup_created = "Backed up existing config to: {path}"
 generic_env_hint = "Or set these environment variables:"
 
 [credits]
