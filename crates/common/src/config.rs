@@ -147,7 +147,8 @@ impl Default for RedactionConfig {
 }
 
 fn default_orchestrator_url() -> String {
-    "wss://api.day1doctor.com/ws".to_string()
+    std::env::var("D1_ORCHESTRATOR_URL")
+        .unwrap_or_else(|_| "wss://api.day1.doctor/ws/daemon".to_string())
 }
 
 fn default_daemon_port() -> u16 {

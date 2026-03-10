@@ -2,6 +2,8 @@
 
 pub mod account;
 pub mod gateway;
+pub mod gateway_keys;
+pub mod gateway_setup;
 pub mod status;
 
 use clap::Subcommand;
@@ -49,7 +51,56 @@ pub enum GatewayCommands {
     /// Show gateway health and connection info
     Status,
     /// List available LLM models with pricing
-    Models,
+    Models {
+        #[command(subcommand)]
+        command: Option<ModelsSubcommand>,
+    },
+    /// Manage API keys
+    Keys {
+        #[command(subcommand)]
+        command: KeysCommands,
+    },
+    /// Show DD credit balance
+    Balance,
+    /// Open the top-up page to add credits
+    Topup,
+    /// Show API usage summary
+    Usage {
+        /// Number of days to show usage for (default: 7)
+        #[arg(long, default_value = "7")]
+        days: u32,
+    },
+    /// Auto-configure an AI coding app to use Day1 Doctor gateway
+    Setup {
+        /// App to configure: cursor, continue, openclaw, or --generic
+        app: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum ModelsSubcommand {
+    /// Show detailed info about a specific model
+    Info {
+        /// Model alias (e.g. gpt-4o, claude-sonnet, dr-bob)
+        alias: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum KeysCommands {
+    /// List all API keys
+    List,
+    /// Create a new API key
+    Create {
+        /// Friendly name for the key
+        #[arg(long, default_value = "Default")]
+        name: String,
+    },
+    /// Revoke (delete) an API key
+    Revoke {
+        /// Key ID to revoke
+        key_id: String,
+    },
 }
 
 pub async fn handle(cmd: Commands) -> anyhow::Result<()> {
@@ -68,7 +119,21 @@ pub async fn handle(cmd: Commands) -> anyhow::Result<()> {
         Commands::Upgrade => todo!("Implement upgrade"),
         Commands::Gateway { command } => match command {
             GatewayCommands::Status => gateway::run_status().await,
-            GatewayCommands::Models => gateway::run_models().await,
+            GatewayCommands::Models { command } => match command {
+                None => gateway::run_models_list().await,
+                Some(ModelsSubcommand::Info { alias }) => {
+                    gateway::run_models_info(&alias).await
+                }
+            },
+            GatewayCommands::Keys { command } => match command {
+                KeysCommands::List => gateway_keys::run_list().await,
+                KeysCommands::Create { name } => gateway_keys::run_create(&name).await,
+                KeysCommands::Revoke { key_id } => gateway_keys::run_revoke(&key_id).await,
+            },
+            GatewayCommands::Balance => gateway::run_balance().await,
+            GatewayCommands::Topup => gateway::run_topup().await,
+            GatewayCommands::Usage { days } => gateway::run_usage(days).await,
+            GatewayCommands::Setup { app } => gateway_setup::run_setup(&app).await,
         },
         Commands::Credits => {
             crate::credits::print_credits();

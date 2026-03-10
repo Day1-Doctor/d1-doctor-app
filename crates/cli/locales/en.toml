@@ -51,6 +51,58 @@ output_price = "Output/1K"
 context = "Context"
 offline_suffix = " (offline)"
 
+[gateway.keys]
+col_id = "ID"
+col_name = "Name"
+col_prefix = "Prefix"
+col_status = "Status"
+col_created = "Created"
+active = "active"
+revoked_label = "revoked"
+none = "No API keys found."
+create_hint = "Create one with: d1 gateway keys create --name \"My Key\""
+list_failed = "Failed to list API keys ({status}): {body}"
+create_failed = "Failed to create API key ({status}): {body}"
+created_title = "API key created: {name}"
+created_warning = "Save this key now -- it will not be shown again."
+revoked = "API key {id} revoked."
+not_found = "API key {id} not found."
+revoke_failed = "Failed to revoke API key ({status}): {body}"
+
+[gateway.balance]
+title = "DD Credit Balance"
+dd_balance = "  DD Balance: {amount} DD"
+fetch_failed = "Failed to fetch balance ({status}): {body}"
+
+[gateway.topup]
+opening = "Opening billing page: {url}"
+hint = "You can also manage your balance at the web dashboard."
+
+[gateway.usage]
+title = "Usage Summary (last {days} days)"
+total_requests = "  Requests:   {count}"
+total_dd = "  DD Used:    {amount} DD"
+fetch_failed = "Failed to fetch usage ({status}): {body}"
+col_date = "Date"
+col_model = "Model"
+col_input = "Input Tok"
+col_output = "Output Tok"
+col_dd = "DD"
+
+[gateway.models_info]
+title = "Model: {alias}"
+not_found = "Model '{alias}' not found. Run 'd1 gateway models' to see available models."
+
+[gateway.setup]
+configuring = "Configuring {app} to use Day1 Doctor gateway..."
+existing_key = "Found existing key: {prefix}..."
+key_created = "Created API key '{name}' ({prefix}...)"
+wrote_config = "Wrote config to: {path}"
+done = "Setup complete! Restart your app to apply changes."
+unsupported_app = "Unsupported app: {app}. Supported: cursor, continue, openclaw, --generic"
+generic_instructions = "Add the following to your app's OpenAI-compatible configuration:"
+generic_env_hint = "Or set these environment variables:"
+
 [credits]
 title = "Credit Balance"
 plan_label = "  Plan:       {plan}"
