@@ -5,4 +5,13 @@
 target/
 # macOS
 .DS_Store
-# Cargo lock (apps should commit this, but checking current practice)
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Secrets & credentials
+*.pem
+*.key
+credentials.json
+service-account*.json
