@@ -50,7 +50,7 @@ benchmark/      Performance benchmarks
 |-------------|-------------|----------|-----|
 | dev | yes | no | http://localhost:1420 |
 | staging | no | yes | TBD (planned) |
-| prod | no | yes | https://day1doctor.com |
+| prod | no | yes | https://day1.doctor |
 
 ### Services
 | Service | Repo | Runtime | Health |

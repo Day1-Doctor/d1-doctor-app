@@ -47,7 +47,7 @@ describe('Sidebar', () => {
   it('renders app name and version badge', () => {
     const w = mount(Sidebar)
     expect(w.text()).toContain('Day1 Doctor')
-    expect(w.text()).toContain('v2.4.2')
+    expect(w.text()).toContain('v2.6.0')
   })
 
   it('renders all four nav items', () => {

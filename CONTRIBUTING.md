@@ -223,7 +223,7 @@ We use [Semantic Versioning](https://semver.org/):
 - **Questions**: Open a [GitHub Discussion](https://github.com/day1doctor/d1-doctor-app/discussions)
 - **Bugs**: Create an [Issue](https://github.com/day1doctor/d1-doctor-app/issues)
 - **Discussions**: Join our Discord (link in README)
-- **Email**: dev@day1doctor.com
+- **Email**: dev@day1.doctor
 
 ## Resources
 

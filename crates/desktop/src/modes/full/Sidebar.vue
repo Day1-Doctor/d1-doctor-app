@@ -5,7 +5,7 @@
       <div class="logo-circle">dr. D1</div>
       <div class="logo-text">
         <span class="logo-name">Day1 Doctor</span>
-        <span class="logo-version">v2.4.2</span>
+        <span class="logo-version">v2.6.0</span>
       </div>
     </div>
 

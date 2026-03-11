@@ -594,7 +594,7 @@ mod tests {
     fn test_platform_api_base_wss() {
         // This test verifies the URL derivation logic indirectly.
         // The actual function reads from config, so we test the logic pattern.
-        let url = "wss://api.day1doctor.com/ws"
+        let url = "wss://gateway.day1.doctor/ws"
             .replace("wss://", "https://")
             .replace("ws://", "http://");
         let result = if let Some(pos) = url.find("/ws") {
@@ -602,7 +602,7 @@ mod tests {
         } else {
             url
         };
-        assert_eq!(result, "https://api.day1doctor.com");
+        assert_eq!(result, "https://gateway.day1.doctor");
     }
 
     #[test]

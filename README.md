@@ -23,7 +23,7 @@ brew install day1doctor/tap/d1-doctor
 
 #### Linux
 ```bash
-curl -fsSL https://install.day1doctor.com | sh
+curl -fsSL https://install.day1.doctor | sh
 ```
 
 #### From Source
@@ -229,7 +229,7 @@ Yes! The daemon caches downloaded files and can operate offline for previously c
 
 ### Is my data secure?
 
-Yes. The daemon runs locally on your machine with your permission. Commands are executed locally, and only setup progress is sent to the cloud. See [Privacy Policy](https://day1doctor.com/privacy) for details.
+Yes. The daemon runs locally on your machine with your permission. Commands are executed locally, and only setup progress is sent to the cloud. See [Privacy Policy](https://day1.doctor/privacy) for details.
 
 ### Can I customize setups?
 
@@ -267,4 +267,4 @@ For help and support:
 - Read the [documentation](./docs/)
 - Check [existing issues](https://github.com/day1doctor/d1-doctor-app/issues)
 - Start a [discussion](https://github.com/day1doctor/d1-doctor-app/discussions)
-- Email support@day1doctor.com
+- Email support@day1.doctor

@@ -151,7 +151,7 @@ async fn ensure_api_key(app_name: &str) -> anyhow::Result<String> {
 
 /// Derive the HTTPS gateway URL from the WebSocket orchestrator URL.
 pub fn derive_gateway_url(orchestrator_url: &str) -> String {
-    // wss://api.day1doctor.com/ws -> https://api.day1doctor.com
+    // wss://gateway.day1.doctor/ws -> https://gateway.day1.doctor
     let url = orchestrator_url
         .replace("wss://", "https://")
         .replace("ws://", "http://");
@@ -430,8 +430,8 @@ mod tests {
     #[test]
     fn test_derive_gateway_url() {
         assert_eq!(
-            derive_gateway_url("wss://api.day1doctor.com/ws"),
-            "https://api.day1doctor.com"
+            derive_gateway_url("wss://gateway.day1.doctor/ws"),
+            "https://gateway.day1.doctor"
         );
         assert_eq!(
             derive_gateway_url("ws://localhost:8000/ws"),
@@ -442,13 +442,13 @@ mod tests {
             "https://api.example.com"
         );
         assert_eq!(
-            derive_gateway_url("wss://api.day1doctor.com/ws/v2"),
-            "https://api.day1doctor.com"
+            derive_gateway_url("wss://gateway.day1.doctor/ws/v2"),
+            "https://gateway.day1.doctor"
         );
         // Edge case: URL with no scheme change
         assert_eq!(
-            derive_gateway_url("https://api.day1doctor.com"),
-            "https://api.day1doctor.com"
+            derive_gateway_url("https://gateway.day1.doctor"),
+            "https://gateway.day1.doctor"
         );
     }
 
@@ -464,7 +464,7 @@ mod tests {
 
     fn test_gw_config() -> GatewayConfig {
         GatewayConfig {
-            api_base: "https://api.day1doctor.com/v1".to_string(),
+            api_base: "https://gateway.day1.doctor/v1".to_string(),
             api_key: "d1d_sk_test123".to_string(),
         }
     }
@@ -481,7 +481,7 @@ mod tests {
         let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
         assert_eq!(
             parsed["openai.apiBase"].as_str().unwrap(),
-            "https://api.day1doctor.com/v1"
+            "https://gateway.day1.doctor/v1"
         );
         assert_eq!(parsed["openai.apiKey"].as_str().unwrap(), "d1d_sk_test123");
     }
@@ -510,7 +510,7 @@ mod tests {
         // Gateway config added
         assert_eq!(
             parsed["openai.apiBase"].as_str().unwrap(),
-            "https://api.day1doctor.com/v1"
+            "https://gateway.day1.doctor/v1"
         );
         // Existing settings preserved
         assert_eq!(parsed["editor.fontSize"].as_i64().unwrap(), 14);
@@ -541,7 +541,7 @@ mod tests {
         let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
         assert_eq!(
             parsed["openai.apiBase"].as_str().unwrap(),
-            "https://api.day1doctor.com/v1"
+            "https://gateway.day1.doctor/v1"
         );
         assert_eq!(parsed["openai.apiKey"].as_str().unwrap(), "d1d_sk_test123");
     }
@@ -573,7 +573,7 @@ mod tests {
         let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
         assert_eq!(
             parsed["openai.apiBase"].as_str().unwrap(),
-            "https://api.day1doctor.com/v1"
+            "https://gateway.day1.doctor/v1"
         );
     }
 
@@ -593,7 +593,7 @@ mod tests {
         assert_eq!(models[0]["provider"].as_str().unwrap(), "openai");
         assert_eq!(
             models[0]["apiBase"].as_str().unwrap(),
-            "https://api.day1doctor.com/v1"
+            "https://gateway.day1.doctor/v1"
         );
         assert_eq!(models[0]["apiKey"].as_str().unwrap(), "d1d_sk_test123");
     }
@@ -679,7 +679,7 @@ mod tests {
         assert_eq!(models[1]["title"].as_str().unwrap(), "Day1 Doctor Gateway");
         assert_eq!(
             models[1]["apiBase"].as_str().unwrap(),
-            "https://api.day1doctor.com/v1"
+            "https://gateway.day1.doctor/v1"
         );
     }
 
@@ -692,7 +692,7 @@ mod tests {
         write_openclaw_config(&config_path, &gw).unwrap();
 
         let content = std::fs::read_to_string(&config_path).unwrap();
-        assert!(content.contains("api_base: \"https://api.day1doctor.com/v1\""));
+        assert!(content.contains("api_base: \"https://gateway.day1.doctor/v1\""));
         assert!(content.contains("api_key: \"d1d_sk_test123\""));
         assert!(content.contains("# Day1 Doctor Gateway configuration"));
     }

@@ -17,7 +17,7 @@ brew install day1doctor/tap/d1-doctor
 For Linux systems, use our curl-based installer:
 
 ```bash
-curl -fsSL https://install.day1doctor.com | sh
+curl -fsSL https://install.day1.doctor | sh
 ```
 
 The installer will:
@@ -66,7 +66,7 @@ Authenticate with your Day 1 Doctor account using device-code flow:
 d1-doctor auth login
 ```
 
-This will provide you with a code to enter on https://day1doctor.com/authorize.
+This will provide you with a code to enter on https://day1.doctor/authorize.
 
 ### 3. Run Your First Task
 
