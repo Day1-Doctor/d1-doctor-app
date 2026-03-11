@@ -176,7 +176,10 @@ impl QmdServer {
     ///
     /// Arguments:
     /// - `url` (string, required): The URL to fetch and ingest.
-    async fn ingest_url(&mut self, arguments: serde_json::Value) -> anyhow::Result<serde_json::Value> {
+    async fn ingest_url(
+        &mut self,
+        arguments: serde_json::Value,
+    ) -> anyhow::Result<serde_json::Value> {
         let url = arguments
             .get("url")
             .and_then(|v| v.as_str())

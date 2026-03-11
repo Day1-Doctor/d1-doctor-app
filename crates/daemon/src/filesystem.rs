@@ -114,8 +114,8 @@ impl FilesystemOps {
         debug!(?abs, "read_file");
 
         // Check file size.
-        let meta = fs::metadata(&abs)
-            .with_context(|| format!("file not found: {}", abs.display()))?;
+        let meta =
+            fs::metadata(&abs).with_context(|| format!("file not found: {}", abs.display()))?;
         if meta.len() > MAX_READ_SIZE {
             bail!(
                 "file too large: {} bytes (max {} bytes)",
@@ -140,8 +140,7 @@ impl FilesystemOps {
         let mut out = String::new();
         for (i, line) in lines[start..end].iter().enumerate() {
             let line_num = start + i + 1; // 1-based
-            writeln!(out, "{:>6}\t{}", line_num, line)
-                .expect("write to String cannot fail");
+            writeln!(out, "{:>6}\t{}", line_num, line).expect("write to String cannot fail");
         }
         Ok(out)
     }
@@ -171,7 +170,11 @@ impl FilesystemOps {
         fs::write(&abs, content)
             .with_context(|| format!("failed to write file: {}", abs.display()))?;
 
-        Ok(format!("wrote {} bytes to {}", content.len(), abs.display()))
+        Ok(format!(
+            "wrote {} bytes to {}",
+            content.len(),
+            abs.display()
+        ))
     }
 
     // ----------------------------------------------------------------
@@ -180,12 +183,7 @@ impl FilesystemOps {
 
     /// Replace an exact string in a file. Errors if the old_string is not
     /// found or appears more than once.
-    pub fn edit_file(
-        &self,
-        path: &str,
-        old_string: &str,
-        new_string: &str,
-    ) -> Result<String> {
+    pub fn edit_file(&self, path: &str, old_string: &str, new_string: &str) -> Result<String> {
         let abs = self.validate_path(path)?;
         debug!(?abs, "edit_file");
 
@@ -226,11 +224,7 @@ impl FilesystemOps {
     // ----------------------------------------------------------------
 
     /// Find files matching a glob pattern under a base path (or workspace root).
-    pub fn glob_files(
-        &self,
-        pattern: &str,
-        base_path: Option<&str>,
-    ) -> Result<Vec<String>> {
+    pub fn glob_files(&self, pattern: &str, base_path: Option<&str>) -> Result<Vec<String>> {
         let base = match base_path {
             Some(p) => self.validate_path(p)?,
             None => self
@@ -285,8 +279,8 @@ impl FilesystemOps {
                 .context("failed to canonicalize workspace root")?,
         };
 
-        let re = Regex::new(pattern)
-            .with_context(|| format!("invalid regex pattern: {}", pattern))?;
+        let re =
+            Regex::new(pattern).with_context(|| format!("invalid regex pattern: {}", pattern))?;
 
         debug!(?base, pattern, "grep");
 
@@ -302,13 +296,7 @@ impl FilesystemOps {
         Ok(output)
     }
 
-    fn grep_file(
-        &self,
-        path: &Path,
-        re: &Regex,
-        ctx: usize,
-        output: &mut String,
-    ) -> Result<()> {
+    fn grep_file(&self, path: &Path, re: &Regex, ctx: usize, output: &mut String) -> Result<()> {
         let content = match fs::read_to_string(path) {
             Ok(c) => c,
             Err(_) => return Ok(()), // skip binary / unreadable files
@@ -335,8 +323,7 @@ impl FilesystemOps {
         writeln!(output, "{}:", path.display()).expect("write to String");
         for (start, end) in merged {
             for i in start..end {
-                writeln!(output, "  {:>6}\t{}", i + 1, lines[i])
-                    .expect("write to String");
+                writeln!(output, "  {:>6}\t{}", i + 1, lines[i]).expect("write to String");
             }
             if end < lines.len() {
                 writeln!(output, "  ---").expect("write to String");
@@ -346,21 +333,13 @@ impl FilesystemOps {
         Ok(())
     }
 
-    fn grep_dir(
-        &self,
-        dir: &Path,
-        re: &Regex,
-        ctx: usize,
-        output: &mut String,
-    ) -> Result<()> {
+    fn grep_dir(&self, dir: &Path, re: &Regex, ctx: usize, output: &mut String) -> Result<()> {
         let canon_root = self.workspace_root.canonicalize()?;
         let entries = fs::read_dir(dir)
             .with_context(|| format!("failed to read directory: {}", dir.display()))?;
 
         // Sort entries for deterministic output.
-        let mut sorted: Vec<_> = entries
-            .filter_map(|e| e.ok())
-            .collect();
+        let mut sorted: Vec<_> = entries.filter_map(|e| e.ok()).collect();
         sorted.sort_by_key(|e| e.file_name());
 
         for entry in sorted {
@@ -410,11 +389,7 @@ impl FilesystemOps {
     // ----------------------------------------------------------------
 
     /// Tree-style directory listing with depth control.
-    pub fn list_directory(
-        &self,
-        path: Option<&str>,
-        depth: Option<usize>,
-    ) -> Result<String> {
+    pub fn list_directory(&self, path: Option<&str>, depth: Option<usize>) -> Result<String> {
         let base = match path {
             Some(p) => self.validate_path(p)?,
             None => self
@@ -469,8 +444,7 @@ impl FilesystemOps {
             let child_prefix = if is_last { "    " } else { "│   " };
 
             if path.is_dir() {
-                writeln!(output, "{}{}{}/", prefix, connector, name)
-                    .expect("write to String");
+                writeln!(output, "{}{}{}/", prefix, connector, name).expect("write to String");
                 self.list_tree(
                     &path,
                     &format!("{}{}", prefix, child_prefix),
@@ -479,8 +453,7 @@ impl FilesystemOps {
                     output,
                 )?;
             } else {
-                writeln!(output, "{}{}{}", prefix, connector, name)
-                    .expect("write to String");
+                writeln!(output, "{}{}{}", prefix, connector, name).expect("write to String");
             }
         }
 
@@ -559,11 +532,7 @@ impl FilesystemOps {
     }
 
     /// Compute diff hunks from an LCS table.
-    fn compute_diff<'a>(
-        a: &[&'a str],
-        b: &[&'a str],
-        lcs: &[Vec<usize>],
-    ) -> Vec<DiffHunk<'a>> {
+    fn compute_diff<'a>(a: &[&'a str], b: &[&'a str], lcs: &[Vec<usize>]) -> Vec<DiffHunk<'a>> {
         let mut changes: Vec<DiffChange<'a>> = Vec::new();
         let mut i = a.len();
         let mut j = b.len();
@@ -648,13 +617,12 @@ impl FilesystemOps {
             bail!("cannot backup: file does not exist: {}", abs_path.display());
         }
 
-        fs::create_dir_all(&self.backup_dir)
-            .with_context(|| {
-                format!(
-                    "failed to create backup directory: {}",
-                    self.backup_dir.display()
-                )
-            })?;
+        fs::create_dir_all(&self.backup_dir).with_context(|| {
+            format!(
+                "failed to create backup directory: {}",
+                self.backup_dir.display()
+            )
+        })?;
 
         let filename = abs_path
             .file_name()
@@ -665,14 +633,13 @@ impl FilesystemOps {
         let backup_name = format!("{}_{}", filename, timestamp);
         let backup_path = self.backup_dir.join(&backup_name);
 
-        fs::copy(abs_path, &backup_path)
-            .with_context(|| {
-                format!(
-                    "failed to copy {} to {}",
-                    abs_path.display(),
-                    backup_path.display()
-                )
-            })?;
+        fs::copy(abs_path, &backup_path).with_context(|| {
+            format!(
+                "failed to copy {} to {}",
+                abs_path.display(),
+                backup_path.display()
+            )
+        })?;
 
         debug!(
             src = %abs_path.display(),
@@ -727,9 +694,7 @@ mod tests {
         let file = tmp.path().join("hello.txt");
         fs::write(&file, "line1\nline2\nline3\n").unwrap();
 
-        let result = ops
-            .read_file(file.to_str().unwrap(), None, None)
-            .unwrap();
+        let result = ops.read_file(file.to_str().unwrap(), None, None).unwrap();
         assert!(result.contains("1\tline1"));
         assert!(result.contains("2\tline2"));
         assert!(result.contains("3\tline3"));
@@ -768,10 +733,7 @@ mod tests {
 
         let result = ops.read_file(file.to_str().unwrap(), None, None);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("file too large"));
+        assert!(result.unwrap_err().to_string().contains("file too large"));
     }
 
     // ---- write_file tests ----
@@ -849,10 +811,7 @@ mod tests {
 
         let result = ops.edit_file(file.to_str().unwrap(), "aaa", "ccc");
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("found 2 times"));
+        assert!(result.unwrap_err().to_string().contains("found 2 times"));
     }
 
     // ---- glob tests ----

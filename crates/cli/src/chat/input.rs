@@ -39,10 +39,7 @@ pub fn read_user_input() -> Result<UserInput> {
 }
 
 fn read_multiline() -> Result<UserInput> {
-    println!(
-        "\x1b[2m{}\x1b[0m",
-        crate::i18n::t("chat.paste_mode")
-    );
+    println!("\x1b[2m{}\x1b[0m", crate::i18n::t("chat.paste_mode"));
 
     let stdin = io::stdin();
     let mut lines = Vec::new();

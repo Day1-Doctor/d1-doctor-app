@@ -8,10 +8,7 @@ use super::connection::ConnectionTarget;
 
 /// Print welcome banner when starting a chat session.
 pub fn print_welcome(session_id: &str, target: &ConnectionTarget) {
-    println!(
-        "\x1b[1;32m{}\x1b[0m",
-        crate::i18n::t("chat.welcome_title")
-    );
+    println!("\x1b[1;32m{}\x1b[0m", crate::i18n::t("chat.welcome_title"));
     println!(
         "{}",
         crate::i18n::t_args("chat.session_label", &[("id", &session_id[..8])])
@@ -81,9 +78,8 @@ pub fn show_typing_indicator() -> Arc<AtomicBool> {
 
     std::thread::spawn(move || {
         let frames = [
-            "\u{280B}", "\u{2819}", "\u{2839}", "\u{2838}",
-            "\u{283C}", "\u{2834}", "\u{2826}", "\u{2827}",
-            "\u{2807}", "\u{280F}",
+            "\u{280B}", "\u{2819}", "\u{2839}", "\u{2838}", "\u{283C}", "\u{2834}", "\u{2826}",
+            "\u{2827}", "\u{2807}", "\u{280F}",
         ];
         let mut i = 0;
 

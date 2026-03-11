@@ -212,11 +212,7 @@ impl FilesystemServer {
     }
 
     /// Dispatch an MCP tool call to the appropriate filesystem operation.
-    pub async fn handle_tool_call(
-        &self,
-        tool: &str,
-        params: Value,
-    ) -> Result<Value> {
+    pub async fn handle_tool_call(&self, tool: &str, params: Value) -> Result<Value> {
         match tool {
             "read_file" => {
                 let path = params["path"]
@@ -367,10 +363,7 @@ mod tests {
         fs::write(&file, "hello\nworld\n").unwrap();
 
         let result = server
-            .handle_tool_call(
-                "read_file",
-                json!({ "path": file.to_str().unwrap() }),
-            )
+            .handle_tool_call("read_file", json!({ "path": file.to_str().unwrap() }))
             .await
             .unwrap();
 
@@ -468,10 +461,7 @@ mod tests {
         fs::write(tmp.path().join("sub/file.txt"), "").unwrap();
 
         let result = server
-            .handle_tool_call(
-                "list_directory",
-                json!({ "depth": 2 }),
-            )
+            .handle_tool_call("list_directory", json!({ "depth": 2 }))
             .await
             .unwrap();
 
@@ -511,25 +501,17 @@ mod tests {
         fs::write(&file, "important data").unwrap();
 
         let result = server
-            .handle_tool_call(
-                "backup",
-                json!({ "path": file.to_str().unwrap() }),
-            )
+            .handle_tool_call("backup", json!({ "path": file.to_str().unwrap() }))
             .await
             .unwrap();
 
-        assert!(result["message"]
-            .as_str()
-            .unwrap()
-            .contains("backed up to"));
+        assert!(result["message"].as_str().unwrap().contains("backed up to"));
     }
 
     #[tokio::test]
     async fn test_dispatch_unknown_tool() {
         let (_tmp, server) = setup_test_server();
-        let result = server
-            .handle_tool_call("nonexistent", json!({}))
-            .await;
+        let result = server.handle_tool_call("nonexistent", json!({})).await;
         assert!(result.is_err());
         assert!(result
             .unwrap_err()

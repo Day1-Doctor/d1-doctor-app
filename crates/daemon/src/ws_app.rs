@@ -42,11 +42,7 @@ pub async fn handle_app_ws(ws: WebSocket, relay: Arc<ChatRelay>, redactor: Arc<R
     // Writer task: drain the channel → WebSocket
     let writer_task = tokio::spawn(async move {
         while let Some(text) = out_rx.recv().await {
-            if ws_tx
-                .send(AxumWsMessage::Text(text.into()))
-                .await
-                .is_err()
-            {
+            if ws_tx.send(AxumWsMessage::Text(text.into())).await.is_err() {
                 break;
             }
         }
@@ -151,10 +147,7 @@ pub async fn handle_app_ws(ws: WebSocket, relay: Arc<ChatRelay>, redactor: Arc<R
             }
         };
 
-        let msg_type = parsed
-            .get("type")
-            .and_then(|t| t.as_str())
-            .unwrap_or("");
+        let msg_type = parsed.get("type").and_then(|t| t.as_str()).unwrap_or("");
 
         match msg_type {
             "task.submit" => {
@@ -174,10 +167,8 @@ pub async fn handle_app_ws(ws: WebSocket, relay: Arc<ChatRelay>, redactor: Arc<R
 
                 // Send session_init on first task
                 if !session_initialized {
-                    let locale =
-                        std::env::var("LANG").unwrap_or_else(|_| "en".to_string());
-                    let init_msg =
-                        ChatMessage::session_init(session_id.clone(), locale);
+                    let locale = std::env::var("LANG").unwrap_or_else(|_| "en".to_string());
+                    let init_msg = ChatMessage::session_init(session_id.clone(), locale);
                     let _ = relay.send_to_cloud(init_msg).await;
                     session_initialized = true;
                 }
@@ -200,10 +191,7 @@ pub async fn handle_app_ws(ws: WebSocket, relay: Arc<ChatRelay>, redactor: Arc<R
                 let _ = out_tx.send(pong).await;
             }
             "plan.approve" | "task.cancel" | "permission.response" => {
-                debug!(
-                    "Received {} — forwarding not yet implemented",
-                    msg_type
-                );
+                debug!("Received {} — forwarding not yet implemented", msg_type);
             }
             _ => {
                 warn!("Unknown message type from Mac app: {}", msg_type);

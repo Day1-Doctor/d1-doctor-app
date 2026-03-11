@@ -207,9 +207,8 @@ fn credentials_path() -> anyhow::Result<std::path::PathBuf> {
 /// Read the JWT access token from local credentials.
 fn load_access_token() -> anyhow::Result<String> {
     let path = credentials_path()?;
-    let content = std::fs::read_to_string(&path).map_err(|_| {
-        anyhow::anyhow!("{}", crate::i18n::t("auth.no_credentials"))
-    })?;
+    let content = std::fs::read_to_string(&path)
+        .map_err(|_| anyhow::anyhow!("{}", crate::i18n::t("auth.no_credentials")))?;
     let creds: serde_json::Value = serde_json::from_str(&content)?;
     creds
         .get("access_token")
@@ -372,10 +371,7 @@ pub async fn run_usage(days: u32) -> anyhow::Result<()> {
 
     println!(
         "{}",
-        crate::i18n::t_args(
-            "gateway.usage.title",
-            &[("days", &days.to_string())]
-        )
+        crate::i18n::t_args("gateway.usage.title", &[("days", &days.to_string())])
     );
     println!();
     println!(
@@ -505,10 +501,7 @@ fn print_model_detail(model: &PlatformModel) {
     println!();
     println!(
         "{}",
-        crate::i18n::t_args(
-            "gateway.models_info.title",
-            &[("alias", &model.alias)]
-        )
+        crate::i18n::t_args("gateway.models_info.title", &[("alias", &model.alias)])
     );
     println!();
     println!("  Provider:        {}", model.provider);

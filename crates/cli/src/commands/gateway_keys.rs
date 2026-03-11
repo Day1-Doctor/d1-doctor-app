@@ -154,11 +154,7 @@ fn print_keys(keys: &[ApiKey]) {
             crate::i18n::t("gateway.keys.revoked_label")
         };
         // Truncate created_at to date only
-        let created = key
-            .created_at
-            .split('T')
-            .next()
-            .unwrap_or(&key.created_at);
+        let created = key.created_at.split('T').next().unwrap_or(&key.created_at);
         println!(
             "{:<38} {:<16} {:<14} {:<10} {}",
             key.id, key.name, key.key_prefix, status_str, created
