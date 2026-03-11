@@ -43,9 +43,7 @@ impl ChatConnection {
 
         let (ws, _response) = tokio_tungstenite::connect_async(&url)
             .await
-            .with_context(|| {
-                crate::i18n::t_args("errors.connection_failed", &[("url", &url)])
-            })?;
+            .with_context(|| crate::i18n::t_args("errors.connection_failed", &[("url", &url)]))?;
 
         Ok(Self {
             ws: Some(ws),

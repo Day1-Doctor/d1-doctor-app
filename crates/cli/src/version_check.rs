@@ -142,9 +142,7 @@ pub fn is_unsupported(current: &str, min_supported: &str) -> bool {
 
 /// Build the one-line update nudge.
 pub fn update_nudge(current: &str, latest: &str) -> String {
-    format!(
-        "Update available: v{latest} (current: v{current}). Run: brew upgrade d1"
-    )
+    format!("Update available: v{latest} (current: v{current}). Run: brew upgrade d1")
 }
 
 /// Build the stronger unsupported-version warning.
@@ -358,7 +356,8 @@ mod tests {
 
     #[test]
     fn test_state_roundtrip() {
-        let dir = std::env::temp_dir().join(format!("d1_version_check_test_{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("d1_version_check_test_{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         let path = dir.join("version_check");
 
@@ -389,7 +388,8 @@ mod tests {
 
     #[test]
     fn test_load_state_corrupt_file() {
-        let dir = std::env::temp_dir().join(format!("d1_version_check_corrupt_{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("d1_version_check_corrupt_{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         let path = dir.join("version_check");
 

@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use std::process::Stdio;
 
 use serde::{Deserialize, Serialize};
-use tokio::process::{Child, Command};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::process::{Child, Command};
 
 /// Configuration for the QMD sidecar process.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -117,12 +117,7 @@ impl QmdManager {
             }
 
             // Wait briefly for graceful exit, then kill
-            match tokio::time::timeout(
-                std::time::Duration::from_secs(5),
-                child.wait(),
-            )
-            .await
-            {
+            match tokio::time::timeout(std::time::Duration::from_secs(5), child.wait()).await {
                 Ok(Ok(status)) => {
                     tracing::info!("QMD process exited with status: {}", status);
                 }
@@ -164,18 +159,24 @@ impl QmdManager {
     /// Send a JSON-RPC request to QMD via STDIO and read the response.
     ///
     /// This implements the MCP STDIO transport protocol: newline-delimited JSON.
-    pub async fn send_request(&mut self, request: serde_json::Value) -> anyhow::Result<serde_json::Value> {
-        let child = self.child.as_mut().ok_or_else(|| {
-            anyhow::anyhow!("QMD process is not running")
-        })?;
+    pub async fn send_request(
+        &mut self,
+        request: serde_json::Value,
+    ) -> anyhow::Result<serde_json::Value> {
+        let child = self
+            .child
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("QMD process is not running"))?;
 
-        let stdin = child.stdin.as_mut().ok_or_else(|| {
-            anyhow::anyhow!("QMD stdin is not available")
-        })?;
+        let stdin = child
+            .stdin
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("QMD stdin is not available"))?;
 
-        let stdout = child.stdout.as_mut().ok_or_else(|| {
-            anyhow::anyhow!("QMD stdout is not available")
-        })?;
+        let stdout = child
+            .stdout
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("QMD stdout is not available"))?;
 
         // Write JSON-RPC request followed by newline
         let mut payload = serde_json::to_vec(&request)?;

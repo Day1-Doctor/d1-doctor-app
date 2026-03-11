@@ -40,7 +40,10 @@ pub async fn run_interactive(target: Option<String>) -> Result<()> {
         Err(e) => {
             let err_str = e.to_string();
             if err_str.contains("Connection refused") || err_str.contains("os error 61") {
-                eprintln!("\x1b[1;31merror:\x1b[0m Could not connect to daemon at {}", target);
+                eprintln!(
+                    "\x1b[1;31merror:\x1b[0m Could not connect to daemon at {}",
+                    target
+                );
                 eprintln!("       Is the daemon running? Start it with: \x1b[1md1-doctor daemon start\x1b[0m");
                 return Err(e);
             }

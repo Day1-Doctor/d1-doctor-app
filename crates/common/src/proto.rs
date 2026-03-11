@@ -4,8 +4,7 @@
 //! between CLI, daemon, and orchestrator. When the proto submodule is available,
 //! this will be replaced with generated prost types.
 
-use bytes::Bytes;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

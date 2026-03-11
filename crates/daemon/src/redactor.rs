@@ -87,7 +87,10 @@ impl Redactor {
         // matches interfering with broader patterns.
 
         if self.config.redact_private_keys {
-            result = self.private_key_pattern.replace_all(&result, PH_PRIVATE_KEY).to_string();
+            result = self
+                .private_key_pattern
+                .replace_all(&result, PH_PRIVATE_KEY)
+                .to_string();
         }
 
         if self.config.redact_connection_strings {
@@ -494,7 +497,8 @@ mod tests {
     #[test]
     fn redact_env_line() {
         let r = redactor();
-        let input = "DATABASE_URL=postgres://user:pass@host/db\nAPI_KEY=sk-12345\nNODE_ENV=production";
+        let input =
+            "DATABASE_URL=postgres://user:pass@host/db\nAPI_KEY=sk-12345\nNODE_ENV=production";
         let out = r.redact(input);
         // The env lines themselves should be redacted
         assert!(!out.contains("postgres://user:pass@host/db"));
@@ -614,7 +618,8 @@ mod tests {
     #[test]
     fn redact_rsa_private_key() {
         let r = redactor();
-        let input = "Key:\n-----BEGIN RSA PRIVATE KEY-----\nMIIE...\n-----END RSA PRIVATE KEY-----\nDone";
+        let input =
+            "Key:\n-----BEGIN RSA PRIVATE KEY-----\nMIIE...\n-----END RSA PRIVATE KEY-----\nDone";
         let out = r.redact(input);
         assert!(!out.contains("MIIE"));
         assert!(out.contains(PH_PRIVATE_KEY));
@@ -754,11 +759,7 @@ mod tests {
     #[test]
     fn redact_json_array_values() {
         let r = redactor();
-        let val = serde_json::json!([
-            "safe text",
-            "password=secret123",
-            42
-        ]);
+        let val = serde_json::json!(["safe text", "password=secret123", 42]);
         let out = r.redact_json(&val);
         let arr = out.as_array().unwrap();
         assert_eq!(arr[0].as_str().unwrap(), "safe text");

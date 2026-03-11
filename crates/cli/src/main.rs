@@ -29,7 +29,10 @@ async fn main() -> anyhow::Result<()> {
         None => {
             println!(
                 "{}",
-                i18n::t_args("app.version_line", &[("version", env!("CARGO_PKG_VERSION"))])
+                i18n::t_args(
+                    "app.version_line",
+                    &[("version", env!("CARGO_PKG_VERSION"))]
+                )
             );
             println!("{}", i18n::t("app.usage_hint"));
         }

@@ -287,8 +287,7 @@ impl SystemOps {
                 stderr: Vec::new(),
             });
         let installed_list = String::from_utf8_lossy(&installed_output.stdout);
-        let installed_set: std::collections::HashSet<&str> =
-            installed_list.lines().collect();
+        let installed_set: std::collections::HashSet<&str> = installed_list.lines().collect();
 
         let packages: Vec<PackageInfo> = stdout
             .lines()
@@ -439,12 +438,11 @@ impl SystemOps {
     async fn config_set_toml(&self, path: &str, key: &str, value: &str) -> Result<()> {
         let content = tokio::fs::read_to_string(path).await.unwrap_or_default();
 
-        let mut table: toml::map::Map<String, toml::Value> =
-            if content.is_empty() {
-                toml::map::Map::new()
-            } else {
-                toml::from_str(&content).context("failed to parse existing TOML")?
-            };
+        let mut table: toml::map::Map<String, toml::Value> = if content.is_empty() {
+            toml::map::Map::new()
+        } else {
+            toml::from_str(&content).context("failed to parse existing TOML")?
+        };
 
         // Parse the value: try integer, float, bool, then fall back to string
         let toml_value = Self::parse_toml_value(value);
@@ -493,9 +491,7 @@ impl SystemOps {
             .or_insert_with(|| toml::Value::Table(toml::map::Map::new()));
 
         match entry {
-            toml::Value::Table(ref mut inner) => {
-                Self::set_nested_toml(inner, &parts[1..], value)
-            }
+            toml::Value::Table(ref mut inner) => Self::set_nested_toml(inner, &parts[1..], value),
             _ => {
                 // Overwrite non-table with a new table
                 *entry = toml::Value::Table(toml::map::Map::new());
@@ -518,14 +514,14 @@ impl SystemOps {
         };
 
         // Parse value: try JSON literal, then fall back to string
-        let json_value: Value = serde_json::from_str(value).unwrap_or(Value::String(value.to_string()));
+        let json_value: Value =
+            serde_json::from_str(value).unwrap_or(Value::String(value.to_string()));
 
         // Support dotted keys
         let parts: Vec<&str> = key.split('.').collect();
         Self::set_nested_json(&mut root, &parts, json_value)?;
 
-        let output =
-            serde_json::to_string_pretty(&root).context("failed to serialize JSON")?;
+        let output = serde_json::to_string_pretty(&root).context("failed to serialize JSON")?;
         tokio::fs::write(path, output)
             .await
             .context("failed to write JSON file")?;
@@ -567,17 +563,14 @@ impl SystemOps {
         let success = output.status.success();
 
         // Try to extract avg latency from "min/avg/max/stddev = ..." line
-        let latency_ms = stdout
-            .lines()
-            .find(|l| l.contains("avg"))
-            .and_then(|line| {
-                // macOS: "round-trip min/avg/max/stddev = 1.0/2.0/3.0/0.5 ms"
-                // Linux: "rtt min/avg/max/mdev = 1.0/2.0/3.0/0.5 ms"
-                line.split('=')
-                    .nth(1)
-                    .and_then(|vals| vals.trim().split('/').nth(1))
-                    .and_then(|avg| avg.trim().parse::<f64>().ok())
-            });
+        let latency_ms = stdout.lines().find(|l| l.contains("avg")).and_then(|line| {
+            // macOS: "round-trip min/avg/max/stddev = 1.0/2.0/3.0/0.5 ms"
+            // Linux: "rtt min/avg/max/mdev = 1.0/2.0/3.0/0.5 ms"
+            line.split('=')
+                .nth(1)
+                .and_then(|vals| vals.trim().split('/').nth(1))
+                .and_then(|avg| avg.trim().parse::<f64>().ok())
+        });
 
         Ok(NetworkResult {
             success,
@@ -702,9 +695,7 @@ mod tests {
     #[test]
     fn test_env_get_missing() {
         let ops = SystemOps::new();
-        let val = ops
-            .env_get("D1_DOCTOR_NONEXISTENT_VAR_99999")
-            .unwrap();
+        let val = ops.env_get("D1_DOCTOR_NONEXISTENT_VAR_99999").unwrap();
         assert_eq!(val, None);
     }
 
@@ -828,10 +819,7 @@ port = 8080
     async fn test_network_check_port() {
         let ops = SystemOps::new();
         // Attempt to connect to a port that likely isn't open
-        let result = ops
-            .network_check("port", "127.0.0.1:19999")
-            .await
-            .unwrap();
+        let result = ops.network_check("port", "127.0.0.1:19999").await.unwrap();
         // The result should be valid regardless of success/failure
         assert!(!result.output.is_empty());
     }

@@ -98,11 +98,7 @@ impl ShellServer {
     }
 
     /// Dispatch a tool call by name, deserialising parameters from `params`.
-    pub async fn handle_tool_call(
-        &self,
-        tool_name: &str,
-        params: Value,
-    ) -> anyhow::Result<Value> {
+    pub async fn handle_tool_call(&self, tool_name: &str, params: Value) -> anyhow::Result<Value> {
         match tool_name {
             "execute" => {
                 let command = params["command"]
@@ -199,10 +195,7 @@ mod tests {
     async fn handle_execute_script() {
         let server = ShellServer::new();
         let result = server
-            .handle_tool_call(
-                "execute_script",
-                json!({ "script": "echo script_via_mcp" }),
-            )
+            .handle_tool_call("execute_script", json!({ "script": "echo script_via_mcp" }))
             .await
             .expect("handle_tool_call should succeed");
 
@@ -228,9 +221,7 @@ mod tests {
     #[tokio::test]
     async fn handle_unknown_tool() {
         let server = ShellServer::new();
-        let result = server
-            .handle_tool_call("nonexistent", json!({}))
-            .await;
+        let result = server.handle_tool_call("nonexistent", json!({})).await;
 
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
@@ -240,9 +231,7 @@ mod tests {
     #[tokio::test]
     async fn handle_missing_required_param() {
         let server = ShellServer::new();
-        let result = server
-            .handle_tool_call("execute", json!({}))
-            .await;
+        let result = server.handle_tool_call("execute", json!({})).await;
 
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();

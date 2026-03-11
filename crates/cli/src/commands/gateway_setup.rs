@@ -58,19 +58,13 @@ pub async fn run_setup(app_name: &str) -> anyhow::Result<()> {
     let app = SupportedApp::from_str(app_name).ok_or_else(|| {
         anyhow::anyhow!(
             "{}",
-            crate::i18n::t_args(
-                "gateway.setup.unsupported_app",
-                &[("app", app_name)]
-            )
+            crate::i18n::t_args("gateway.setup.unsupported_app", &[("app", app_name)])
         )
     })?;
 
     println!(
         "{}",
-        crate::i18n::t_args(
-            "gateway.setup.configuring",
-            &[("app", app.display_name())]
-        )
+        crate::i18n::t_args("gateway.setup.configuring", &[("app", app.display_name())])
     );
 
     // Step 1: Ensure we have an API key
@@ -118,10 +112,7 @@ async fn ensure_api_key(app_name: &str) -> anyhow::Result<String> {
         if let Some(key) = keys.iter().find(|k| k.name == app_name && k.is_active) {
             println!(
                 "{}",
-                crate::i18n::t_args(
-                    "gateway.setup.existing_key",
-                    &[("prefix", &key.key_prefix)]
-                )
+                crate::i18n::t_args("gateway.setup.existing_key", &[("prefix", &key.key_prefix)])
             );
         }
     }
@@ -297,9 +288,7 @@ pub fn write_continue_config(
     });
 
     let obj = config.as_object_mut().unwrap();
-    let models = obj
-        .entry("models")
-        .or_insert_with(|| serde_json::json!([]));
+    let models = obj.entry("models").or_insert_with(|| serde_json::json!([]));
     if let Some(arr) = models.as_array_mut() {
         // Remove any existing Day1 Doctor entries
         arr.retain(|m| {
@@ -408,14 +397,8 @@ mod tests {
     #[test]
     fn test_supported_app_from_str() {
         assert_eq!(SupportedApp::from_str("cursor"), Some(SupportedApp::Cursor));
-        assert_eq!(
-            SupportedApp::from_str("Cursor"),
-            Some(SupportedApp::Cursor)
-        );
-        assert_eq!(
-            SupportedApp::from_str("CURSOR"),
-            Some(SupportedApp::Cursor)
-        );
+        assert_eq!(SupportedApp::from_str("Cursor"), Some(SupportedApp::Cursor));
+        assert_eq!(SupportedApp::from_str("CURSOR"), Some(SupportedApp::Cursor));
         assert_eq!(
             SupportedApp::from_str("continue"),
             Some(SupportedApp::Continue)
@@ -500,10 +483,7 @@ mod tests {
             parsed["openai.apiBase"].as_str().unwrap(),
             "https://api.day1doctor.com/v1"
         );
-        assert_eq!(
-            parsed["openai.apiKey"].as_str().unwrap(),
-            "d1d_sk_test123"
-        );
+        assert_eq!(parsed["openai.apiKey"].as_str().unwrap(), "d1d_sk_test123");
     }
 
     #[test]
@@ -516,7 +496,11 @@ mod tests {
             "editor.fontSize": 14,
             "theme": "dark"
         });
-        std::fs::write(&settings_path, serde_json::to_string_pretty(&existing).unwrap()).unwrap();
+        std::fs::write(
+            &settings_path,
+            serde_json::to_string_pretty(&existing).unwrap(),
+        )
+        .unwrap();
 
         let gw = test_gw_config();
         write_cursor_config(&settings_path, &gw).unwrap();
@@ -544,7 +528,11 @@ mod tests {
             "openai.apiKey": "old_key",
             "editor.fontSize": 14,
         });
-        std::fs::write(&settings_path, serde_json::to_string_pretty(&existing).unwrap()).unwrap();
+        std::fs::write(
+            &settings_path,
+            serde_json::to_string_pretty(&existing).unwrap(),
+        )
+        .unwrap();
 
         let gw = test_gw_config();
         write_cursor_config(&settings_path, &gw).unwrap();
@@ -555,10 +543,7 @@ mod tests {
             parsed["openai.apiBase"].as_str().unwrap(),
             "https://api.day1doctor.com/v1"
         );
-        assert_eq!(
-            parsed["openai.apiKey"].as_str().unwrap(),
-            "d1d_sk_test123"
-        );
+        assert_eq!(parsed["openai.apiKey"].as_str().unwrap(), "d1d_sk_test123");
     }
 
     #[test]
@@ -604,19 +589,13 @@ mod tests {
         let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
         let models = parsed["models"].as_array().unwrap();
         assert_eq!(models.len(), 1);
-        assert_eq!(
-            models[0]["title"].as_str().unwrap(),
-            "Day1 Doctor Gateway"
-        );
+        assert_eq!(models[0]["title"].as_str().unwrap(), "Day1 Doctor Gateway");
         assert_eq!(models[0]["provider"].as_str().unwrap(), "openai");
         assert_eq!(
             models[0]["apiBase"].as_str().unwrap(),
             "https://api.day1doctor.com/v1"
         );
-        assert_eq!(
-            models[0]["apiKey"].as_str().unwrap(),
-            "d1d_sk_test123"
-        );
+        assert_eq!(models[0]["apiKey"].as_str().unwrap(), "d1d_sk_test123");
     }
 
     #[test]
@@ -636,7 +615,11 @@ mod tests {
             ],
             "systemMessage": "You are helpful."
         });
-        std::fs::write(&config_path, serde_json::to_string_pretty(&existing).unwrap()).unwrap();
+        std::fs::write(
+            &config_path,
+            serde_json::to_string_pretty(&existing).unwrap(),
+        )
+        .unwrap();
 
         let gw = test_gw_config();
         write_continue_config(&config_path, &gw).unwrap();
@@ -648,10 +631,7 @@ mod tests {
         // Original model preserved
         assert_eq!(models[0]["title"].as_str().unwrap(), "My Custom Model");
         // Day1 Doctor added
-        assert_eq!(
-            models[1]["title"].as_str().unwrap(),
-            "Day1 Doctor Gateway"
-        );
+        assert_eq!(models[1]["title"].as_str().unwrap(), "Day1 Doctor Gateway");
         // Other config preserved
         assert_eq!(
             parsed["systemMessage"].as_str().unwrap(),
@@ -681,7 +661,11 @@ mod tests {
                 }
             ]
         });
-        std::fs::write(&config_path, serde_json::to_string_pretty(&existing).unwrap()).unwrap();
+        std::fs::write(
+            &config_path,
+            serde_json::to_string_pretty(&existing).unwrap(),
+        )
+        .unwrap();
 
         let gw = test_gw_config();
         write_continue_config(&config_path, &gw).unwrap();
@@ -692,10 +676,7 @@ mod tests {
         // Old D1D entry removed, new one added; other model kept
         assert_eq!(models.len(), 2);
         assert_eq!(models[0]["title"].as_str().unwrap(), "Another Model");
-        assert_eq!(
-            models[1]["title"].as_str().unwrap(),
-            "Day1 Doctor Gateway"
-        );
+        assert_eq!(models[1]["title"].as_str().unwrap(), "Day1 Doctor Gateway");
         assert_eq!(
             models[1]["apiBase"].as_str().unwrap(),
             "https://api.day1doctor.com/v1"
@@ -781,9 +762,9 @@ mod tests {
             .collect();
         assert_eq!(entries.len(), 2, "Should have original + backup");
 
-        let bak_entry = entries.iter().find(|e| {
-            e.file_name().to_str().unwrap().ends_with(".bak")
-        });
+        let bak_entry = entries
+            .iter()
+            .find(|e| e.file_name().to_str().unwrap().ends_with(".bak"));
         assert!(bak_entry.is_some(), "Should have a .bak file");
 
         // Backup content should match original

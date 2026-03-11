@@ -74,7 +74,9 @@ struct DaemonState {
 /// Try to read the CLI user's access token from ~/.d1-doctor/credentials.json.
 fn read_cli_credentials() -> Option<String> {
     let home = std::env::var("HOME").ok()?;
-    let path = std::path::PathBuf::from(home).join(".d1-doctor").join("credentials.json");
+    let path = std::path::PathBuf::from(home)
+        .join(".d1-doctor")
+        .join("credentials.json");
     let data = std::fs::read_to_string(&path).ok()?;
     let parsed: serde_json::Value = serde_json::from_str(&data).ok()?;
     parsed.get("access_token")?.as_str().map(|s| s.to_string())
@@ -131,9 +133,7 @@ async fn main() -> anyhow::Result<()> {
 
     // 6. Spawn CloudWsClient
     let jwt = read_cli_credentials()
-        .or_else(|| {
-            config.supabase.as_ref().map(|s| s.anon_key.clone())
-        })
+        .or_else(|| config.supabase.as_ref().map(|s| s.anon_key.clone()))
         .unwrap_or_default();
 
     if jwt.is_empty() {
@@ -258,9 +258,7 @@ async fn ws_app_handler(
     ws: WebSocketUpgrade,
     State(state): State<DaemonState>,
 ) -> impl IntoResponse {
-    ws.on_upgrade(move |socket| {
-        ws_app::handle_app_ws(socket, state.relay, state.redactor)
-    })
+    ws.on_upgrade(move |socket| ws_app::handle_app_ws(socket, state.relay, state.redactor))
 }
 
 /// Axum handler that upgrades HTTP to WebSocket for the /chat endpoint.

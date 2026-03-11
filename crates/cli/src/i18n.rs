@@ -97,7 +97,9 @@ pub fn init_auto() {
 ///
 /// Returns the message string or the key itself if not found.
 pub fn t(key: &str) -> String {
-    let catalog = CATALOG.get().expect("i18n not initialised -- call i18n::init() first");
+    let catalog = CATALOG
+        .get()
+        .expect("i18n not initialised -- call i18n::init() first");
     catalog.get(key).cloned().unwrap_or_else(|| key.to_string())
 }
 
@@ -154,7 +156,10 @@ mod tests {
     #[test]
     fn test_parse_catalog_zh_cn() {
         let catalog = parse_catalog(ZH_CN_CATALOG);
-        assert_eq!(catalog.get("chat.goodbye").unwrap(), "\u{518D}\u{89C1}\u{FF01}");
+        assert_eq!(
+            catalog.get("chat.goodbye").unwrap(),
+            "\u{518D}\u{89C1}\u{FF01}"
+        );
         assert!(catalog.contains_key("auth.login_success"));
     }
 
@@ -164,18 +169,10 @@ mod tests {
         let zh = parse_catalog(ZH_CN_CATALOG);
 
         for key in en.keys() {
-            assert!(
-                zh.contains_key(key),
-                "zh-CN catalog missing key: {}",
-                key
-            );
+            assert!(zh.contains_key(key), "zh-CN catalog missing key: {}", key);
         }
         for key in zh.keys() {
-            assert!(
-                en.contains_key(key),
-                "en catalog missing key: {}",
-                key
-            );
+            assert!(en.contains_key(key), "en catalog missing key: {}", key);
         }
     }
 

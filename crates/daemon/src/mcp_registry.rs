@@ -132,11 +132,7 @@ impl McpRegistry {
                 .kill_on_drop(true)
                 .spawn()
                 .map_err(|e| {
-                    anyhow::anyhow!(
-                        "failed to spawn MCP server '{}': {}",
-                        server_cfg.name,
-                        e
-                    )
+                    anyhow::anyhow!("failed to spawn MCP server '{}': {}", server_cfg.name, e)
                 })?;
 
             self.servers.push(ManagedServer {
@@ -156,7 +152,10 @@ impl McpRegistry {
             .map(|s| {
                 let pid = s.child.id();
                 let (status, uptime) = if pid.is_some() {
-                    (ServerState::Running, Some(s.started_at.elapsed().as_secs_f64()))
+                    (
+                        ServerState::Running,
+                        Some(s.started_at.elapsed().as_secs_f64()),
+                    )
                 } else {
                     (ServerState::Stopped, None)
                 };

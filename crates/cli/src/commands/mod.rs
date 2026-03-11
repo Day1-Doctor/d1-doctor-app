@@ -121,9 +121,7 @@ pub async fn handle(cmd: Commands) -> anyhow::Result<()> {
             GatewayCommands::Status => gateway::run_status().await,
             GatewayCommands::Models { command } => match command {
                 None => gateway::run_models_list().await,
-                Some(ModelsSubcommand::Info { alias }) => {
-                    gateway::run_models_info(&alias).await
-                }
+                Some(ModelsSubcommand::Info { alias }) => gateway::run_models_info(&alias).await,
             },
             GatewayCommands::Keys { command } => match command {
                 KeysCommands::List => gateway_keys::run_list().await,

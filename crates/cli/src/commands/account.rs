@@ -71,9 +71,7 @@ pub async fn run_delete() -> anyhow::Result<()> {
 fn load_access_token() -> anyhow::Result<String> {
     let path = credentials_path()?;
     let content = std::fs::read_to_string(&path).map_err(|_| {
-        anyhow::anyhow!(
-            "No stored credentials found. Run \'d1 auth login\' first."
-        )
+        anyhow::anyhow!("No stored credentials found. Run \'d1 auth login\' first.")
     })?;
     let creds: serde_json::Value = serde_json::from_str(&content)?;
     creds
