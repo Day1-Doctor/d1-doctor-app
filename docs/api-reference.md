@@ -17,7 +17,7 @@ Response:
 {
   "device_code": "ABC123",
   "user_code": "WXYZ-1234",
-  "verification_uri": "https://day1doctor.com/authorize",
+  "verification_uri": "https://day1.doctor/authorize",
   "expires_in": 900,
   "interval": 5
 }
@@ -146,7 +146,7 @@ Response:
 ### Connection
 
 ```
-wss://api.day1doctor.com/ws?token={jwt_token}
+wss://api.day1.doctor/ws?token={jwt_token}
 ```
 
 ### Message Types

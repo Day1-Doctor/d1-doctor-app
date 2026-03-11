@@ -77,7 +77,7 @@ async fn login() -> anyhow::Result<()> {
     let redirect_uri = format!("http://127.0.0.1:{}/callback", port);
 
     let auth_url = format!(
-        "https://auth.day1doctor.com/authorize?redirect_uri={}&response_type=code",
+        "https://tjxyyhugiczvkkwclucy.supabase.co/auth/v1/authorize?redirect_uri={}&response_type=code",
         redirect_uri
     );
 
@@ -105,7 +105,7 @@ async fn login() -> anyhow::Result<()> {
 
     let client = reqwest::Client::new();
     let resp = client
-        .post("https://auth.day1doctor.com/token")
+        .post("https://tjxyyhugiczvkkwclucy.supabase.co/auth/v1/token?grant_type=authorization_code")
         .json(&serde_json::json!({
             "grant_type": "authorization_code",
             "code": code,

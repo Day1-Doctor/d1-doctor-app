@@ -103,7 +103,7 @@ describe('App.vue', () => {
 
     expect(wrapper.find('.login-screen-stub').exists()).toBe(true)
     expect(wrapper.find('.full-mode-stub').exists()).toBe(false)
-    expect(wrapper.find('.login-screen-stub').exists()).toBe(false)
+    expect(wrapper.find('.copilot-mode-stub').exists()).toBe(false)
   })
 
   it('renders LoginScreen when unauthenticated', async () => {

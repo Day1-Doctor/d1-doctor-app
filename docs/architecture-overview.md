@@ -20,7 +20,7 @@ Day 1 Doctor is a distributed system with cloud orchestration and local executio
 │                                │                              │
 │         ┌──────────────────────▼────────────────────┐        │
 │         │    API Gateway & Auth Service            │        │
-│         │    (cloud.day1doctor.com)                │        │
+│         │    (cloud.day1.doctor)                │        │
 │         └──────────────────────┬────────────────────┘        │
 │                                │                              │
 │              ┌─────────────────┴─────────────────┐            │

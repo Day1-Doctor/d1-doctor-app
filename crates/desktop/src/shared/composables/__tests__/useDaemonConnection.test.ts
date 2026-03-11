@@ -109,7 +109,7 @@ describe('useDaemonConnection', () => {
     const ws = MockWebSocket.instances[0]
     ws.simulateMessage({
       v: 1, id: 'msg-1', ts: Date.now(), type: 'daemon.status',
-      payload: { daemon_version: '0.4.1', protocol_version: 1, orchestrator_connected: true, orchestrator_url: 'wss://api.day1doctor.com', active_tasks: 0, device_id: 'dev-abc' },
+      payload: { daemon_version: '0.4.1', protocol_version: 1, orchestrator_connected: true, orchestrator_url: 'wss://api.day1.doctor', active_tasks: 0, device_id: 'dev-abc' },
     })
     await flushPromises()
     expect(daemonStore.status).toBe('connected')
