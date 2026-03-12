@@ -1,0 +1,83 @@
+name: Release — Build & Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v2.6.0). Leave empty to build without releasing.'
+        required: false
+        type: string
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TAURI_DIR: crates/desktop/src-tauri
+  FRONTEND_DIR: crates/desktop
+
+jobs:
+  build-macos:
+    name: Build macOS (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      matrix:
+        include:
+          - arch: aarch64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+          - arch: x86_64
+            runner: macos-13
+            target: x86_64-apple-darwin
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ env.TAURI_DIR }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        working-directory: ${{ env.FRONTEND_DIR }}
+        run: npm ci
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: ${{ env.FRONTEND_DIR }}
+          args: --target ${{ matrix.target }}
+          # Only create GitHub release on tag push or manual tag input
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag || '' }}
+          releaseName: ${{ github.ref_type == 'tag' && format('Day1 Doctor {0}', github.ref_name) || inputs.tag && format('Day1 Doctor {0}', inputs.tag) || '' }}
+          releaseBody: |
+            See the [changelog](https://github.com/Day1-Doctor/d1-doctor-app/blob/main/CHANGELOG.md) for details.
+
+            ## Install
+            - **macOS Apple Silicon**: Download `.dmg` (aarch64)
+            - **macOS Intel**: Download `.dmg` (x86_64)
+          releaseDraft: true
+          prerelease: false
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: |
+            ${{ env.TAURI_DIR }}/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
+            ${{ env.TAURI_DIR }}/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
+            ${{ env.TAURI_DIR }}/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz.sig
+          if-no-files-found: error
