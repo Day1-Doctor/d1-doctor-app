@@ -15,6 +15,9 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 env:
   TAURI_DIR: crates/desktop/src-tauri
   FRONTEND_DIR: crates/desktop
