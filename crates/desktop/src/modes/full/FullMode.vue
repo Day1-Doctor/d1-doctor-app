@@ -35,8 +35,8 @@ import ModeBar from '@/shared/components/ModeBar.vue'
 
 .full-mode-bar {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: var(--space-sm);
+  right: var(--space-sm);
   z-index: 200;
   -webkit-app-region: no-drag;  /* Tauri: allow clicks in draggable title bar area */
 }

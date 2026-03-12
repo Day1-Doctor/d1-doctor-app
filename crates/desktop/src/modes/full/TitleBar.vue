@@ -24,35 +24,36 @@ function toggleMaximize(): void { void appWindow.toggleMaximize() }
 <style scoped>
 .title-bar {
   height: 38px;
-  background: rgba(13, 13, 13, 0.82);
-  backdrop-filter: blur(30px) saturate(150%);
-  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  background: var(--surface-title-bar);
+  backdrop-filter: var(--backdrop-md);
+  -webkit-backdrop-filter: var(--backdrop-md);
   border-bottom: 1px solid var(--border);
   -webkit-app-region: drag;
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 var(--space-lg);
   flex-shrink: 0;
 }
 
 .traffic-lights {
   -webkit-app-region: no-drag;
   display: flex;
-  gap: 8px;
-  margin-right: 16px;
+  gap: var(--space-sm);
+  margin-right: var(--space-lg);
 }
 
 .traffic-dot {
-  width: 12px;
-  height: 12px;
+  width: var(--space-md);
+  height: var(--space-md);
   border-radius: 50%;
   cursor: pointer;
   flex-shrink: 0;
 }
 
-.close    { background: #FF5F57; }
-.minimize { background: #FFBD2E; }
-.maximize { background: #28C840; }
+.traffic-dot:hover { opacity: 0.85; }
+.close    { background: var(--traffic-close); }
+.minimize { background: var(--traffic-minimize); }
+.maximize { background: var(--traffic-maximize); }
 
 .window-title {
   -webkit-app-region: no-drag;
@@ -66,8 +67,8 @@ function toggleMaximize(): void { void appWindow.toggleMaximize() }
 .title-actions {
   -webkit-app-region: no-drag;
   display: flex;
-  gap: 4px;
-  margin-left: 16px;
+  gap: var(--space-xs);
+  margin-left: var(--space-lg);
 }
 
 .icon-btn {
@@ -75,14 +76,14 @@ function toggleMaximize(): void { void appWindow.toggleMaximize() }
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 14px;
-  width: 24px;
-  height: 24px;
+  font-size: var(--font-size-lg);
+  width: var(--space-xl);
+  height: var(--space-xl);
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--duration-fast), background var(--duration-fast);
   padding: 0;
   line-height: 1;
 }

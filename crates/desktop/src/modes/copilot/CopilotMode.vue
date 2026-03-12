@@ -10,7 +10,7 @@
       :status-dot="agentStore.connectionStatus"
       :credit-estimate="creditEstimate"
     />
-    <div class="copilot-messages" ref="listEl" @scroll="onScroll">
+    <div class="copilot-messages" ref="listEl" role="log" aria-live="polite" @scroll="onScroll">
       <div
         v-if="conversationStore.messages.length === 0 && !conversationStore.currentPlan"
         class="empty-state"
@@ -130,22 +130,22 @@ function onReject(): void {
 <style scoped>
 .copilot-mode-bar {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: var(--space-sm);
+  right: var(--space-sm);
   z-index: 100;
   -webkit-app-region: no-drag;  /* Tauri: allow clicks in draggable window */
 }
 
 .copilot-panel {
   background: var(--surface-copilot);
-  backdrop-filter: blur(40px) saturate(160%);
-  -webkit-backdrop-filter: blur(40px) saturate(160%);
+  backdrop-filter: var(--backdrop-lg);
+  -webkit-backdrop-filter: var(--backdrop-lg);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--space-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-lg);
   width: 420px;
   height: 100vh;
   position: relative;
@@ -154,10 +154,10 @@ function onReject(): void {
 .copilot-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  padding: var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .copilot-messages::-webkit-scrollbar {
@@ -191,19 +191,19 @@ function onReject(): void {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 32px 16px;
+  gap: var(--space-xs);
+  padding: var(--space-2xl) var(--space-lg);
   color: var(--text-disabled);
 }
 
 .empty-title {
-  font: 600 13px var(--font-mono);
+  font: var(--font-weight-semibold) var(--font-size-md) var(--font-mono);
   color: var(--text-muted);
 }
 
 .empty-sub {
-  font: 11px var(--font-mono);
-  color: var(--text-disabled);
+  font: var(--font-size-base) var(--font-mono);
+  color: var(--text-secondary);
   text-align: center;
 }
 
@@ -213,9 +213,9 @@ function onReject(): void {
   left: 50%;
   transform: translateX(-50%);
   background: var(--accent);
-  color: #000;
-  font: 700 10px var(--font-mono);
-  padding: 4px 12px;
+  color: var(--text-on-accent);
+  font: var(--font-weight-bold) var(--font-size-xs) var(--font-mono);
+  padding: var(--space-xs) var(--space-md);
   border-radius: 999px;
   cursor: pointer;
   user-select: none;
@@ -226,7 +226,7 @@ function onReject(): void {
 
 .credit-footer {
   height: 36px;
-  padding: 0 14px;
+  padding: 0 var(--space-lg);
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;

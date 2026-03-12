@@ -15,16 +15,16 @@ defineProps<{ title: string; detail: string; code?: string }>()
   background: var(--success-soft);
   border: 1px solid var(--success-border);
   border-radius: var(--radius-md);
-  padding: 16px;
+  padding: var(--space-lg);
 }
-.result-title { font: 700 13px var(--font-mono); color: var(--success); margin-bottom: 4px; }
-.result-detail { font: 12px/1.5 var(--font-mono); color: var(--text-secondary); }
+.result-title { font: var(--font-weight-bold) var(--font-size-md) var(--font-mono); color: var(--success); margin-bottom: var(--space-xs); }
+.result-detail { font: var(--font-size-base)/1.5 var(--font-mono); color: var(--text-secondary); }
 .result-code {
   margin-top: 10px;
   background: var(--muted);
-  padding: 10px;
+  padding: var(--space-md);
   border-radius: var(--radius-sm);
-  font: 11px/1.5 var(--font-mono);
+  font: var(--font-size-sm)/1.5 var(--font-mono);
   color: var(--text-primary);
   overflow-x: auto;
   white-space: pre-wrap;

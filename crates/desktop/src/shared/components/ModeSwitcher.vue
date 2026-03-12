@@ -32,11 +32,11 @@ const modes = [
 
 <style scoped>
 .mode-switcher {
-  padding: 8px 16px;
+  padding: var(--space-sm) var(--space-lg);
 }
 
 .mode-switcher-label {
-  font: 700 10px var(--font-mono, monospace);
+  font: var(--font-weight-bold) var(--font-size-xs) var(--font-mono, monospace);
   color: var(--text-disabled);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -45,7 +45,7 @@ const modes = [
 
 .mode-btns {
   display: flex;
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .mode-btn {
@@ -60,7 +60,7 @@ const modes = [
   border-radius: var(--radius-sm, 4px);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
   font-family: var(--font-mono, monospace);
 }
 
@@ -76,13 +76,13 @@ const modes = [
 }
 
 .mode-icon {
-  font-size: 14px;
+  font-size: var(--font-size-lg);
   line-height: 1;
 }
 
 .mode-label {
-  font-size: 9px;
-  font-weight: 600;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }

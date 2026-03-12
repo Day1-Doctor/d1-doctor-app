@@ -28,10 +28,10 @@ const modes = [
 <style scoped>
 .mode-bar {
   display: flex;
-  gap: 2px;
-  background: var(--surface-2, rgba(0,0,0,0.3));
+  gap: var(--space-2xs);
+  background: var(--muted);
   border-radius: var(--radius-sm, 4px);
-  padding: 2px;
+  padding: var(--space-2xs);
 }
 
 .mode-bar-btn {
@@ -45,8 +45,8 @@ const modes = [
   border-radius: 3px;
   color: var(--text-disabled);
   cursor: pointer;
-  font-size: 12px;
-  transition: background 0.1s, color 0.1s;
+  font-size: var(--font-size-base);
+  transition: background var(--duration-instant), color var(--duration-instant);
 }
 
 .mode-bar-btn:hover:not(.active) {
@@ -55,7 +55,7 @@ const modes = [
 }
 
 .mode-bar-btn.active {
-  background: var(--accent-soft, rgba(99,102,241,0.15));
-  color: var(--accent, #6366f1);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 </style>

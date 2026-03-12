@@ -111,7 +111,7 @@ async function handleGoogleSSO() {
   background: var(--background);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  padding: 24px;
+  padding: var(--space-xl);
 }
 .login-card {
   width: 100%;
@@ -119,9 +119,9 @@ async function handleGoogleSSO() {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 40px 32px;
+  padding: var(--space-2xl) var(--space-xl);
 }
-.login-header { text-align: center; margin-bottom: 32px; }
+.login-header { text-align: center; margin-bottom: var(--space-xl); }
 .logo-mark {
   display: inline-flex;
   align-items: center;
@@ -130,30 +130,30 @@ async function handleGoogleSSO() {
   height: 56px;
   border-radius: var(--radius-md);
   background: var(--accent);
-  color: #fff;
+  color: var(--text-contrast);
   font-size: 20px;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   letter-spacing: -0.5px;
-  margin-bottom: 16px;
+  margin-bottom: var(--space-lg);
 }
 .app-title {
-  margin: 0 0 4px;
+  margin: 0 0 var(--space-xs);
   font-size: 22px;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
   letter-spacing: -0.3px;
 }
-.app-subtitle { margin: 0; font-size: 13px; color: var(--text-secondary); }
+.app-subtitle { margin: 0; font-size: var(--font-size-md); color: var(--text-secondary); }
 .error-banner {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: var(--space-sm);
+  padding: 10px var(--space-md);
   margin-bottom: 20px;
   background: var(--error-soft);
   border: 1px solid var(--error-border);
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: var(--font-size-base);
   color: var(--error);
 }
 .error-icon {
@@ -164,9 +164,9 @@ async function handleGoogleSSO() {
   height: 18px;
   border-radius: 50%;
   background: var(--error);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
+  color: var(--text-contrast);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   flex-shrink: 0;
 }
 .error-message { flex: 1; }
@@ -176,34 +176,34 @@ async function handleGoogleSSO() {
   color: var(--error);
   cursor: pointer;
   padding: 0 2px;
-  font-size: 12px;
+  font-size: var(--font-size-base);
   opacity: 0.7;
-  transition: opacity 0.15s;
+  transition: opacity var(--duration-fast);
 }
 .error-dismiss:hover { opacity: 1; }
 .error-fade-enter-active,
-.error-fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.error-fade-leave-active { transition: opacity var(--duration-normal) ease, transform var(--duration-normal) ease; }
 .error-fade-enter-from,
 .error-fade-leave-to { opacity: 0; transform: translateY(-4px); }
-.login-form { display: flex; flex-direction: column; gap: 16px; }
-.field { display: flex; flex-direction: column; gap: 6px; }
+.login-form { display: flex; flex-direction: column; gap: var(--space-lg); }
+.field { display: flex; flex-direction: column; gap: var(--space-xs); }
 .field-label {
-  font-size: 12px;
+  font-size: var(--font-size-base);
   font-weight: 500;
   color: var(--text-secondary);
   letter-spacing: 0.3px;
 }
 .field-input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 10px var(--space-md);
   background: var(--muted);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--font-size-md);
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
   box-sizing: border-box;
 }
 .field-input::placeholder { color: var(--text-disabled); }
@@ -214,24 +214,24 @@ async function handleGoogleSSO() {
 .field-input:disabled { opacity: 0.5; cursor: not-allowed; }
 .field--error .field-input { border-color: var(--error); }
 .field--error .field-input:focus { box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
-.field-error { margin: 0; font-size: 11px; color: var(--error); }
+.field-error { margin: 0; font-size: var(--font-size-sm); color: var(--error); }
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-sm);
   width: 100%;
-  padding: 11px 16px;
+  padding: 11px var(--space-lg);
   border: none;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: background 0.15s, opacity 0.15s, box-shadow 0.15s;
+  transition: background var(--duration-fast), opacity var(--duration-fast), box-shadow var(--duration-fast);
 }
 .btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary { background: var(--accent); color: var(--text-contrast); }
 .btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
   box-shadow: 0 0 12px var(--accent-glow);
@@ -243,10 +243,10 @@ async function handleGoogleSSO() {
 }
 .btn-google:hover:not(:disabled) { background: var(--border); }
 .google-icon { flex-shrink: 0; }
-.divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+.divider { display: flex; align-items: center; gap: var(--space-md); margin: 20px 0; }
 .divider-line { flex: 1; height: 1px; background: var(--border); }
 .divider-text {
-  font-size: 11px;
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -256,9 +256,8 @@ async function handleGoogleSSO() {
   width: 14px;
   height: 14px;
   border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
+  border-top-color: var(--text-contrast);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 </style>

@@ -19,6 +19,8 @@
           v-if="showErrorBanner"
           class="daemon-error-banner"
           role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
         >
           <p>{{ bannerMessage }}</p>
           <code v-if="showStartCmd">d1 start</code>
@@ -108,34 +110,34 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   z-index: 9999;
-  background: var(--error, #ef4444);
-  color: #fff;
-  padding: 8px 16px;
+  background: var(--error);
+  color: var(--text-contrast);
+  padding: var(--space-sm) var(--space-lg);
   display: flex;
   align-items: center;
-  gap: 12px;
-  font: 12px var(--font-mono);
+  gap: var(--space-md);
+  font: var(--font-size-base) var(--font-mono);
 }
 .daemon-error-banner p { margin: 0; }
 .daemon-error-banner code {
-  background: rgba(0, 0, 0, 0.2);
-  padding: 2px 6px;
-  border-radius: 4px;
+  background: var(--color-disabled-bg);
+  padding: var(--space-2xs) var(--space-xs);
+  border-radius: var(--space-xs);
 }
 .banner-dismiss {
   margin-left: auto;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-placeholder);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--font-size-lg);
   line-height: 1;
-  padding: 0 4px;
-  transition: color 0.1s;
+  padding: 0 var(--space-xs);
+  transition: color var(--duration-instant);
 }
-.banner-dismiss:hover { color: #fff; }
+.banner-dismiss:hover { color: var(--text-contrast); }
 .mode-switch-enter-active,
-.mode-switch-leave-active { transition: opacity 0.3s ease; }
+.mode-switch-leave-active { transition: opacity var(--duration-fast) var(--easing-default); }
 .mode-switch-enter-from,
 .mode-switch-leave-to { opacity: 0; }
 </style>

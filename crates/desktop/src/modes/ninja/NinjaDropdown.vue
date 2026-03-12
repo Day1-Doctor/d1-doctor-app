@@ -17,7 +17,13 @@
     <!-- Footer -->
     <div class="dropdown-footer">
       <div class="progress-row">
-        <div class="progress-track">
+        <div
+          class="progress-track"
+          role="progressbar"
+          :aria-valuenow="completedSteps"
+          :aria-valuemax="totalSteps"
+          aria-label="Plan progress"
+        >
           <div class="progress-fill" :style="{ width: progressPct + '%' }" />
         </div>
       </div>
@@ -48,56 +54,61 @@ const props = defineProps<{
 
 const emit = defineEmits<{ approve: []; dismiss: [] }>()
 
+const completedSteps = computed((): number =>
+  props.steps.filter(s => s.state === 'done').length
+)
+
+const totalSteps = computed((): number => props.steps.length)
+
 const progressPct = computed((): number => {
-  if (props.steps.length === 0) return 0
-  const done = props.steps.filter(s => s.state === 'done').length
-  return Math.round((done / props.steps.length) * 100)
+  if (totalSteps.value === 0) return 0
+  return Math.round((completedSteps.value / totalSteps.value) * 100)
 })
 </script>
 
 <style scoped>
 .ninja-dropdown {
   width: 680px;
-  background: rgba(5, 5, 5, 0.88);
-  backdrop-filter: blur(50px) saturate(160%);
-  -webkit-backdrop-filter: blur(50px) saturate(160%);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8);
+  background: var(--surface-ninja-dropdown);
+  backdrop-filter: var(--backdrop-xl);
+  -webkit-backdrop-filter: var(--backdrop-xl);
+  border-radius: var(--space-lg);
+  border: 1px solid var(--border-translucent);
+  box-shadow: var(--shadow-xl);
   overflow: hidden;
-  animation: slideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  margin-top: 4px;
+  animation: slideDown 0.25s var(--easing-out) forwards;
+  margin-top: var(--space-xs);
 }
 
 /* Header */
 .dropdown-header {
-  padding: 16px 20px 12px;
+  padding: var(--space-lg) var(--space-xl) var(--space-md);
   border-bottom: 1px solid var(--border);
 }
 
 .query-echo {
-  font: 13px var(--font-mono);
-  color: var(--text-muted);
-  margin-bottom: 4px;
+  font: var(--font-size-md) var(--font-mono);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
 }
 
 .agent-label {
-  font: 11px var(--font-mono);
+  font: var(--font-size-sm) var(--font-mono);
   color: var(--text-secondary);
 }
 
 /* Result card wrapper */
 .result-card-wrapper {
-  padding: 0 20px 12px;
+  padding: 0 var(--space-xl) var(--space-md);
 }
 
 /* Footer */
 .dropdown-footer {
-  padding: 12px 20px;
+  padding: var(--space-md) var(--space-xl);
   border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-sm);
 }
 
 .progress-row {
@@ -108,15 +119,15 @@ const progressPct = computed((): number => {
   width: 100%;
   height: 3px;
   background: var(--border);
-  border-radius: 2px;
+  border-radius: var(--space-2xs);
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
   background: var(--accent);
-  border-radius: 2px;
-  transition: width 0.3s ease;
+  border-radius: var(--space-2xs);
+  transition: width var(--duration-slow) var(--easing-default);
 }
 
 .footer-actions {
@@ -126,13 +137,13 @@ const progressPct = computed((): number => {
 }
 
 .credit-cost {
-  font: 11px var(--font-mono);
+  font: var(--font-size-sm) var(--font-mono);
   color: var(--text-muted);
 }
 
 .footer-btns {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 /* Buttons */
@@ -140,10 +151,10 @@ const progressPct = computed((): number => {
 .btn-dismiss {
   background: none;
   border-radius: var(--radius-sm);
-  padding: 5px 14px;
-  font: 12px var(--font-mono);
+  padding: var(--space-xs) var(--space-lg);
+  font: var(--font-size-base) var(--font-mono);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--duration-fast);
 }
 
 .btn-approve {
@@ -152,7 +163,7 @@ const progressPct = computed((): number => {
 }
 
 .btn-approve:hover {
-  background: rgba(34, 197, 94, 0.1);
+  background: var(--success-soft);
 }
 
 .btn-dismiss {

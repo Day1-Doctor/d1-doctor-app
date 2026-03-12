@@ -1,5 +1,5 @@
 <template>
-  <div class="copilot-header">
+  <div class="copilot-header" role="banner">
     <div class="traffic-lights">
       <div class="traffic-dot close" title="Close" @click="closeWindow" />
       <div class="traffic-dot minimize" title="Minimize" @click="minimizeWindow" />
@@ -28,27 +28,27 @@ function toggleMaximize(): void { void appWindow.toggleMaximize() }
 .copilot-header {
   height: 50px;
   background: var(--surface-title-bar);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
+  backdrop-filter: var(--backdrop-md);
+  -webkit-backdrop-filter: var(--backdrop-md);
   border-bottom: 1px solid var(--border);
   -webkit-app-region: drag;
   display: flex;
   align-items: center;
-  padding: 0 14px;
-  gap: 10px;
+  padding: 0 var(--space-lg);
+  gap: var(--space-sm);
   flex-shrink: 0;
 }
 
 .traffic-lights {
   -webkit-app-region: no-drag;
   display: flex;
-  gap: 6px;
+  gap: var(--space-xs);
   flex-shrink: 0;
 }
 
 .traffic-dot {
-  width: 10px;
-  height: 10px;
+  width: var(--space-sm);
+  height: var(--space-sm);
   border-radius: 50%;
   cursor: pointer;
   flex-shrink: 0;
@@ -58,14 +58,16 @@ function toggleMaximize(): void { void appWindow.toggleMaximize() }
 .minimize { background: var(--traffic-minimize); }
 .maximize { background: var(--traffic-maximize); }
 
+.traffic-dot:hover { opacity: 0.85; }
+
 .app-logo {
   -webkit-app-region: no-drag;
-  width: 24px;
-  height: 24px;
+  width: var(--space-xl);
+  height: var(--space-xl);
   border-radius: 50%;
   background: var(--accent);
-  color: #000;
-  font: 700 9px var(--font-mono);
+  color: var(--text-on-accent);
+  font: var(--font-weight-bold) var(--font-size-2xs) var(--font-mono);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -76,7 +78,7 @@ function toggleMaximize(): void { void appWindow.toggleMaximize() }
 .title {
   -webkit-app-region: no-drag;
   flex: 1;
-  font: 12px var(--font-mono);
+  font: var(--font-size-base) var(--font-mono);
   color: var(--text-primary);
   user-select: none;
   white-space: nowrap;
@@ -87,7 +89,7 @@ function toggleMaximize(): void { void appWindow.toggleMaximize() }
 .header-actions {
   -webkit-app-region: no-drag;
   display: flex;
-  gap: 4px;
+  gap: var(--space-xs);
   flex-shrink: 0;
 }
 
@@ -96,14 +98,14 @@ function toggleMaximize(): void { void appWindow.toggleMaximize() }
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 13px;
-  width: 24px;
-  height: 24px;
+  font-size: var(--font-size-md);
+  width: var(--space-xl);
+  height: var(--space-xl);
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--duration-fast), background var(--duration-fast);
   padding: 0;
   line-height: 1;
 }

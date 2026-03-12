@@ -116,33 +116,33 @@ function onReconnect(): void {
 
 <style scoped>
 .connection-status {
-  padding: 8px 16px;
+  padding: var(--space-sm) var(--space-lg);
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .conn-summary {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-xs);
   padding-bottom: 4px;
   margin-bottom: 2px;
   border-bottom: 1px solid var(--border);
 }
 
 .conn-summary-text {
-  font: 600 11px var(--font-mono, monospace);
+  font: var(--font-weight-semibold) var(--font-size-sm) var(--font-mono, monospace);
 }
-.conn-summary-text.connected  { color: var(--success, #22c55e); }
-.conn-summary-text.local-only { color: var(--warning, #f59e0b); }
-.conn-summary-text.offline    { color: var(--error, #ef4444); }
+.conn-summary-text.connected  { color: var(--success); }
+.conn-summary-text.local-only { color: var(--warning); }
+.conn-summary-text.offline    { color: var(--error); }
 
 .conn-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font: 10px var(--font-mono, monospace);
+  gap: var(--space-xs);
+  font: var(--font-size-xs) var(--font-mono, monospace);
 }
 
 .status-dot {
@@ -152,11 +152,11 @@ function onReconnect(): void {
   flex-shrink: 0;
 }
 
-.status-dot.connected    { background: var(--success, #22c55e); }
-.status-dot.connecting   { background: var(--accent, #6366f1); animation: pulse 1s infinite; }
-.status-dot.local-only   { background: var(--warning, #f59e0b); }
-.status-dot.disconnected { background: var(--error, #ef4444); }
-.status-dot.offline      { background: var(--error, #ef4444); }
+.status-dot.connected    { background: var(--success); }
+.status-dot.connecting   { background: var(--accent); animation: pulse 1s infinite; }
+.status-dot.local-only   { background: var(--warning); }
+.status-dot.disconnected { background: var(--error); }
+.status-dot.offline      { background: var(--error); }
 
 .conn-label {
   color: var(--text-disabled);
@@ -164,17 +164,17 @@ function onReconnect(): void {
 }
 
 .conn-text {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
-.conn-text.connected    { color: var(--success, #22c55e); }
-.conn-text.connecting   { color: var(--accent, #6366f1); }
-.conn-text.disconnected { color: var(--error, #ef4444); }
+.conn-text.connected    { color: var(--success); }
+.conn-text.connecting   { color: var(--accent); }
+.conn-text.disconnected { color: var(--error); }
 
 .offline-hint {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font: 10px var(--font-mono, monospace);
+  gap: var(--space-xs);
+  font: var(--font-size-xs) var(--font-mono, monospace);
   color: var(--text-secondary);
   padding-top: 2px;
 }
@@ -188,7 +188,7 @@ function onReconnect(): void {
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 1px 5px;
-  font: 10px var(--font-mono, monospace);
+  font: var(--font-size-xs) var(--font-mono, monospace);
   color: var(--text-primary);
   white-space: nowrap;
 }
@@ -199,11 +199,11 @@ function onReconnect(): void {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm, 4px);
   color: var(--text-secondary);
-  font: 10px var(--font-mono, monospace);
+  font: var(--font-size-xs) var(--font-mono, monospace);
   padding: 3px 8px;
   cursor: pointer;
   align-self: flex-start;
-  transition: background 0.12s, color 0.12s;
+  transition: background var(--duration-fast), color var(--duration-fast);
 }
 
 .reconnect-btn:hover {
@@ -211,8 +211,4 @@ function onReconnect(): void {
   color: var(--text-primary);
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
 </style>

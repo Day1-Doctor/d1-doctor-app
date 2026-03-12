@@ -74,7 +74,7 @@ function autoResize(): void {
 
 <style scoped>
 .copilot-input {
-  padding: 8px 12px;
+  padding: var(--space-sm) var(--space-md);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
@@ -83,11 +83,11 @@ function autoResize(): void {
   background: var(--muted);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 8px 12px;
+  padding: var(--space-sm) var(--space-md);
   display: flex;
   align-items: flex-end;
-  gap: 8px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  gap: var(--space-sm);
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
 }
 
 .input-pill.focused {
@@ -109,29 +109,30 @@ textarea {
 }
 
 textarea::placeholder {
-  color: var(--text-disabled);
+  color: var(--text-placeholder);
 }
 
 .send-btn {
   background: var(--accent);
   border: none;
   border-radius: var(--radius-sm);
-  width: 24px;
-  height: 24px;
-  color: #000;
+  width: var(--space-xl);
+  height: var(--space-xl);
+  color: var(--text-on-accent);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--font-size-base);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background var(--duration-fast), opacity var(--duration-fast);
   padding: 0;
   line-height: 1;
 }
 
 .send-btn:hover:not(:disabled) {
   background: var(--accent-hover);
+  box-shadow: 0 0 16px var(--accent-glow);
 }
 
 .send-btn:disabled {

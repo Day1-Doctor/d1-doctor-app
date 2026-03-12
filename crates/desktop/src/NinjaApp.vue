@@ -109,16 +109,16 @@ onMounted(() => {
 .ninja-status {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-sm);
 }
 
 .bob-phrase {
-  font-family: 'Geist Mono', monospace;
-  font-size: 10px;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
   margin: 0;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn var(--duration-slow) var(--easing-default);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -133,15 +133,10 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.connection-dot.connected { background: var(--success, #22c55e); }
-.connection-dot.connecting { background: var(--warning, #f59e0b); animation: agentPulse 1.5s infinite; }
+.connection-dot.connected { background: var(--success); }
+.connection-dot.connecting { background: var(--warning); animation: agentPulse 1.5s infinite; }
 .connection-dot.disconnected,
-.connection-dot.error { background: var(--error, #ef4444); }
-
-@keyframes agentPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
+.connection-dot.error { background: var(--error); }
 
 @media (prefers-reduced-motion: reduce) {
   .connection-dot.connecting { animation: none; }
