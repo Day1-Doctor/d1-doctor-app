@@ -62,7 +62,7 @@ const i18n = createI18n<[MessageSchema], 'en' | 'zh-CN'>({
  */
 export async function initLocale(): Promise<void> {
   const detected = await detectLocale()
-  i18n.global.locale.value = detected as 'en' | 'zh-CN'
+  ;(i18n.global.locale as unknown as { value: string }).value = detected
 }
 
 export default i18n

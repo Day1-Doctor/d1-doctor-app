@@ -60,6 +60,19 @@ const daemonStore = useDaemonStore()
 
 const bannerDismissed = ref(false)
 
+// Update banner state (wired to Tauri updater plugin)
+const showUpdateBanner = ref(false)
+const updateVersion = ref('')
+
+function restartNow() {
+  // Tauri updater will handle the restart
+  import('@tauri-apps/plugin-process').then(({ relaunch }) => relaunch())
+}
+
+function dismissUpdate() {
+  showUpdateBanner.value = false
+}
+
 const showErrorBanner = computed(() => {
   if (bannerDismissed.value) return false
   if (!daemonStore.errorMessage) return false
