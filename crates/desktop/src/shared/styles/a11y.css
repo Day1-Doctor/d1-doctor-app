@@ -1,0 +1,24 @@
+/* Global accessibility styles — WCAG AAA compliance */
+
+/* Focus ring for all interactive elements (2.4.7 Focus Visible) */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Override for input pills — parent handles the ring */
+.input-pill *:focus-visible,
+.copilot-input-pill *:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Global button press feedback */
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Scrollbar contrast fix (WCAG 1.4.11) */
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb) !important;
+}
