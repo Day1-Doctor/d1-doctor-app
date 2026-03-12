@@ -18,7 +18,7 @@ defineProps<{ agent: string; active: boolean }>()
   display: flex;
   align-items: center;
   justify-content: center;
-  font: 700 11px var(--font-mono);
+  font: var(--font-weight-bold) var(--font-size-sm) var(--font-mono);
   color: var(--accent);
   flex-shrink: 0;
   user-select: none;

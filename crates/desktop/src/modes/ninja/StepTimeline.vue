@@ -5,6 +5,7 @@
       :key="step.id"
       class="step-item"
       :class="step.state"
+      :aria-current="step.state === 'active' ? 'step' : undefined"
     >
       <div class="step-dot" :class="step.state">
         <span>{{ dotContent(step) }}</span>
@@ -28,15 +29,15 @@ function dotContent(step: Step): string {
 
 <style scoped>
 .step-timeline {
-  padding: 12px 20px;
+  padding: var(--space-md) var(--space-xl);
   position: relative;
 }
 
 .step-item {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 8px 0;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
   position: relative;
 }
 
@@ -68,11 +69,11 @@ function dotContent(step: Step): string {
   display: flex;
   align-items: center;
   justify-content: center;
-  font: 11px var(--font-mono);
+  font: var(--font-size-sm) var(--font-mono);
 }
 
 .step-dot.done {
-  background: rgba(34, 197, 94, 0.15);
+  background: var(--success-soft);
   border: 1px solid var(--success);
   color: var(--success);
 }
@@ -86,26 +87,26 @@ function dotContent(step: Step): string {
 
 .step-dot.pending {
   background: transparent;
-  border: 1px solid var(--text-disabled);
-  color: var(--text-disabled);
+  border: 1px solid var(--text-muted);
+  color: var(--text-muted);
 }
 
 .step-dot.error {
-  background: rgba(239, 68, 68, 0.15);
+  background: var(--error-soft);
   border: 1px solid var(--error);
   color: var(--error);
 }
 
 /* Step label */
 .step-label {
-  font: 13px/1.4 var(--font-mono);
+  font: var(--font-size-md)/1.4 var(--font-mono);
   color: var(--text-secondary);
-  padding-top: 4px;
+  padding-top: var(--space-xs);
 }
 
 .step-item.active .step-label {
   color: var(--text-primary);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .step-item.done .step-label {

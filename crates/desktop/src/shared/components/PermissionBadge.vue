@@ -10,9 +10,9 @@ defineProps<{ state: 'allow' | 'ask' | 'deny'; label: string }>()
 .permission-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 8px;
+  padding: 3px var(--space-sm);
   border-radius: var(--radius-sm);
-  font: 11px var(--font-mono);
+  font: var(--font-size-sm) var(--font-mono);
   border: 1px solid transparent;
 }
 .allow { background: var(--success-soft); color: var(--success); border-color: var(--success-border); }

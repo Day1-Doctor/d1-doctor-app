@@ -6,6 +6,7 @@
       :class="statusDot"
       :data-status="statusDot"
       :title="statusDot"
+      :aria-label="'Connection: ' + statusDot"
     />
     <span class="credit-est">{{ creditEstimate }}</span>
   </div>
@@ -26,14 +27,14 @@ defineProps<{
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  padding: 0 14px;
-  gap: 8px;
+  padding: 0 var(--space-lg);
+  gap: var(--space-sm);
   flex-shrink: 0;
 }
 
 .session-name {
   flex: 1;
-  font: 12px var(--font-mono);
+  font: var(--font-size-base) var(--font-mono);
   color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -48,12 +49,17 @@ defineProps<{
 }
 
 .status-dot.connected    { background: var(--success); }
-.status-dot.connecting   { background: var(--warning); }
-.status-dot.disconnected { background: var(--text-disabled); }
+.status-dot.connecting   { background: var(--warning); animation: pulse 1s infinite; }
+.status-dot.disconnected { background: var(--text-muted); }
 
 .credit-est {
-  font: 11px var(--font-mono);
+  font: var(--font-size-sm) var(--font-mono);
   color: var(--text-disabled);
   white-space: nowrap;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 </style>

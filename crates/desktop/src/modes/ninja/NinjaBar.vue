@@ -8,6 +8,7 @@
         class="ninja-input"
         placeholder="Ask anything..."
         autofocus
+        aria-describedby="ninja-hints"
         @keydown.enter.prevent="submit"
         @keydown.esc.prevent="emit('dismiss')"
         @input="onInput"
@@ -15,7 +16,7 @@
       <button class="ninja-send" @click="submit" aria-label="Send">→</button>
     </div>
 
-    <div :class="{ 'hints-hidden': !showHints }" class="ninja-shortcuts">
+    <div id="ninja-hints" :class="{ 'hints-hidden': !showHints }" class="ninja-shortcuts">
       <span>⌘⇧D Toggle · Esc Dismiss · ⏎ Send</span>
     </div>
   </div>
@@ -86,31 +87,31 @@ onUnmounted(() => {
 .ninja-bar {
   width: 680px;
   height: 64px;
-  background: rgba(5, 5, 5, 0.82);
-  backdrop-filter: blur(50px) saturate(180%);
-  -webkit-backdrop-filter: blur(50px) saturate(180%);
+  background: var(--surface-ninja-bar);
+  backdrop-filter: var(--backdrop-xl);
+  -webkit-backdrop-filter: var(--backdrop-xl);
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-translucent);
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(249, 115, 22, 0.1);
   display: flex;
   align-items: center;
-  padding: 0 20px;
-  gap: 14px;
+  padding: 0 var(--space-xl);
+  gap: var(--space-lg);
 }
 
 .ninja-logo {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #F97316, #EA580C);
+  border-radius: var(--space-md);
+  background: var(--gradient-accent);
   box-shadow: 0 0 20px rgba(249, 115, 22, 0.1);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-size: 18px;
-  font-weight: 700;
+  color: var(--text-contrast);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
   font-family: var(--font-mono);
 }
 
@@ -120,32 +121,33 @@ onUnmounted(() => {
   border: none;
   outline: none;
   color: var(--text-primary);
-  font: 16px/1 var(--font-mono);
+  font: var(--font-size-xl)/1 var(--font-mono);
   caret-color: var(--accent);
 }
 
 .ninja-input::placeholder {
-  color: var(--text-disabled);
+  color: var(--text-placeholder);
 }
 
 .ninja-send {
   background: var(--accent);
   border: none;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  color: white;
-  font-size: 16px;
+  border-radius: var(--space-sm);
+  width: var(--space-2xl);
+  height: var(--space-2xl);
+  color: var(--text-on-accent);
+  font-size: var(--font-size-xl);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition: background var(--duration-fast);
 }
 
 .ninja-send:hover {
   background: var(--accent-hover);
+  box-shadow: 0 0 16px var(--accent-glow);
 }
 
 .ninja-shortcuts {
@@ -154,13 +156,13 @@ onUnmounted(() => {
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 20px;
+  gap: var(--space-xl);
   opacity: 0.6;
-  font: 11px var(--font-mono);
+  font: var(--font-size-sm) var(--font-mono);
   color: var(--text-muted);
   pointer-events: none;
   white-space: nowrap;
-  transition: opacity 0.5s ease;
+  transition: opacity var(--duration-slower) var(--easing-default);
 }
 
 .ninja-shortcuts.hints-hidden {

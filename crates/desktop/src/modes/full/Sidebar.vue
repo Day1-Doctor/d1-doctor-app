@@ -131,12 +131,12 @@ function onBuyCredits(): void {
 <style scoped>
 .sidebar {
   width: 260px;
-  background: rgba(10, 10, 10, 0.78);
-  backdrop-filter: blur(30px) saturate(140%);
-  -webkit-backdrop-filter: blur(30px) saturate(140%);
+  background: var(--surface-sidebar);
+  backdrop-filter: var(--backdrop-md);
+  -webkit-backdrop-filter: var(--backdrop-md);
   border-right: 1px solid var(--border);
   overflow-y: auto;
-  padding: 16px 0;
+  padding: var(--space-lg) 0;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -146,10 +146,10 @@ function onBuyCredits(): void {
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 16px 16px;
+  gap: var(--space-sm);
+  padding: 0 var(--space-lg) var(--space-lg);
   border-bottom: 1px solid var(--border);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .logo-circle {
@@ -157,8 +157,8 @@ function onBuyCredits(): void {
   height: 34px;
   border-radius: 50%;
   background: var(--accent);
-  color: #000;
-  font: 700 13px/34px var(--font-mono);
+  color: var(--text-on-accent);
+  font: var(--font-weight-bold) var(--font-size-md)/34px var(--font-mono);
   text-align: center;
   flex-shrink: 0;
   user-select: none;
@@ -171,17 +171,17 @@ function onBuyCredits(): void {
 }
 
 .logo-name {
-  font: 600 12px var(--font-mono);
+  font: var(--font-weight-semibold) var(--font-size-base) var(--font-mono);
   color: var(--text-primary);
 }
 
 .logo-version {
-  font: 10px var(--font-mono);
+  font: var(--font-size-xs) var(--font-mono);
   color: var(--accent);
   background: var(--accent-soft);
   border: 1px solid var(--accent-border);
   border-radius: var(--radius-sm);
-  padding: 1px 5px;
+  padding: 1px var(--space-xs);
   align-self: flex-start;
 }
 
@@ -189,22 +189,22 @@ function onBuyCredits(): void {
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  padding: 4px 0;
+  padding: var(--space-xs) 0;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 16px;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
   background: transparent;
   border: none;
   border-left: 2px solid transparent;
   color: var(--text-secondary);
-  font: 12px var(--font-mono);
+  font: var(--font-size-base) var(--font-mono);
   cursor: pointer;
   text-align: left;
-  transition: background 0.12s, color 0.12s;
+  transition: background var(--duration-fast), color var(--duration-fast);
   width: 100%;
 }
 
@@ -220,7 +220,7 @@ function onBuyCredits(): void {
 }
 
 .nav-icon {
-  font-size: 14px;
+  font-size: var(--font-size-lg);
   width: 18px;
   text-align: center;
   flex-shrink: 0;
@@ -232,28 +232,28 @@ function onBuyCredits(): void {
 
 /* Recent Tasks */
 .sidebar-section {
-  padding: 12px 16px 8px;
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
 }
 
 .section-label {
-  font: 700 10px var(--font-mono);
-  color: var(--text-disabled);
+  font: var(--font-weight-bold) var(--font-size-xs) var(--font-mono);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .task-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-xs);
 }
 
 .task-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font: 11px var(--font-mono);
+  gap: var(--space-sm);
+  font: var(--font-size-sm) var(--font-mono);
   color: var(--text-secondary);
 }
 
@@ -267,7 +267,7 @@ function onBuyCredits(): void {
 .task-dot.done    { background: var(--success); }
 .task-dot.active  { background: var(--accent); }
 .task-dot.pending { background: var(--text-disabled); }
-.task-dot.error   { background: var(--error, #ef4444); }
+.task-dot.error   { background: var(--error); }
 
 .task-name {
   flex: 1;
@@ -289,7 +289,7 @@ function onBuyCredits(): void {
 
 /* Credits */
 .sidebar-credits {
-  padding: 12px 16px;
+  padding: var(--space-md) var(--space-lg);
   border-top: 1px solid var(--border);
 }
 
@@ -297,8 +297,8 @@ function onBuyCredits(): void {
 .sidebar-user {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px 0;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg) 0;
   border-top: 1px solid var(--border);
 }
 
@@ -307,7 +307,7 @@ function onBuyCredits(): void {
   height: 30px;
   border-radius: 50%;
   background: var(--muted);
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -325,12 +325,12 @@ function onBuyCredits(): void {
 }
 
 .user-name {
-  font: 600 11px var(--font-mono);
+  font: var(--font-weight-semibold) var(--font-size-sm) var(--font-mono);
   color: var(--text-primary);
 }
 
 .user-email {
-  font: 10px var(--font-mono);
+  font: var(--font-size-xs) var(--font-mono);
   color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -342,14 +342,14 @@ function onBuyCredits(): void {
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--font-size-lg);
   width: 24px;
   height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--duration-fast), background var(--duration-fast);
   flex-shrink: 0;
 }
 

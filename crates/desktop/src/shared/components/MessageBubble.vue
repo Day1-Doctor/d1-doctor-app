@@ -24,10 +24,10 @@ const formattedTime = computed(() =>
   display: flex;
   flex-direction: column;
   max-width: 85%;
-  padding: 12px 16px;
+  padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-md);
-  font: 13px/1.6 var(--font-mono);
-  animation: fadeIn 0.15s ease;
+  font: var(--font-size-md)/1.6 var(--font-mono);
+  animation: messageIn var(--duration-fast) var(--easing-out);
 }
 .agent {
   align-self: flex-start;
@@ -40,9 +40,9 @@ const formattedTime = computed(() =>
   background: var(--muted);
   color: var(--text-primary);
 }
-.bubble-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.role-label { font-size: 11px; font-weight: 700; color: var(--accent); }
-.timestamp { font-size: 10px; color: var(--text-disabled); }
+.bubble-header { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-xs); }
+.role-label { font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); color: var(--accent); }
+.timestamp { font-size: var(--font-size-xs); color: var(--text-disabled); }
 .bubble-content { white-space: pre-wrap; word-break: break-word; }
-.bubble-footer { margin-top: 4px; display: flex; justify-content: flex-end; }
+.bubble-footer { margin-top: var(--space-xs); display: flex; justify-content: flex-end; }
 </style>

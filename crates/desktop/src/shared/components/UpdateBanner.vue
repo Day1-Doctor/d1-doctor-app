@@ -49,14 +49,14 @@ defineEmits<{
   left: 0;
   right: 0;
   z-index: 9998;
-  background: linear-gradient(135deg, var(--success, #22C55E) 0%, #16a34a 100%);
-  color: #fff;
-  padding: 8px 16px;
+  background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+  color: var(--text-contrast);
+  padding: var(--space-sm) var(--space-lg);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  font: 12px/1.4 var(--font-mono, 'SF Mono', monospace);
+  gap: var(--space-md);
+  font: var(--font-size-base)/1.4 var(--font-mono, 'SF Mono', monospace);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -67,7 +67,7 @@ defineEmits<{
 
 .update-banner__actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-sm);
   flex-shrink: 0;
 }
 
@@ -76,10 +76,10 @@ defineEmits<{
   border-radius: var(--radius-sm, 6px);
   padding: 4px 12px;
   font: inherit;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: opacity 0.15s ease, transform 0.1s ease;
+  transition: opacity var(--duration-fast) var(--easing-default), transform var(--duration-instant) var(--easing-default);
 }
 
 .update-banner__btn:hover {
@@ -92,21 +92,21 @@ defineEmits<{
 
 .update-banner__btn--primary {
   background: #fff;
-  color: #16a34a;
+  color: var(--success-dark);
 }
 
 .update-banner__btn--secondary {
   background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  color: var(--text-contrast);
 }
 
 /* Slide-in from top animation */
 .update-slide-enter-active {
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.35s ease;
+  transition: transform 0.35s var(--easing-out), opacity 0.35s ease;
 }
 
 .update-slide-leave-active {
-  transition: transform 0.25s cubic-bezier(0.7, 0, 0.84, 0), opacity 0.25s ease;
+  transition: transform 0.25s var(--easing-in), opacity 0.25s ease;
 }
 
 .update-slide-enter-from {

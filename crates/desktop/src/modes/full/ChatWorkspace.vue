@@ -170,9 +170,9 @@ function onReject(): void {
 <style scoped>
 .chat-workspace {
   flex: 1;
-  background: rgba(5, 5, 5, 0.75);
-  backdrop-filter: blur(24px) saturate(130%);
-  -webkit-backdrop-filter: blur(24px) saturate(130%);
+  background: var(--surface-chat);
+  backdrop-filter: var(--backdrop-sm);
+  -webkit-backdrop-filter: var(--backdrop-sm);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -182,10 +182,10 @@ function onReject(): void {
 .message-list {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: var(--space-xl);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-lg);
 }
 
 .message-list::-webkit-scrollbar {
@@ -208,23 +208,23 @@ function onReject(): void {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 48px 24px;
+  gap: var(--space-sm);
+  padding: var(--space-3xl) var(--space-xl);
   color: var(--text-disabled);
 }
 
 .empty-icon {
   font-size: 32px;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-sm);
 }
 
 .empty-title {
-  font: 600 14px var(--font-mono);
+  font: var(--font-weight-semibold) var(--font-size-lg) var(--font-mono);
   color: var(--text-muted);
 }
 
 .empty-subtitle {
-  font: 12px var(--font-mono);
+  font: var(--font-size-base) var(--font-mono);
   color: var(--text-disabled);
   text-align: center;
 }
@@ -236,16 +236,16 @@ function onReject(): void {
   left: 50%;
   transform: translateX(-50%);
   background: var(--accent);
-  color: #000;
-  font: 700 11px var(--font-mono);
-  padding: 5px 14px;
+  color: var(--text-on-accent);
+  font: var(--font-weight-bold) var(--font-size-sm) var(--font-mono);
+  padding: var(--space-xs) var(--space-lg);
   border-radius: 999px;
   cursor: pointer;
   user-select: none;
   z-index: 10;
   box-shadow: 0 2px 12px var(--accent-glow);
   /* fadeIn keyframe defined globally in src/shared/styles/animations.css */
-  animation: fadeIn 0.15s ease;
+  animation: fadeIn var(--duration-fast) var(--easing-default);
   transition: opacity 0.15s;
 }
 
@@ -254,18 +254,18 @@ function onReject(): void {
 }
 
 .disconnection-banner {
-  padding: 6px 16px;
-  background: var(--error-soft, rgba(239, 68, 68, 0.12));
-  border-top: 1px solid var(--error-border, rgba(239, 68, 68, 0.3));
-  color: var(--error, #ef4444);
-  font: 11px var(--font-mono, monospace);
+  padding: var(--space-xs) var(--space-lg);
+  background: var(--error-soft);
+  border-top: 1px solid var(--error-border);
+  color: var(--error);
+  font: var(--font-size-sm) var(--font-mono, monospace);
   flex-shrink: 0;
   text-align: center;
 }
 
 /* Input bar */
 .input-bar {
-  padding: 16px 24px;
+  padding: var(--space-lg) var(--space-xl);
   background: rgba(13, 13, 13, 0.6);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
@@ -275,11 +275,11 @@ function onReject(): void {
   background: var(--muted);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 12px 16px;
+  padding: var(--space-md) var(--space-lg);
   display: flex;
   align-items: flex-end;
-  gap: 12px;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  gap: var(--space-md);
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
 }
 
 .input-pill:focus-within {
@@ -301,14 +301,14 @@ function onReject(): void {
 }
 
 .chat-textarea::placeholder {
-  color: var(--text-disabled);
+  color: var(--text-placeholder);
 }
 
 .send-btn {
   background: var(--accent);
   border: none;
-  color: #000;
-  font-size: 14px;
+  color: var(--text-on-accent);
+  font-size: var(--font-size-lg);
   width: 28px;
   height: 28px;
   border-radius: var(--radius-sm);
@@ -317,12 +317,13 @@ function onReject(): void {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s, opacity 0.15s;
+  transition: background var(--duration-fast), opacity var(--duration-fast);
   padding: 0;
 }
 
 .send-btn:hover:not(:disabled) {
   background: var(--accent-hover);
+  box-shadow: 0 0 16px var(--accent-glow);
 }
 
 .send-btn:disabled {

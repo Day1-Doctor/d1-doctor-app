@@ -2,11 +2,11 @@
   <aside class="utility-panel">
     <!-- Task Info section -->
     <div class="panel-section">
-      <button class="section-header" @click="toggle('taskInfo')">
+      <button class="section-header" @click="toggle('taskInfo')" :aria-expanded="open.taskInfo" aria-controls="section-task-info">
         <span class="section-title">Task Info</span>
         <span class="chevron" :class="{ collapsed: !open.taskInfo }">▾</span>
       </button>
-      <div v-if="open.taskInfo" class="section-body">
+      <div v-if="open.taskInfo" id="section-task-info" class="section-body">
         <div class="info-row">
           <span class="info-label">Task</span>
           <span class="info-value">—</span>
@@ -28,11 +28,11 @@
 
     <!-- Agents section -->
     <div class="panel-section">
-      <button class="section-header" @click="toggle('agents')">
+      <button class="section-header" @click="toggle('agents')" :aria-expanded="open.agents" aria-controls="section-agents">
         <span class="section-title">Agents</span>
         <span class="chevron" :class="{ collapsed: !open.agents }">▾</span>
       </button>
-      <div v-if="open.agents" class="section-body">
+      <div v-if="open.agents" id="section-agents" class="section-body">
         <div v-if="agentStore.activeAgents.length === 0" class="empty-hint">
           No active agents
         </div>
@@ -48,22 +48,22 @@
 
     <!-- Permissions section -->
     <div class="panel-section">
-      <button class="section-header" @click="toggle('permissions')">
+      <button class="section-header" @click="toggle('permissions')" :aria-expanded="open.permissions" aria-controls="section-permissions">
         <span class="section-title">Permissions</span>
         <span class="chevron" :class="{ collapsed: !open.permissions }">▾</span>
       </button>
-      <div v-if="open.permissions" class="section-body">
+      <div v-if="open.permissions" id="section-permissions" class="section-body">
         <div class="empty-hint">No permissions requested</div>
       </div>
     </div>
 
     <!-- System Health section -->
     <div class="panel-section">
-      <button class="section-header" @click="toggle('health')">
+      <button class="section-header" @click="toggle('health')" :aria-expanded="open.health" aria-controls="section-health">
         <span class="section-title">System Health</span>
         <span class="chevron" :class="{ collapsed: !open.health }">▾</span>
       </button>
-      <div v-if="open.health" class="section-body">
+      <div v-if="open.health" id="section-health" class="section-body">
         <div class="info-row">
           <span class="info-label">OS</span>
           <span class="info-value">macOS</span>
@@ -82,11 +82,11 @@
 
     <!-- Connection section -->
     <div class="panel-section">
-      <button class="section-header" @click="toggle('connection')">
+      <button class="section-header" @click="toggle('connection')" :aria-expanded="open.connection" aria-controls="section-connection">
         <span class="section-title">Connection</span>
         <span class="chevron" :class="{ collapsed: !open.connection }">▾</span>
       </button>
-      <div v-if="open.connection" class="section-body">
+      <div v-if="open.connection" id="section-connection" class="section-body">
         <div class="info-row">
           <span class="info-label">Backend</span>
           <span
@@ -189,15 +189,15 @@ const gatewayLabel = computed(() =>
 .utility-panel {
   width: 280px;
   background: rgba(13, 13, 13, 0.78);
-  backdrop-filter: blur(30px) saturate(140%);
-  -webkit-backdrop-filter: blur(30px) saturate(140%);
+  backdrop-filter: var(--backdrop-md);
+  -webkit-backdrop-filter: var(--backdrop-md);
   border-left: 1px solid var(--border);
   overflow-y: auto;
-  padding: 16px;
+  padding: var(--space-lg);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xs);
 }
 
 .utility-panel::-webkit-scrollbar {
@@ -222,16 +222,16 @@ const gatewayLabel = computed(() =>
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: var(--space-sm) var(--space-md);
   background: transparent;
   border: none;
   color: var(--text-secondary);
-  font: 700 10px var(--font-mono);
+  font: var(--font-weight-bold) var(--font-size-xs) var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   cursor: pointer;
   text-align: left;
-  transition: background 0.12s;
+  transition: background var(--duration-fast);
 }
 
 .section-header:hover {
@@ -243,9 +243,9 @@ const gatewayLabel = computed(() =>
 }
 
 .chevron {
-  font-size: 12px;
+  font-size: var(--font-size-base);
   color: var(--text-disabled);
-  transition: transform 0.2s;
+  transition: transform var(--duration-fast);
   display: inline-block;
 }
 
@@ -254,10 +254,10 @@ const gatewayLabel = computed(() =>
 }
 
 .section-body {
-  padding: 8px 12px 12px;
+  padding: var(--space-sm) var(--space-md) var(--space-md);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
   border-top: 1px solid var(--border);
 }
 
@@ -265,8 +265,8 @@ const gatewayLabel = computed(() =>
 .info-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font: 11px var(--font-mono);
+  gap: var(--space-sm);
+  font: var(--font-size-sm) var(--font-mono);
 }
 
 .info-label {
@@ -280,8 +280,8 @@ const gatewayLabel = computed(() =>
 
 /* Status badges */
 .status-badge {
-  font: 10px var(--font-mono);
-  padding: 2px 7px;
+  font: var(--font-size-xs) var(--font-mono);
+  padding: var(--space-2xs) var(--space-sm);
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
 }
@@ -306,7 +306,7 @@ const gatewayLabel = computed(() =>
 
 /* Health refresh hint */
 .health-refresh {
-  font: 10px var(--font-mono);
+  font: var(--font-size-xs) var(--font-mono);
   color: var(--text-disabled);
   margin-top: 2px;
 }
@@ -315,18 +315,18 @@ const gatewayLabel = computed(() =>
 .agent-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .agent-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-sm);
 }
 
 .agent-name {
   flex: 1;
-  font: 11px var(--font-mono);
+  font: var(--font-size-sm) var(--font-mono);
   color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -334,8 +334,8 @@ const gatewayLabel = computed(() =>
 }
 
 .agent-status {
-  font: 10px var(--font-mono);
-  padding: 2px 7px;
+  font: var(--font-size-xs) var(--font-mono);
+  padding: var(--space-2xs) var(--space-sm);
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
 }
@@ -348,16 +348,16 @@ const gatewayLabel = computed(() =>
 
 /* Empty hint */
 .empty-hint {
-  font: 11px var(--font-mono);
+  font: var(--font-size-sm) var(--font-mono);
   color: var(--text-disabled);
   text-align: center;
-  padding: 4px 0;
+  padding: var(--space-xs) 0;
 }
 
 /* Connection dots */
 .conn-dot {
-  width: 8px;
-  height: 8px;
+  width: var(--space-sm);
+  height: var(--space-sm);
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -367,7 +367,7 @@ const gatewayLabel = computed(() =>
 .conn-dot.disconnected { background: var(--error); }
 
 .conn-label {
-  font: 11px var(--font-mono);
+  font: var(--font-size-sm) var(--font-mono);
   color: var(--text-secondary);
 }
 </style>

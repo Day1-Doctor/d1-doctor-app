@@ -36,4 +36,68 @@
   --traffic-close: #FF5F57;
   --traffic-minimize: #FFBD2E;
   --traffic-maximize: #28C840;
+
+  /* ── Spacing (4px grid) ── */
+  --space-2xs: 2px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+
+  /* ── Typography sizes ── */
+  --font-size-2xs: 9px;
+  --font-size-xs: 10px;
+  --font-size-sm: 11px;
+  --font-size-base: 12px;
+  --font-size-md: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 16px;
+  --font-size-2xl: 18px;
+  --font-size-3xl: 20px;
+
+  /* ── Typography weights & line heights ── */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.2;
+  --line-height-base: 1.5;
+  --line-height-relaxed: 1.6;
+
+  /* ── Transition durations & easings ── */
+  --duration-instant: 0.1s;
+  --duration-fast: 0.15s;
+  --duration-base: 0.2s;
+  --duration-slow: 0.3s;
+  --duration-slower: 0.5s;
+  --easing-default: ease;
+  --easing-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --easing-in: cubic-bezier(0.7, 0, 0.84, 0);
+
+  /* ── Backdrop filters ── */
+  --backdrop-sm: blur(24px) saturate(130%);
+  --backdrop-md: blur(30px) saturate(140%);
+  --backdrop-lg: blur(40px) saturate(160%);
+  --backdrop-xl: blur(50px) saturate(180%);
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.6);
+  --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.8);
+
+  /* ── Semantic additions ── */
+  --text-on-accent: #000;
+  --text-contrast: #fff;
+  --text-placeholder: #878787;
+  --border-translucent: rgba(255, 255, 255, 0.08);
+  --success-dark: #16a34a;
+  --color-disabled-bg: var(--muted);
+  --color-disabled-text: var(--text-disabled);
+  --scrollbar-thumb: #666666;
+  --gradient-accent: linear-gradient(135deg, var(--accent), var(--accent-hover));
 }

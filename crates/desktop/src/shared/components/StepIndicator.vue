@@ -17,20 +17,20 @@ defineProps<{ state: Step['state']; label: string; index: number }>()
 </script>
 
 <style scoped>
-.step-item { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; }
+.step-item { display: flex; align-items: flex-start; gap: var(--space-md); padding: var(--space-sm) 0; }
 .step-dot {
   width: 22px; height: 22px; border-radius: 50%;
   border: 1px solid var(--border);
   background: transparent;
   display: flex; align-items: center; justify-content: center;
-  font: 11px var(--font-mono);
+  font: var(--font-size-sm) var(--font-mono);
   flex-shrink: 0;
 }
 .done .step-dot  { background: var(--success-soft); border-color: var(--success); color: var(--success); }
 .active .step-dot { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); animation: agentPulse 1.8s ease-in-out infinite; }
 .pending .step-dot { color: var(--text-disabled); }
 .error .step-dot { background: var(--error-soft); border-color: var(--error); color: var(--error); }
-.step-label { font: 13px/1.4 var(--font-mono); color: var(--text-secondary); padding-top: 4px; }
-.active .step-label { color: var(--text-primary); font-weight: 600; }
+.step-label { font: var(--font-size-md)/1.4 var(--font-mono); color: var(--text-secondary); padding-top: var(--space-xs); }
+.active .step-label { color: var(--text-primary); font-weight: var(--font-weight-semibold); }
 .done .step-label { color: var(--text-muted); }
 </style>
