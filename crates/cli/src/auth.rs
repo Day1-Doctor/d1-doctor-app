@@ -105,7 +105,9 @@ async fn login() -> anyhow::Result<()> {
 
     let client = reqwest::Client::new();
     let resp = client
-        .post("https://tjxyyhugiczvkkwclucy.supabase.co/auth/v1/token?grant_type=authorization_code")
+        .post(
+            "https://tjxyyhugiczvkkwclucy.supabase.co/auth/v1/token?grant_type=authorization_code",
+        )
         .json(&serde_json::json!({
             "grant_type": "authorization_code",
             "code": code,
