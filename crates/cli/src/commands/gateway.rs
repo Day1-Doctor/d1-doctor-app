@@ -218,7 +218,7 @@ fn load_access_token() -> anyhow::Result<String> {
 }
 
 /// Derive the platform REST API base URL from the orchestrator WebSocket URL.
-fn platform_api_base() -> String {
+pub fn platform_api_base() -> String {
     let config = d1_common::Config::load().unwrap_or_default();
     let url = config
         .orchestrator_url
