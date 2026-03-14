@@ -24,7 +24,7 @@ env:
 
 jobs:
   build-macos:
-    name: Build macOS (${{ matrix.arch }})
+    name: Build macOS DMG (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
@@ -60,19 +60,23 @@ jobs:
         with:
           projectPath: ${{ env.FRONTEND_DIR }}
           args: --target ${{ matrix.target }}
-          # Only create GitHub release on tag push or manual tag input
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag || '' }}
           releaseName: ${{ github.ref_type == 'tag' && format('Day1 Doctor {0}', github.ref_name) || inputs.tag && format('Day1 Doctor {0}', inputs.tag) || '' }}
           releaseBody: |
             See the [changelog](https://github.com/Day1-Doctor/d1-doctor-app/blob/main/CHANGELOG.md) for details.
 
             ## Install
+
+            ### Desktop App
             - **macOS Apple Silicon**: Download `.dmg` (aarch64)
-            - **macOS Intel**: Download `.dmg` (x86_64)
+
+            ### CLI
+            - **macOS**: `curl -fsSL https://raw.githubusercontent.com/Day1-Doctor/d1-doctor-app/main/scripts/install.sh | sh`
+            - Or download `d1-macos-universal.tar.gz` below
           releaseDraft: true
           prerelease: false
 
-      - name: Upload build artifacts
+      - name: Upload DMG artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}
@@ -81,3 +85,51 @@ jobs:
             ${{ env.TAURI_DIR }}/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
             ${{ env.TAURI_DIR }}/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz.sig
           if-no-files-found: error
+
+  build-cli:
+    name: Build CLI (macOS aarch64)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build CLI binary
+        run: cargo build --release -p d1-doctor-cli --target aarch64-apple-darwin
+
+      - name: Package CLI tarball
+        run: |
+          mkdir -p dist
+          tar -czf dist/d1-macos-universal.tar.gz \
+            -C target/aarch64-apple-darwin/release \
+            d1-doctor-cli
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-macos-aarch64
+          path: dist/d1-macos-universal.tar.gz
+          if-no-files-found: error
+
+  attach-cli-to-release:
+    name: Attach CLI to GitHub Release
+    needs: [build-macos, build-cli]
+    if: github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.tag != '')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download CLI artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: cli-macos-aarch64
+
+      - name: Upload CLI to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG="${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}"
+          gh release upload "$TAG" d1-macos-universal.tar.gz --clobber
