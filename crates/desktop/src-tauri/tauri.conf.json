@@ -39,7 +39,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:9876 ws://127.0.0.1:9876 http://localhost:9876 http://127.0.0.1:9876 https://releases.day1.doctor"
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws://localhost:9876 ws://127.0.0.1:9876 http://localhost:9876 http://127.0.0.1:9876"
     }
   },
   "bundle": {
@@ -62,7 +62,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://releases.day1.doctor/update.json"
+        "https://github.com/Day1-Doctor/d1-doctor-app/releases/latest/download/update.json"
       ],
       "pubkey": ""
     }
