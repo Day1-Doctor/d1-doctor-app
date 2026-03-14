@@ -76,7 +76,53 @@ jobs:
           releaseDraft: true
           prerelease: false
 
-      - name: Upload DMG artifacts
+      - name: Generate and upload update.json
+        if: ${{ github.ref_type == 'tag' || inputs.tag != '' }}
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_type == 'tag' && github.ref_name || inputs.tag }}"
+          VERSION="${TAG#v}"
+
+          BUNDLE_DIR="${{ env.TAURI_DIR }}/target/${{ matrix.target }}/release/bundle/macos"
+
+          # Read the update bundle signature
+          SIG_FILE=$(find "$BUNDLE_DIR" -name "*.app.tar.gz.sig" | head -1)
+          if [ -z "$SIG_FILE" ]; then
+            echo "::error::No .app.tar.gz.sig file found — is TAURI_SIGNING_PRIVATE_KEY set?"
+            exit 1
+          fi
+          SIGNATURE=$(cat "$SIG_FILE")
+
+          # Determine the .app.tar.gz asset name uploaded by tauri-action
+          TAR_FILE=$(find "$BUNDLE_DIR" -name "*.app.tar.gz" ! -name "*.sig" | head -1)
+          TAR_BASENAME=$(basename "$TAR_FILE")
+
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/${TAR_BASENAME}"
+
+          jq -n \
+            --arg version "$VERSION" \
+            --arg notes "See the changelog for details." \
+            --arg pub_date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --arg sig "$SIGNATURE" \
+            --arg url "$DOWNLOAD_URL" \
+            '{
+              version: $version,
+              notes: $notes,
+              pub_date: $pub_date,
+              platforms: {
+                "darwin-aarch64": {
+                  signature: $sig,
+                  url: $url
+                }
+              }
+            }' > update.json
+
+          cat update.json
+          gh release upload "${TAG}" update.json --clobber
+
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-${{ matrix.arch }}
