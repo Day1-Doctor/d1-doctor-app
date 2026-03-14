@@ -1,6 +1,7 @@
 //! CLI command definitions and handlers.
 
 pub mod account;
+pub mod diagnose;
 pub mod gateway;
 pub mod gateway_keys;
 pub mod gateway_setup;
@@ -113,7 +114,7 @@ pub async fn handle(cmd: Commands) -> anyhow::Result<()> {
             );
             todo!("Implement install command")
         }
-        Commands::Diagnose => todo!("Implement diagnose"),
+        Commands::Diagnose => diagnose::run().await,
         Commands::Files => todo!("Implement files"),
         Commands::Status => status::run().await,
         Commands::Upgrade => todo!("Implement upgrade"),
