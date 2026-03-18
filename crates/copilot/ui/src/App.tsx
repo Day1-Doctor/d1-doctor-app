@@ -18,6 +18,8 @@ import {
   OnboardingWizard,
   useOnboarding,
 } from "./components/shared/OnboardingWizard";
+import { ApprovalDialog } from "./components/shared/ApprovalDialog";
+import { UpgradePrompt } from "./components/shared/UpgradePrompt";
 
 const DebugView = lazy(() =>
   import("./views/DebugView").then((m) => ({ default: m.DebugView })),
@@ -129,6 +131,12 @@ function App() {
       {!hasOnboarded && <OnboardingWizard onComplete={completeOnboarding} />}
       {/* Auth wall modal */}
       {showAuthWall && <AuthWall onAuthenticated={handleAuthenticated} />}
+
+      {/* Approval dialog for risky agent tool calls (PRD 10.4) */}
+      <ApprovalDialog />
+
+      {/* Upgrade prompt when tier limit exceeded */}
+      <UpgradePrompt />
 
       <TopBar onAuthRequired={handleAuthRequired} />
 
