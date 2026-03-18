@@ -5,6 +5,7 @@ import { useViewStore } from "./stores/viewStore";
 import { useEventStream } from "./hooks/useEventStream";
 import { useAgentStore } from "./stores/agentStore";
 import { useAuthStore } from "./stores/authStore";
+import { useSettingsStore } from "./stores/settingsStore";
 import { TopBar } from "./components/shared/TopBar";
 import { Sidebar } from "./components/shared/Sidebar";
 import { StatusBar } from "./components/shared/StatusBar";
@@ -97,6 +98,12 @@ function App() {
   const checkStoredAuth = useAuthStore((s) => s.checkStoredAuth);
   const refreshBalance = useAuthStore((s) => s.refreshBalance);
   const [showAuthWall, setShowAuthWall] = useState(false);
+
+  // Apply persisted zoom level on mount
+  const zoomLevel = useSettingsStore((s) => s.zoomLevel);
+  React.useEffect(() => {
+    document.documentElement.style.fontSize = `${zoomLevel}%`;
+  }, [zoomLevel]);
 
   // Check for stored auth on mount
   React.useEffect(() => {

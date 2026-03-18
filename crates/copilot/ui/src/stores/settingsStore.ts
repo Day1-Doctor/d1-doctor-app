@@ -18,13 +18,17 @@ export interface AgentConfig {
 
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 
+export type ZoomLevel = 80 | 90 | 100 | 110 | 120 | 130 | 150;
+
 interface SettingsState {
   providers: ProviderConfig[];
   agents: AgentConfig[];
   autoApprove: Record<RiskLevel, boolean>;
+  zoomLevel: ZoomLevel;
   updateProvider: (id: string, updates: Partial<ProviderConfig>) => void;
   updateAgent: (id: string, updates: Partial<AgentConfig>) => void;
   setAutoApprove: (level: RiskLevel, value: boolean) => void;
+  setZoomLevel: (level: ZoomLevel) => void;
 }
 
 const defaultProviders: ProviderConfig[] = [
@@ -50,10 +54,16 @@ const defaultAutoApprove: Record<RiskLevel, boolean> = {
   critical: false,
 };
 
+// Read persisted zoom level
+const savedZoom = typeof window !== 'undefined'
+  ? parseInt(localStorage.getItem('day1-zoom') || '100', 10) as ZoomLevel
+  : 100 as ZoomLevel;
+
 export const useSettingsStore = create<SettingsState>((set) => ({
   providers: defaultProviders,
   agents: defaultAgents,
   autoApprove: defaultAutoApprove,
+  zoomLevel: savedZoom,
   updateProvider: (id, updates) =>
     set((state) => ({
       providers: state.providers.map((p) =>
@@ -66,8 +76,14 @@ export const useSettingsStore = create<SettingsState>((set) => ({
         a.id === id ? { ...a, ...updates } : a,
       ),
     })),
-  setAutoApprove: (level, value) =>
-    set((state) => ({
+  setAutoApprove: (level: RiskLevel, value: boolean) =>
+    set((state: SettingsState) => ({
       autoApprove: { ...state.autoApprove, [level]: value },
     })),
+  setZoomLevel: (level: ZoomLevel) => {
+    // Apply zoom by setting root font-size (scales all rem-based UI)
+    document.documentElement.style.fontSize = `${level}%`;
+    localStorage.setItem('day1-zoom', String(level));
+    set({ zoomLevel: level });
+  },
 }));

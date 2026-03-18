@@ -101,7 +101,11 @@
     "approvals": "Auto-Approve by Risk Level",
     "language": "Language",
     "apiKey": "API Key",
-    "endpoint": "Endpoint"
+    "endpoint": "Endpoint",
+    "zoom": "Display Zoom",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "zoomReset": "Reset zoom"
   },
   "credits": {
     "remaining": "{{count}} DD remaining",

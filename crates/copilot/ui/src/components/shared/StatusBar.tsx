@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useAgentStore } from "../../stores/agentStore";
 import { useConnectionStore } from "../../stores/connectionStore";
+import { ZoomControl } from "./ZoomControl";
 
 export function StatusBar() {
   const { t } = useTranslation();
@@ -49,8 +50,10 @@ export function StatusBar() {
         <span>{t("statusBar.tokens")} 0</span>
       </div>
 
-      {/* Right: Latency + Connection */}
+      {/* Right: Zoom + Latency + Connection */}
       <div className="flex items-center gap-3 flex-1 justify-end">
+        <ZoomControl />
+        <span className="text-border">|</span>
         <span>{t("statusBar.latency")} --</span>
         <div className="flex items-center gap-1.5">
           <span
