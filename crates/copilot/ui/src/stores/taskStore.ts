@@ -15,6 +15,8 @@ export interface TaskStep {
   agentName?: string;
   agentRole?: string;
   duration?: number; // ms
+  isParallel?: boolean;
+  parallelGroup?: string;
 }
 
 export interface Task {
@@ -72,6 +74,42 @@ const mockSteps: TaskStep[] = [
   },
 ];
 
+const mockParallelSteps: TaskStep[] = [
+  {
+    id: "p-0",
+    title: "Research",
+    status: "completed",
+    agentName: "Scout",
+    agentRole: "researcher",
+    duration: 32000,
+  },
+  {
+    id: "p-1a",
+    title: "Analyze data",
+    status: "running",
+    agentName: "Sage",
+    agentRole: "analyst",
+    isParallel: true,
+    parallelGroup: "group-1",
+  },
+  {
+    id: "p-1b",
+    title: "Review sources",
+    status: "running",
+    agentName: "Quill",
+    agentRole: "writer",
+    isParallel: true,
+    parallelGroup: "group-1",
+  },
+  {
+    id: "p-2",
+    title: "Write report",
+    status: "pending",
+    agentName: "Quill",
+    agentRole: "writer",
+  },
+];
+
 const mockTasks: Task[] = [
   {
     id: "task-1",
@@ -79,6 +117,13 @@ const mockTasks: Task[] = [
     status: "running",
     steps: mockSteps,
     totalDuration: 45000,
+  },
+  {
+    id: "task-2",
+    title: "Research Report with Parallel Analysis",
+    status: "running",
+    steps: mockParallelSteps,
+    totalDuration: 32000,
   },
 ];
 
