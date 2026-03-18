@@ -34,7 +34,7 @@ export function AuthWall({ onAuthenticated }: AuthWallProps) {
       <div className="w-full max-w-md mx-4 rounded-2xl border border-border p-8 bg-card/95 shadow-2xl shadow-black/50" style={{ backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }} role="dialog" aria-modal="true" aria-label={t("auth.signIn")}>
         <div className="text-center mb-6">
           <h2 className="text-lg font-semibold text-text-primary mb-1">{t("auth.signIn")}</h2>
-          <p className="text-xs text-text-muted">{t("auth.apiKeyLabel")}</p>
+          <p className="text-sm text-text-muted">{t("auth.apiKeyLabel")}</p>
         </div>
         <div className="mb-4">
           <div className="relative">
@@ -48,11 +48,11 @@ export function AuthWall({ onAuthenticated }: AuthWallProps) {
             </button>
           </div>
         </div>
-        {error && <p className="text-error text-xs mb-4 text-center">{t("auth.invalidKey")}</p>}
+        {error && <p className="text-error text-sm mb-4 text-center">{t("auth.invalidKey")}</p>}
         <button onClick={handleConnect} disabled={isLoading || !apiKey.trim()} className="w-full py-3 rounded-lg font-medium text-sm transition-colors duration-100 bg-accent hover:bg-accent-hover text-background disabled:bg-muted disabled:text-text-disabled disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">{isLoading ? t("auth.connecting") : t("auth.connect")}</button>
-        <div className="flex items-center gap-3 my-6"><div className="flex-1 h-px bg-border" /><span className="text-text-disabled text-xs">{t("auth.or")}</span><div className="flex-1 h-px bg-border" /></div>
+        <div className="flex items-center gap-3 my-6"><div className="flex-1 h-px bg-border" /><span className="text-text-disabled text-sm">{t("auth.or")}</span><div className="flex-1 h-px bg-border" /></div>
         <button onClick={() => openExternal("https://day1.doctor/auth/login")} className="w-full py-3 rounded-lg font-medium text-sm transition-colors duration-100 border border-border bg-transparent text-text-primary hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">{t("auth.signInWithAccount")}</button>
-        <p className="text-center mt-4"><button onClick={() => openExternal("https://day1.doctor/auth/register")} className="text-accent text-xs hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded">{t("auth.createAccount")}</button></p>
+        <p className="text-center mt-4"><button onClick={() => openExternal("https://day1.doctor/auth/register")} className="text-accent text-sm hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 rounded">{t("auth.createAccount")}</button></p>
       </div>
     </div>
   );

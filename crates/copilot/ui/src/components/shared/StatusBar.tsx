@@ -14,8 +14,8 @@ export function StatusBar() {
 
   return (
     <footer
-      className="h-7 flex items-center justify-between px-4 border-t border-border
-        bg-card/80 text-[11px] text-text-muted select-none shrink-0"
+      className="h-8 flex items-center justify-between px-4 border-t border-border
+        bg-card/80 text-[13px] text-text-muted select-none shrink-0"
       role="contentinfo"
     >
       {/* Left: Agent status */}

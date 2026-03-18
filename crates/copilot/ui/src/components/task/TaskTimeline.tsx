@@ -106,7 +106,7 @@ export function TaskTimeline({ steps, className = "" }: TaskTimelineProps) {
   if (steps.length === 0) {
     return (
       <div className={`flex items-center justify-center py-4 ${className}`}>
-        <span className="text-text-muted text-xs">No steps to display</span>
+        <span className="text-text-muted text-sm">No steps to display</span>
       </div>
     );
   }

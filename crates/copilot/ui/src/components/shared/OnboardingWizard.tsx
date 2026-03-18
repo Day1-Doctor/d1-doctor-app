@@ -100,7 +100,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <button
             onClick={handleBack}
             disabled={step === 0}
-            className="px-4 py-1.5 rounded text-xs text-text-secondary hover:text-text-primary
+            className="px-4 py-1.5 rounded text-sm text-text-secondary hover:text-text-primary
               disabled:opacity-30 disabled:cursor-not-allowed transition-colors duration-100
               focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
@@ -109,7 +109,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={handleSkip}
-              className="px-4 py-1.5 rounded text-xs text-text-muted hover:text-text-secondary
+              className="px-4 py-1.5 rounded text-sm text-text-muted hover:text-text-secondary
                 transition-colors duration-100 focus:outline-none focus-visible:ring-2
                 focus-visible:ring-accent/50"
             >
@@ -117,7 +117,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             </button>
             <button
               onClick={handleNext}
-              className="px-4 py-1.5 rounded text-xs bg-accent hover:bg-accent-hover text-background
+              className="px-4 py-1.5 rounded text-sm bg-accent hover:bg-accent-hover text-background
                 font-medium transition-colors duration-100 focus:outline-none focus-visible:ring-2
                 focus-visible:ring-accent/50"
             >
@@ -139,7 +139,7 @@ function StepWelcome() {
         {t("onboarding.welcomeDesc")}
       </p>
       <div className="w-12 h-0.5 bg-accent/30 rounded-full mx-auto mb-4" />
-      <p className="text-text-muted text-xs leading-relaxed">
+      <p className="text-text-muted text-sm leading-relaxed">
         {t("onboarding.welcomeBody")}
       </p>
     </div>
@@ -165,7 +165,7 @@ function StepApiKey({
       </h3>
       <div className="space-y-3">
         <div>
-          <label className="text-[10px] text-text-muted uppercase tracking-wider">
+          <label className="text-[12px] text-text-muted uppercase tracking-wider">
             {t("onboarding.apiKeyLabel")}
           </label>
           <input
@@ -177,14 +177,14 @@ function StepApiKey({
             }}
             placeholder="sk-ant-..."
             disabled={useGateway}
-            className="w-full bg-card border border-border rounded px-3 py-2 text-xs text-text-primary
+            className="w-full bg-card border border-border rounded px-3 py-2 text-sm text-text-primary
               placeholder:text-text-disabled focus:outline-none focus:ring-1 focus:ring-accent/50
               font-mono mt-1 disabled:opacity-50"
           />
         </div>
         <div className="flex items-center gap-2 py-2">
           <div className="flex-1 h-px bg-border" />
-          <span className="text-text-disabled text-[10px]">{t("onboarding.or")}</span>
+          <span className="text-text-disabled text-[12px]">{t("onboarding.or")}</span>
           <div className="flex-1 h-px bg-border" />
         </div>
         <label className="flex items-center gap-3 rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/20">
@@ -199,7 +199,7 @@ function StepApiKey({
           />
           <div>
             <span className="text-sm text-text-primary font-medium">{t("onboarding.useGateway")}</span>
-            <p className="text-[11px] text-text-muted mt-0.5">
+            <p className="text-[13px] text-text-muted mt-0.5">
               {t("onboarding.useGatewayDesc")}
             </p>
           </div>
@@ -230,10 +230,10 @@ function StepMeetTheTeam() {
                   className="inline-block w-2.5 h-2.5 rounded-full"
                   style={{ backgroundColor: color }}
                 />
-                <span className="text-xs text-text-primary font-medium">{agent.name}</span>
+                <span className="text-sm text-text-primary font-medium">{agent.name}</span>
               </div>
               <span
-                className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px]
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-[13px]
                   font-medium uppercase tracking-wider mb-1"
                 style={{
                   backgroundColor: color + "15",
@@ -243,7 +243,7 @@ function StepMeetTheTeam() {
               >
                 {agent.role}
               </span>
-              <p className="text-[10px] text-text-muted leading-snug">{agent.descKey}</p>
+              <p className="text-[12px] text-text-muted leading-snug">{agent.descKey}</p>
             </div>
           );
         })}
@@ -259,14 +259,14 @@ function StepTryATask() {
   return (
     <div className="text-center">
       <h3 className="text-sm text-text-primary font-medium mb-3">{t("onboarding.tryTask")}</h3>
-      <p className="text-text-muted text-xs mb-4 leading-relaxed">
+      <p className="text-text-muted text-sm mb-4 leading-relaxed">
         {t("onboarding.tryTaskDesc")}
       </p>
       <div className="space-y-2 text-left">
         {suggestions.map((suggestion, i) => (
           <div
             key={i}
-            className="rounded-lg border border-border px-3 py-2 text-xs text-text-secondary"
+            className="rounded-lg border border-border px-3 py-2 text-sm text-text-secondary"
             style={{ backgroundColor: "rgba(15, 15, 15, 0.6)" }}
           >
             &ldquo;{suggestion}&rdquo;

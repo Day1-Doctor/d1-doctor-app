@@ -132,27 +132,27 @@ export function StepCard({ step }: StepCardProps) {
         </svg>
 
         {/* Title */}
-        <span className="text-text-primary text-xs font-medium truncate flex-1">
+        <span className="text-text-primary text-sm font-medium truncate flex-1">
           {step.title}
         </span>
 
         {/* Status badge */}
         <span
-          className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${statusBadgeColor[step.status]}`}
+          className={`text-[12px] font-medium px-2 py-0.5 rounded-full shrink-0 ${statusBadgeColor[step.status]}`}
         >
           {statusLabel[step.status]}
         </span>
 
         {/* Agent name */}
         {step.agentName && (
-          <span className="text-text-muted text-[10px] shrink-0">
+          <span className="text-text-muted text-[12px] shrink-0">
             {step.agentName}
           </span>
         )}
 
         {/* Duration */}
         {step.duration != null && (
-          <span className="text-text-disabled text-[10px] shrink-0">
+          <span className="text-text-disabled text-[12px] shrink-0">
             {formatDuration(step.duration)}
           </span>
         )}
@@ -171,14 +171,14 @@ export function StepCard({ step }: StepCardProps) {
             <div className="px-4 pb-3 pt-1 space-y-3 border-t border-border">
               {/* Tool calls */}
               <div>
-                <h4 className="text-[10px] text-text-secondary font-medium uppercase tracking-wider mb-1.5">
+                <h4 className="text-[12px] text-text-secondary font-medium uppercase tracking-wider mb-1.5">
                   Tool Calls
                 </h4>
                 <div className="space-y-1">
                   {toolCalls.map((tc, i) => (
                     <div
                       key={`${tc.name}-${i}`}
-                      className="flex items-center gap-2 text-[10px]"
+                      className="flex items-center gap-2 text-[12px]"
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -196,10 +196,10 @@ export function StepCard({ step }: StepCardProps) {
 
               {/* Token usage */}
               <div>
-                <h4 className="text-[10px] text-text-secondary font-medium uppercase tracking-wider mb-1.5">
+                <h4 className="text-[12px] text-text-secondary font-medium uppercase tracking-wider mb-1.5">
                   Token Usage
                 </h4>
-                <div className="flex gap-4 text-[10px]">
+                <div className="flex gap-4 text-[12px]">
                   <span className="text-text-muted">
                     Input: <span className="text-text-primary">{tokenUsage.input.toLocaleString()}</span>
                   </span>
@@ -214,10 +214,10 @@ export function StepCard({ step }: StepCardProps) {
 
               {/* Raw output preview */}
               <div>
-                <h4 className="text-[10px] text-text-secondary font-medium uppercase tracking-wider mb-1.5">
+                <h4 className="text-[12px] text-text-secondary font-medium uppercase tracking-wider mb-1.5">
                   Output Preview
                 </h4>
-                <div className="bg-background rounded px-3 py-2 text-[10px] text-text-muted font-mono leading-relaxed max-h-[80px] overflow-y-auto">
+                <div className="bg-background rounded px-3 py-2 text-[12px] text-text-muted font-mono leading-relaxed max-h-[80px] overflow-y-auto">
                   {rawOutput}
                 </div>
               </div>

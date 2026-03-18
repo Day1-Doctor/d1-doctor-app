@@ -41,7 +41,7 @@ export function FpsCounter() {
   const color = fps >= 50 ? "#22C55E" : fps >= 25 ? "#F59E0B" : "#EF4444";
 
   return (
-    <div className="flex items-center gap-1.5 text-[10px] tabular-nums">
+    <div className="flex items-center gap-1.5 text-[12px] tabular-nums">
       <span
         className="inline-block w-1.5 h-1.5 rounded-full"
         style={{ backgroundColor: color }}

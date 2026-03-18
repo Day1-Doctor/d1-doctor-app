@@ -38,7 +38,7 @@ function LazyFallback() {
   const { t } = useTranslation();
   return (
     <div className="flex-1 flex items-center justify-center">
-      <span className="text-text-muted text-xs">{t("common.loading")}</span>
+      <span className="text-text-muted text-sm">{t("common.loading")}</span>
     </div>
   );
 }

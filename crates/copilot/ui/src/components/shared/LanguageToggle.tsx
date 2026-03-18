@@ -12,7 +12,7 @@ export function LanguageToggle() {
   return (
     <button
       onClick={toggle}
-      className="px-2 py-1 rounded text-xs text-text-secondary hover:text-text-primary
+      className="px-2 py-1 rounded text-sm text-text-secondary hover:text-text-primary
         hover:bg-muted transition-colors duration-100
         focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
       title={isZh ? "Switch to English" : "切换到中文"}

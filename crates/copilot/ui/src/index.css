@@ -26,8 +26,8 @@
     background-color: var(--background);
     color: var(--text-primary);
     font-family: "Geist Mono", "SF Mono", "Fira Code", ui-monospace, monospace;
-    font-size: 13px;
-    line-height: 1.5;
+    font-size: 15px;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

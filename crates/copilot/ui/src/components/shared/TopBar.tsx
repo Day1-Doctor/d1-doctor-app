@@ -32,17 +32,17 @@ export function TopBar({ onAuthRequired }: TopBarProps) {
         >
           {t("app.name")}
         </span>
-        <span className="text-text-muted text-xs">v0.1.0</span>
+        <span className="text-text-muted text-sm">v0.1.0</span>
       </div>
 
       {/* Center: Active task */}
       <div className="flex-1 text-center truncate px-4">
         {activeTask ? (
-          <span className="text-text-primary text-xs">
+          <span className="text-text-primary text-sm">
             {activeTask.title}
           </span>
         ) : (
-          <span className="text-text-disabled text-xs">
+          <span className="text-text-disabled text-sm">
             {t("office.noTask")}
           </span>
         )}
@@ -53,12 +53,12 @@ export function TopBar({ onAuthRequired }: TopBarProps) {
         {/* Auth indicator */}
         {isAuthenticated ? (
           <div className="flex items-center gap-2">
-            <span className="text-text-secondary text-xs font-mono">
+            <span className="text-text-secondary text-sm font-mono">
               {apiKeyPrefix}...
             </span>
             <button
               onClick={logout}
-              className="text-text-muted text-[10px] hover:text-error
+              className="text-text-muted text-[12px] hover:text-error
                 transition-colors duration-100 focus:outline-none
                 focus-visible:ring-2 focus-visible:ring-accent/50 rounded px-1"
             >
@@ -68,7 +68,7 @@ export function TopBar({ onAuthRequired }: TopBarProps) {
         ) : (
           <button
             onClick={onAuthRequired}
-            className="text-accent text-xs hover:text-accent-hover
+            className="text-accent text-sm hover:text-accent-hover
               transition-colors duration-100 focus:outline-none
               focus-visible:ring-2 focus-visible:ring-accent/50 rounded px-1.5 py-0.5"
           >

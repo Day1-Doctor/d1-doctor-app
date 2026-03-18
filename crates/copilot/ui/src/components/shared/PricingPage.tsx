@@ -123,7 +123,7 @@ export function PricingPage() {
           className={`text-sm ${annual ? "text-text-primary font-medium" : "text-text-muted"}`}
         >
           {t("pricing.annual")}{" "}
-          <span className="text-xs text-accent">{t("pricing.savePercent")}</span>
+          <span className="text-sm text-accent">{t("pricing.savePercent")}</span>
         </span>
       </div>
 
@@ -154,7 +154,7 @@ export function PricingPage() {
                 </span>
                 <span className="text-sm text-text-muted"> {t("pricing.perMonth")}</span>
                 {annual && tier.priceAnnual > 0 && (
-                  <p className="text-xs text-text-muted">
+                  <p className="text-sm text-text-muted">
                     {t("pricing.billedAnnually", { amount: tier.priceAnnual })}
                   </p>
                 )}

@@ -48,7 +48,7 @@ export function SettingsView() {
 
       {/* Language section */}
       <section className="mb-8">
-        <h3 className="text-xs text-text-muted uppercase tracking-wider font-medium mb-3">
+        <h3 className="text-sm text-text-muted uppercase tracking-wider font-medium mb-3">
           {t("settings.language")}
         </h3>
         <div className="flex items-center gap-2">
@@ -72,7 +72,7 @@ export function SettingsView() {
 
       {/* Provider section */}
       <section className="mb-8">
-        <h3 className="text-xs text-text-muted uppercase tracking-wider font-medium mb-3">
+        <h3 className="text-sm text-text-muted uppercase tracking-wider font-medium mb-3">
           {t("settings.providers")}
         </h3>
         <div className="space-y-3">
@@ -106,7 +106,7 @@ export function SettingsView() {
               </div>
               <div className="space-y-2">
                 <div>
-                  <label className="text-[10px] text-text-muted uppercase tracking-wider">
+                  <label className="text-[12px] text-text-muted uppercase tracking-wider">
                     {t("settings.apiKey")}
                   </label>
                   <input
@@ -114,13 +114,13 @@ export function SettingsView() {
                     value={provider.apiKey}
                     onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value })}
                     placeholder="sk-..."
-                    className="w-full bg-card border border-border rounded px-2 py-1 text-xs text-text-primary
+                    className="w-full bg-card border border-border rounded px-2 py-1 text-sm text-text-primary
                       placeholder:text-text-disabled focus:outline-none focus:ring-1 focus:ring-accent/50
                       font-mono mt-0.5"
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-text-muted uppercase tracking-wider">
+                  <label className="text-[12px] text-text-muted uppercase tracking-wider">
                     {t("settings.endpoint")}
                   </label>
                   <input
@@ -128,7 +128,7 @@ export function SettingsView() {
                     value={provider.endpoint}
                     onChange={(e) => updateProvider(provider.id, { endpoint: e.target.value })}
                     placeholder="https://..."
-                    className="w-full bg-card border border-border rounded px-2 py-1 text-xs text-text-primary
+                    className="w-full bg-card border border-border rounded px-2 py-1 text-sm text-text-primary
                       placeholder:text-text-disabled focus:outline-none focus:ring-1 focus:ring-accent/50
                       font-mono mt-0.5"
                   />
@@ -141,7 +141,7 @@ export function SettingsView() {
 
       {/* Agent section */}
       <section className="mb-8">
-        <h3 className="text-xs text-text-muted uppercase tracking-wider font-medium mb-3">
+        <h3 className="text-sm text-text-muted uppercase tracking-wider font-medium mb-3">
           {t("settings.agents")}
         </h3>
         <div className="space-y-2">
@@ -154,13 +154,13 @@ export function SettingsView() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-text-primary font-medium">{agent.name}</span>
-                  <span className="text-[10px] text-text-muted uppercase">{agent.role}</span>
+                  <span className="text-[12px] text-text-muted uppercase">{agent.role}</span>
                 </div>
                 <div className="mt-1">
                   <select
                     value={agent.model}
                     onChange={(e) => updateAgent(agent.id, { model: e.target.value })}
-                    className="bg-card border border-border rounded px-2 py-0.5 text-[11px] text-text-primary
+                    className="bg-card border border-border rounded px-2 py-0.5 text-[13px] text-text-primary
                       focus:outline-none focus:ring-1 focus:ring-accent/50 font-mono cursor-pointer"
                   >
                     {MODEL_OPTIONS.map((m) => (
@@ -195,7 +195,7 @@ export function SettingsView() {
 
       {/* Approval section */}
       <section className="mb-8">
-        <h3 className="text-xs text-text-muted uppercase tracking-wider font-medium mb-3">
+        <h3 className="text-sm text-text-muted uppercase tracking-wider font-medium mb-3">
           {t("settings.approvals")}
         </h3>
         <div className="space-y-2">
@@ -222,7 +222,7 @@ export function SettingsView() {
                     />
                     <span className="text-sm text-text-primary font-medium capitalize">{level}</span>
                   </div>
-                  <p className="text-[11px] text-text-muted mt-0.5">{description}</p>
+                  <p className="text-[13px] text-text-muted mt-0.5">{description}</p>
                 </div>
               </label>
             );

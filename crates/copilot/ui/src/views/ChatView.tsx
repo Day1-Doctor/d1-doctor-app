@@ -69,7 +69,7 @@ export function ChatView() {
       <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-border">
         <label
           htmlFor="agent-select"
-          className="text-[10px] text-text-secondary uppercase tracking-wider font-medium"
+          className="text-[12px] text-text-secondary uppercase tracking-wider font-medium"
         >
           {t("debug.agent")}
         </label>
@@ -77,7 +77,7 @@ export function ChatView() {
           id="agent-select"
           value={selectedAgentId}
           onChange={(e) => setSelectedAgent(e.target.value)}
-          className="bg-card border border-border rounded px-2 py-1 text-xs text-text-primary
+          className="bg-card border border-border rounded px-2 py-1 text-sm text-text-primary
             focus:outline-none focus:ring-2 focus:ring-accent/50 font-mono cursor-pointer"
         >
           {agents.map((agent) => (
@@ -87,7 +87,7 @@ export function ChatView() {
           ))}
         </select>
         {selectedAgent && (
-          <span className="text-[10px] text-text-muted ml-auto">
+          <span className="text-[12px] text-text-muted ml-auto">
             {t(`agents.status.${selectedAgent.status}`, selectedAgent.status)}
           </span>
         )}
@@ -97,7 +97,7 @@ export function ChatView() {
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 min-h-0">
         {agentMessages.length === 0 && (
           <div className="flex items-center justify-center h-full">
-            <p className="text-text-disabled text-xs">
+            <p className="text-text-disabled text-sm">
               {t("chat.noMessages", { agent: selectedAgent?.name ?? "agent" })}
             </p>
           </div>
@@ -126,24 +126,24 @@ export function ChatView() {
                 {!isUser && (
                   <div className="flex items-center gap-1.5 mb-1">
                     <span
-                      className="text-[10px] font-medium"
+                      className="text-[12px] font-medium"
                       style={{ color: borderColor }}
                     >
                       {msg.agentName}
                     </span>
-                    <span className="text-text-disabled text-[9px]">
+                    <span className="text-text-disabled text-[13px]">
                       {formatTimestamp(msg.timestamp)}
                     </span>
                   </div>
                 )}
 
-                <p className="text-text-primary text-xs leading-relaxed whitespace-pre-wrap">
+                <p className="text-text-primary text-sm leading-relaxed whitespace-pre-wrap">
                   {msg.content}
                 </p>
 
                 {isUser && (
                   <div className="flex justify-end mt-1">
-                    <span className="text-text-disabled text-[9px]">
+                    <span className="text-text-disabled text-[13px]">
                       {formatTimestamp(msg.timestamp)}
                     </span>
                   </div>
@@ -164,7 +164,7 @@ export function ChatView() {
             onKeyDown={handleKeyDown}
             placeholder={t("chat.inputPlaceholder", { agent: selectedAgent?.name ?? "agent" })}
             rows={1}
-            className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary
+            className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-sm text-text-primary
               placeholder:text-text-disabled resize-none font-mono
               focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent
               max-h-[100px] overflow-y-auto"
@@ -197,7 +197,7 @@ export function ChatView() {
             </svg>
           </button>
         </div>
-        <p className="text-text-disabled text-[9px] mt-1.5">
+        <p className="text-text-disabled text-[13px] mt-1.5">
           {t("chat.inputHint")}
         </p>
       </div>

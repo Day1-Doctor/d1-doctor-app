@@ -27,7 +27,7 @@ export function ZoomControl() {
   };
 
   return (
-    <div className="flex items-center gap-1 text-[10px]">
+    <div className="flex items-center gap-1 text-[12px]">
       <button
         onClick={zoomOut}
         disabled={currentIndex <= 0}

@@ -123,17 +123,17 @@ export function ArtifactCard({ artifact }: ArtifactCardProps) {
         <ArtifactIcon type={artifact.type} />
 
         <div className="flex flex-col gap-0.5 flex-1 min-w-0">
-          <span className="text-text-primary text-[11px] font-medium truncate">
+          <span className="text-text-primary text-[13px] font-medium truncate">
             {artifact.name}
           </span>
-          <span className="text-text-disabled text-[9px]">
+          <span className="text-text-disabled text-[13px]">
             {formatSize(artifact.size)} -- {artifact.agent} -- {formatTimestamp(artifact.timestamp)}
           </span>
         </div>
 
         {/* Open button (placeholder) */}
         <span
-          className="text-[9px] text-accent hover:text-accent-hover px-1.5 py-0.5 rounded border border-accent/30 shrink-0"
+          className="text-[13px] text-accent hover:text-accent-hover px-1.5 py-0.5 rounded border border-accent/30 shrink-0"
           role="button"
           tabIndex={0}
           onClick={(e) => {
@@ -161,7 +161,7 @@ export function ArtifactCard({ artifact }: ArtifactCardProps) {
             className="overflow-hidden"
           >
             <div className="px-3 pb-2.5 pt-1 border-t border-border">
-              <pre className="bg-background rounded px-2.5 py-2 text-[10px] text-text-muted font-mono leading-relaxed max-h-[120px] overflow-y-auto whitespace-pre-wrap">
+              <pre className="bg-background rounded px-2.5 py-2 text-[12px] text-text-muted font-mono leading-relaxed max-h-[120px] overflow-y-auto whitespace-pre-wrap">
                 {artifact.content}
               </pre>
             </div>
@@ -176,7 +176,7 @@ export function ArtifactCard({ artifact }: ArtifactCardProps) {
             className="overflow-hidden"
           >
             <div className="px-3 pb-2.5 pt-1 border-t border-border">
-              <p className="text-text-disabled text-[10px] text-center py-2">
+              <p className="text-text-disabled text-[12px] text-center py-2">
                 Preview not available for this file type
               </p>
             </div>

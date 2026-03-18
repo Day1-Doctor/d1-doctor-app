@@ -69,7 +69,7 @@ export function OfficeView() {
       <button
         onClick={() => setActiveView("valley")}
         className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-3 py-1.5
-          rounded-md text-xs text-text-secondary hover:text-text-primary
+          rounded-md text-sm text-text-secondary hover:text-text-primary
           bg-black/50 hover:bg-black/70 border border-border/30
           backdrop-blur-sm transition-colors duration-100
           focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
@@ -106,10 +106,10 @@ export function OfficeView() {
           }}
         >
           <div className="flex items-center gap-3 px-4 py-1">
-            <span className="text-text-secondary text-[10px] font-medium shrink-0 uppercase tracking-wider">
+            <span className="text-text-secondary text-[12px] font-medium shrink-0 uppercase tracking-wider">
               {t("nav.tasks")}
             </span>
-            <span className="text-text-primary text-xs truncate max-w-[160px]">
+            <span className="text-text-primary text-sm truncate max-w-[160px]">
               {activeTask.title}
             </span>
             <div className="w-px h-4 bg-border shrink-0" />

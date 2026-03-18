@@ -83,13 +83,13 @@ export function ApprovalDialog() {
           <h2 className="text-sm font-semibold text-text-primary">
             {t("approval.agentRequests", { agent: request.agentName })}
           </h2>
-          <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-text-secondary">
+          <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[12px] font-medium text-text-secondary">
             {request.agentRole}
           </span>
         </div>
 
         {/* Details table */}
-        <div className="mb-4 space-y-2 text-xs">
+        <div className="mb-4 space-y-2 text-sm">
           {/* Action */}
           <div className="flex justify-between">
             <span className="text-text-secondary">{t("approval.action")}</span>
@@ -114,7 +114,7 @@ export function ApprovalDialog() {
               {t("approval.riskLevel")}
             </span>
             <span
-              className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${badgeClass}`}
+              className={`rounded-full border px-2 py-0.5 text-[12px] font-bold uppercase ${badgeClass}`}
             >
               {riskBadgeLabel[request.riskLevel]}
             </span>
@@ -131,7 +131,7 @@ export function ApprovalDialog() {
 
         {/* Queue indicator */}
         {pendingApprovals.length > 1 && (
-          <p className="mb-3 text-center text-[10px] text-text-muted">
+          <p className="mb-3 text-center text-[12px] text-text-muted">
             +{pendingApprovals.length - 1} more pending
           </p>
         )}
@@ -140,7 +140,7 @@ export function ApprovalDialog() {
         <div className="flex gap-2">
           <button
             onClick={() => handleDecision("allow_once")}
-            className="flex-1 rounded-lg bg-accent px-3 py-2 text-xs font-medium
+            className="flex-1 rounded-lg bg-accent px-3 py-2 text-sm font-medium
               text-white transition-colors hover:bg-accent/90
               focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
@@ -150,7 +150,7 @@ export function ApprovalDialog() {
           <button
             onClick={() => handleDecision("allow_always")}
             className="flex-1 rounded-lg border border-accent/40 bg-transparent
-              px-3 py-2 text-xs font-medium text-accent transition-colors
+              px-3 py-2 text-sm font-medium text-accent transition-colors
               hover:bg-accent/10
               focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
@@ -160,7 +160,7 @@ export function ApprovalDialog() {
           <button
             onClick={() => handleDecision("reject")}
             className="flex-1 rounded-lg border border-border bg-transparent
-              px-3 py-2 text-xs font-medium text-text-secondary
+              px-3 py-2 text-sm font-medium text-text-secondary
               transition-colors hover:bg-muted hover:text-text-primary
               focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
@@ -177,7 +177,7 @@ export function ApprovalDialog() {
             className="h-3.5 w-3.5 rounded border-border bg-muted text-accent
               focus:ring-accent/50"
           />
-          <span className="text-[11px] text-text-secondary">
+          <span className="text-[13px] text-text-secondary">
             {t("approval.trustCheckbox", {
               level: riskBadgeLabel[request.riskLevel],
             })}

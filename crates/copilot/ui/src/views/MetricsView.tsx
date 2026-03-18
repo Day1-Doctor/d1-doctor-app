@@ -6,10 +6,10 @@ import { useOfficeStore } from "../stores/officeStore";
 function StatCard({ label, value, unit }: { label: string; value: string | number; unit?: string }) {
   return (
     <div className="border border-border rounded-lg px-3 py-2.5 bg-card/60">
-      <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1">{label}</div>
+      <div className="text-[12px] uppercase tracking-wider text-text-muted mb-1">{label}</div>
       <div className="text-base font-semibold text-text-primary">
         {value}
-        {unit && <span className="text-xs font-normal text-text-muted ml-1">{unit}</span>}
+        {unit && <span className="text-sm font-normal text-text-muted ml-1">{unit}</span>}
       </div>
     </div>
   );
@@ -53,7 +53,7 @@ export function MetricsView() {
 
         {/* By Office */}
         <section>
-          <h2 className="text-[10px] uppercase tracking-wider text-text-muted font-semibold mb-2">
+          <h2 className="text-[12px] uppercase tracking-wider text-text-muted font-semibold mb-2">
             {t("metrics.byOffice")}
           </h2>
           <div className="space-y-2">
@@ -62,8 +62,8 @@ export function MetricsView() {
               return (
                 <div key={office.id} className="border border-border rounded-lg px-3 py-2 bg-card/60">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] text-text-primary">{office.name}</span>
-                    <span className="text-[10px] text-text-muted">{office.agentCount} agents</span>
+                    <span className="text-[13px] text-text-primary">{office.name}</span>
+                    <span className="text-[12px] text-text-muted">{office.agentCount} agents</span>
                   </div>
                   <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
@@ -79,11 +79,11 @@ export function MetricsView() {
 
         {/* By Agent */}
         <section>
-          <h2 className="text-[10px] uppercase tracking-wider text-text-muted font-semibold mb-2">
+          <h2 className="text-[12px] uppercase tracking-wider text-text-muted font-semibold mb-2">
             {t("metrics.byAgent")}
           </h2>
           <div className="border border-border rounded-lg overflow-hidden">
-            <table className="w-full text-[11px]">
+            <table className="w-full text-[13px]">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left px-3 py-1.5 text-text-muted font-medium">Agent</th>
@@ -97,7 +97,7 @@ export function MetricsView() {
                   <tr key={row.name} className="border-b border-border/50 last:border-0 hover:bg-muted/20">
                     <td className="px-3 py-1.5 text-text-primary">
                       <span className="font-medium">{row.name}</span>
-                      <span className="text-text-muted ml-1 text-[10px]">{row.role}</span>
+                      <span className="text-text-muted ml-1 text-[12px]">{row.role}</span>
                     </td>
                     <td className="px-3 py-1.5 text-text-secondary text-right">{row.tokens.toLocaleString()}</td>
                     <td className="px-3 py-1.5 text-text-secondary text-right">{row.cost} DD</td>

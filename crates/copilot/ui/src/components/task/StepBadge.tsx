@@ -115,20 +115,20 @@ export function StepBadge({ step, isActive, onClick }: StepBadgeProps) {
     >
       <div className="flex items-center gap-2 w-full">
         <StatusIcon status={step.status} />
-        <span className="text-text-primary text-xs font-medium truncate">
+        <span className="text-text-primary text-sm font-medium truncate">
           {step.title}
         </span>
       </div>
 
       {step.agentName && (
-        <span className="text-text-muted text-[10px] pl-5 truncate w-full">
+        <span className="text-text-muted text-[12px] pl-5 truncate w-full">
           {step.agentName}
           {step.agentRole ? ` (${step.agentRole})` : ""}
         </span>
       )}
 
       {step.duration != null && step.status === "completed" && (
-        <span className="text-text-disabled text-[10px] pl-5">
+        <span className="text-text-disabled text-[12px] pl-5">
           {formatDuration(step.duration)}
         </span>
       )}

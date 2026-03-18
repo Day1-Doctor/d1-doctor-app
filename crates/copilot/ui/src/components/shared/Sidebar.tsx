@@ -150,7 +150,7 @@ function SectionHeader({
         <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-accent rounded-r" aria-hidden="true" />
       )}
       <span className={`shrink-0 ${isActive ? "text-accent" : ""}`}>{icon}</span>
-      <span className="flex-1 text-left text-[10px] uppercase tracking-wider font-semibold">
+      <span className="flex-1 text-left text-[12px] uppercase tracking-wider font-semibold">
         {label}
       </span>
       {badge}
@@ -190,7 +190,7 @@ function SubItem({
       onClick={onClick}
       disabled={!onClick}
       className={`
-        w-full flex items-center gap-2 pl-6 pr-2 py-1 rounded-md text-[11px]
+        w-full flex items-center gap-2 pl-6 pr-2 py-1 rounded-md text-[13px]
         transition-colors duration-100 relative
         focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50
         ${isActive ? "text-text-primary bg-muted/60 border-l-2 border-accent" : ""}
@@ -203,7 +203,7 @@ function SubItem({
       )}
       <span className="flex-1 text-left truncate">{label}</span>
       {badge && (
-        <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${badgeCls}`}>
+        <span className={`text-[13px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${badgeCls}`}>
           {badge}
         </span>
       )}
@@ -283,7 +283,7 @@ function ValleySection({ collapsed }: { collapsed: boolean }) {
           {/* Add Office button */}
           <button
             onClick={handleAddOffice}
-            className="w-full flex items-center gap-2 pl-6 pr-2 py-1 rounded-md text-[11px]
+            className="w-full flex items-center gap-2 pl-6 pr-2 py-1 rounded-md text-[13px]
               text-accent hover:text-accent hover:bg-accent/10
               transition-colors duration-100
               focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
@@ -293,7 +293,7 @@ function ValleySection({ collapsed }: { collapsed: boolean }) {
           </button>
           {/* Locked count */}
           {lockedCount > 0 && (
-            <div className="pl-6 pr-2 py-1 text-[10px] text-text-muted select-none">
+            <div className="pl-6 pr-2 py-1 text-[12px] text-text-muted select-none">
               {t("sidebar.locked", { count: billingLockedCount > 0 ? billingLockedCount : lockedCount })}
             </div>
           )}
@@ -342,7 +342,7 @@ function TasksSection({ collapsed }: { collapsed: boolean }) {
         onClick={handleHeaderClick}
         badge={
           blockCount > 0 ? (
-            <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 shrink-0">
+            <span className="text-[13px] font-medium px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 shrink-0">
               ⚠
             </span>
           ) : undefined
@@ -588,7 +588,7 @@ export function Sidebar() {
           <button
             onClick={() => setActiveView("settings")}
             className={`
-              w-full flex items-center gap-2 px-2 py-2 rounded-md text-[11px]
+              w-full flex items-center gap-2 px-2 py-2 rounded-md text-[13px]
               transition-colors duration-100 relative
               focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50
               ${activeView === "settings" ? "text-text-primary bg-muted" : "text-text-secondary hover:text-text-primary hover:bg-muted/50"}

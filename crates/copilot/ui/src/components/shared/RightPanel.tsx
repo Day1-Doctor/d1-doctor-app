@@ -80,7 +80,7 @@ function ChatPanel() {
         <select
           value={selectedAgentId}
           onChange={(e) => setSelectedAgent(e.target.value)}
-          className="flex-1 bg-card border border-border rounded px-2 py-1 text-xs text-text-primary
+          className="flex-1 bg-card border border-border rounded px-2 py-1 text-sm text-text-primary
             focus:outline-none focus:ring-2 focus:ring-accent/50 font-mono cursor-pointer"
           aria-label={t("chat.selectAgent")}
         >
@@ -104,7 +104,7 @@ function ChatPanel() {
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
         {agentMessages.length === 0 && (
           <div className="flex items-center justify-center h-full">
-            <p className="text-text-disabled text-xs text-center px-4">
+            <p className="text-text-disabled text-sm text-center px-4">
               {t("chat.noMessages", { agent: selectedAgent?.name ?? "agent" })}
             </p>
           </div>
@@ -125,18 +125,18 @@ function ChatPanel() {
               >
                 {!isUser && (
                   <div className="flex items-center gap-1 mb-0.5">
-                    <span className="text-[10px] font-medium" style={{ color: borderColor }}>
+                    <span className="text-[12px] font-medium" style={{ color: borderColor }}>
                       {msg.agentName}
                     </span>
-                    <span className="text-text-disabled text-[9px]">{formatTimestamp(msg.timestamp)}</span>
+                    <span className="text-text-disabled text-[13px]">{formatTimestamp(msg.timestamp)}</span>
                   </div>
                 )}
-                <p className="text-text-primary text-[11px] leading-relaxed whitespace-pre-wrap">
+                <p className="text-text-primary text-[13px] leading-relaxed whitespace-pre-wrap">
                   {msg.content}
                 </p>
                 {isUser && (
                   <div className="flex justify-end mt-0.5">
-                    <span className="text-text-disabled text-[9px]">{formatTimestamp(msg.timestamp)}</span>
+                    <span className="text-text-disabled text-[13px]">{formatTimestamp(msg.timestamp)}</span>
                   </div>
                 )}
               </div>
@@ -155,7 +155,7 @@ function ChatPanel() {
             onKeyDown={handleKeyDown}
             placeholder={t("commandCenter.commandPlaceholder")}
             rows={1}
-            className="flex-1 bg-card border border-border rounded-lg px-2.5 py-2 text-[11px] text-text-primary
+            className="flex-1 bg-card border border-border rounded-lg px-2.5 py-2 text-[13px] text-text-primary
               placeholder:text-text-disabled resize-none font-mono
               focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent
               max-h-[80px] overflow-y-auto"
@@ -216,7 +216,7 @@ function AgentsPanel({ onOpenChat }: { onOpenChat: () => void }) {
       {/* Working count banner */}
       {workingCount > 0 && (
         <div className="shrink-0 px-3 py-1.5 border-b border-border bg-accent/5">
-          <span className="text-[10px] text-accent font-medium">
+          <span className="text-[12px] text-accent font-medium">
             {t("commandCenter.working", { count: workingCount })}
           </span>
         </div>
@@ -243,11 +243,11 @@ function AgentsPanel({ onOpenChat }: { onOpenChat: () => void }) {
                   style={{ backgroundColor: dotColor }}
                   aria-hidden="true"
                 />
-                <span className="text-[11px] font-medium text-text-primary truncate flex-1">
+                <span className="text-[13px] font-medium text-text-primary truncate flex-1">
                   {agent.name}
                 </span>
                 <span
-                  className="text-[10px] font-medium shrink-0"
+                  className="text-[12px] font-medium shrink-0"
                   style={{ color: roleColor }}
                 >
                   {agent.role}
@@ -255,7 +255,7 @@ function AgentsPanel({ onOpenChat }: { onOpenChat: () => void }) {
               </div>
 
               {/* Status / task */}
-              <div className="text-[10px] text-text-muted truncate pl-4">
+              <div className="text-[12px] text-text-muted truncate pl-4">
                 {agent.status !== "idle"
                   ? t(`agents.status.${agent.status}`, agent.status)
                   : "Idle"}
@@ -263,7 +263,7 @@ function AgentsPanel({ onOpenChat }: { onOpenChat: () => void }) {
 
               {/* Cost */}
               {cost > 0 && (
-                <div className="flex items-center gap-2 pl-4 text-[10px] text-text-muted">
+                <div className="flex items-center gap-2 pl-4 text-[12px] text-text-muted">
                   <span>{cost} DD</span>
                 </div>
               )}
@@ -273,7 +273,7 @@ function AgentsPanel({ onOpenChat }: { onOpenChat: () => void }) {
                 {skills.map((skill) => (
                   <span
                     key={skill}
-                    className="text-[9px] px-1.5 py-0.5 rounded-full bg-muted text-text-secondary border border-border"
+                    className="text-[13px] px-1.5 py-0.5 rounded-full bg-muted text-text-secondary border border-border"
                   >
                     {skill}
                   </span>
@@ -289,7 +289,7 @@ function AgentsPanel({ onOpenChat }: { onOpenChat: () => void }) {
         <button
           onClick={onOpenChat}
           className="w-full py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-background
-            text-[11px] font-medium transition-colors duration-100
+            text-[13px] font-medium transition-colors duration-100
             focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
         >
           {t("commandCenter.openChat")}
@@ -327,7 +327,7 @@ export function RightPanel() {
           {/* Header */}
           <div className="shrink-0 flex items-center gap-1 h-10 px-3 border-b border-border">
             {/* Title */}
-            <span className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mr-1">
+            <span className="text-[12px] text-text-muted uppercase tracking-wider font-semibold mr-1">
               {t("commandCenter.title")}
             </span>
 
@@ -335,7 +335,7 @@ export function RightPanel() {
             <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5">
               <button
                 onClick={() => setMode("chat")}
-                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors duration-100
+                className={`px-2 py-0.5 rounded text-[12px] font-medium transition-colors duration-100
                   focus:outline-none focus-visible:ring-1 focus-visible:ring-accent/50
                   ${mode === "chat" ? "bg-card text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
               >
@@ -343,7 +343,7 @@ export function RightPanel() {
               </button>
               <button
                 onClick={() => setMode("agents")}
-                className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors duration-100
+                className={`px-2 py-0.5 rounded text-[12px] font-medium transition-colors duration-100
                   focus:outline-none focus-visible:ring-1 focus-visible:ring-accent/50
                   ${mode === "agents" ? "bg-card text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
               >

@@ -41,7 +41,7 @@ export function CreditMeter() {
     <div ref={containerRef} className="relative">
       <button
         onClick={() => setShowPopover((v) => !v)}
-        className="flex items-center gap-1.5 text-xs text-text-secondary
+        className="flex items-center gap-1.5 text-sm text-text-secondary
           hover:text-text-primary transition-colors duration-100
           focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50
           rounded px-1.5 py-0.5"
@@ -66,21 +66,21 @@ export function CreditMeter() {
           role="dialog"
           aria-label={t("credits.sessionCostBreakdown")}
         >
-          <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2">{t("credits.sessionCostBreakdown")}</p>
-          <div className="flex justify-between text-xs mb-1">
+          <p className="text-[12px] text-text-muted uppercase tracking-wider mb-2">{t("credits.sessionCostBreakdown")}</p>
+          <div className="flex justify-between text-sm mb-1">
             <span className="text-text-secondary">{t("credits.sessionTotal")}</span>
             <span className="text-text-primary">{sessionCost} DD</span>
           </div>
-          <div className="flex justify-between text-xs mb-2">
+          <div className="flex justify-between text-sm mb-2">
             <span className="text-text-secondary">{t("credits.balance")}</span>
             <span style={{ color: barColor }}>{balance} / {limit} DD</span>
           </div>
           {agentEntries.length > 0 && (
             <>
               <div className="h-px bg-border my-2" />
-              <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">{t("credits.perAgent")}</p>
+              <p className="text-[12px] text-text-muted uppercase tracking-wider mb-1.5">{t("credits.perAgent")}</p>
               {agentEntries.map(([name, cost]) => (
-                <div key={name} className="flex justify-between text-xs mb-0.5">
+                <div key={name} className="flex justify-between text-sm mb-0.5">
                   <span className="text-text-secondary">{name}</span>
                   <span className="text-text-primary">{cost} DD</span>
                 </div>

@@ -23,11 +23,11 @@ export function WorkspaceView() {
       <div className="flex-1 px-6 py-4 space-y-6">
         {/* Files & Artifacts section */}
         <section>
-          <h2 className="text-[10px] uppercase tracking-wider text-text-muted font-semibold mb-2">
+          <h2 className="text-[12px] uppercase tracking-wider text-text-muted font-semibold mb-2">
             {t("workspace.files")}
           </h2>
           {artifacts.length === 0 ? (
-            <p className="text-text-disabled text-xs">{t("workspace.noFiles")}</p>
+            <p className="text-text-disabled text-sm">{t("workspace.noFiles")}</p>
           ) : (
             <div className="space-y-2">
               {artifacts.map((artifact) => (
@@ -39,14 +39,14 @@ export function WorkspaceView() {
 
         {/* Memory section */}
         <section>
-          <h2 className="text-[10px] uppercase tracking-wider text-text-muted font-semibold mb-2">
+          <h2 className="text-[12px] uppercase tracking-wider text-text-muted font-semibold mb-2">
             {t("workspace.memory")}
             <span className="ml-1.5 text-text-disabled normal-case font-normal">
               ({mockMemoryEntries.length})
             </span>
           </h2>
           {mockMemoryEntries.length === 0 ? (
-            <p className="text-text-disabled text-xs">{t("workspace.noMemory")}</p>
+            <p className="text-text-disabled text-sm">{t("workspace.noMemory")}</p>
           ) : (
             <div className="space-y-1.5">
               {mockMemoryEntries.map((entry) => (
@@ -54,8 +54,8 @@ export function WorkspaceView() {
                   key={entry.id}
                   className="border border-border rounded-lg px-3 py-2 bg-card/60"
                 >
-                  <p className="text-[11px] text-text-primary leading-relaxed">{entry.content}</p>
-                  <p className="text-[9px] text-text-muted mt-1">
+                  <p className="text-[13px] text-text-primary leading-relaxed">{entry.content}</p>
+                  <p className="text-[13px] text-text-muted mt-1">
                     {new Date(entry.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>

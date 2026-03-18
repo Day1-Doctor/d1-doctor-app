@@ -135,7 +135,7 @@ export function AgentDetailPanel() {
         {/* Role badge */}
         <div className="flex items-center gap-2">
           <span
-            className="inline-flex items-center px-2 py-0.5 rounded text-[10px]
+            className="inline-flex items-center px-2 py-0.5 rounded text-[12px]
               font-medium uppercase tracking-wider"
             style={{
               backgroundColor: roleColor + "20",
@@ -149,7 +149,7 @@ export function AgentDetailPanel() {
 
         {/* FSM Status */}
         <div>
-          <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+          <p className="text-[12px] text-text-muted uppercase tracking-wider mb-1">
             {t("agentDetail.fsmState")}
           </p>
           <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export function AgentDetailPanel() {
               className="inline-block w-2 h-2 rounded-full"
               style={{ backgroundColor: statusColor }}
             />
-            <span className="text-xs text-text-primary font-medium">
+            <span className="text-sm text-text-primary font-medium">
               {fsmLabel(agent.status)}
             </span>
           </div>
@@ -166,11 +166,11 @@ export function AgentDetailPanel() {
         {/* Trust Score (D1D-238) */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <p className="text-[10px] text-text-muted uppercase tracking-wider">
+            <p className="text-[12px] text-text-muted uppercase tracking-wider">
               {t("agentDetail.trustScore")}
             </p>
             <span
-              className="text-xs font-medium tabular-nums"
+              className="text-sm font-medium tabular-nums"
               style={{ color: tsColor }}
             >
               {trustScore}%
@@ -189,10 +189,10 @@ export function AgentDetailPanel() {
 
         {/* Current Task */}
         <div>
-          <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+          <p className="text-[12px] text-text-muted uppercase tracking-wider mb-1">
             {t("agentDetail.currentTask")}
           </p>
-          <p className="text-xs text-text-secondary">{taskName}</p>
+          <p className="text-sm text-text-secondary">{taskName}</p>
         </div>
 
         {/* Session Stats */}
@@ -201,7 +201,7 @@ export function AgentDetailPanel() {
             className="rounded-lg border border-border p-2"
             style={{ backgroundColor: "rgba(15, 15, 15, 0.6)" }}
           >
-            <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">
+            <p className="text-[12px] text-text-muted uppercase tracking-wider mb-0.5">
               {t("agentDetail.tokens")}
             </p>
             <p className="text-sm text-text-primary font-medium tabular-nums">
@@ -212,7 +212,7 @@ export function AgentDetailPanel() {
             className="rounded-lg border border-border p-2"
             style={{ backgroundColor: "rgba(15, 15, 15, 0.6)" }}
           >
-            <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">
+            <p className="text-[12px] text-text-muted uppercase tracking-wider mb-0.5">
               {t("agentDetail.costDD")}
             </p>
             <p className="text-sm text-accent font-medium tabular-nums">
@@ -223,12 +223,12 @@ export function AgentDetailPanel() {
 
         {/* Activity Log */}
         <div>
-          <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
+          <p className="text-[12px] text-text-muted uppercase tracking-wider mb-2">
             {t("agentDetail.activityLog")}
           </p>
           <div className="space-y-1.5 max-h-[240px] overflow-y-auto">
             {MOCK_ACTIVITY.map((event, i) => (
-              <div key={i} className="flex gap-2 text-[11px]">
+              <div key={i} className="flex gap-2 text-[13px]">
                 <span className="text-text-disabled shrink-0 tabular-nums w-8">
                   {event.time}
                 </span>

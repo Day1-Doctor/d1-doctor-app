@@ -50,7 +50,7 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`px-3 py-1 rounded text-xs font-medium transition-colors duration-100
+      className={`px-3 py-1 rounded text-sm font-medium transition-colors duration-100
         focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50
         ${
           active
