@@ -1,5 +1,6 @@
 import { useTaskStore } from "../stores/taskStore";
 import { TaskTimeline } from "../components/task/TaskTimeline";
+import { StepCard } from "../components/task/StepCard";
 
 const statusLabel: Record<string, string> = {
   pending: "Pending",
@@ -111,26 +112,14 @@ export function TaskView() {
         <TaskTimeline steps={activeTask.steps} />
       </section>
 
-      {/* Artifacts placeholder */}
-      <section className="flex-1 flex flex-col items-center justify-center min-h-0 border border-dashed border-border rounded-lg">
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-text-disabled mb-2"
-          aria-hidden="true"
-        >
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-          <polyline points="14 2 14 8 20 8" />
-        </svg>
-        <p className="text-text-disabled text-xs">
-          Artifacts will appear here
-        </p>
+      {/* Step details */}
+      <section className="flex-1 flex flex-col min-h-0 overflow-y-auto gap-2">
+        <h3 className="text-xs text-text-secondary font-medium shrink-0">
+          Step Details
+        </h3>
+        {activeTask.steps.map((step) => (
+          <StepCard key={step.id} step={step} />
+        ))}
       </section>
     </div>
   );
