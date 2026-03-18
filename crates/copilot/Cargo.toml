@@ -28,3 +28,4 @@ axum = { version = "0.7", features = ["ws"] }
 tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.5", features = ["cors"] }
 futures = "0.3"
+async-trait = { workspace = true }
