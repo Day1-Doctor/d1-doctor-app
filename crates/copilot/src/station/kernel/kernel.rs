@@ -157,7 +157,10 @@ mod tests {
         let agent = AgentDescriptor::new("worker", AgentRole::Writer, Framework::Generic);
         let id = kernel.register(agent).await;
 
-        let (old, new) = kernel.apply_trigger(&id, Trigger::TaskAssign).await.unwrap();
+        let (old, new) = kernel
+            .apply_trigger(&id, Trigger::TaskAssign)
+            .await
+            .unwrap();
         assert_eq!(old, AgentStatus::Idle);
         assert_eq!(new, AgentStatus::Working);
 
@@ -197,8 +200,14 @@ mod tests {
         assert_eq!(kernel.agent_count().await, 3);
 
         // Apply different triggers to different agents.
-        kernel.apply_trigger(&id1, Trigger::TaskAssign).await.unwrap();
-        kernel.apply_trigger(&id2, Trigger::TaskAssign).await.unwrap();
+        kernel
+            .apply_trigger(&id1, Trigger::TaskAssign)
+            .await
+            .unwrap();
+        kernel
+            .apply_trigger(&id2, Trigger::TaskAssign)
+            .await
+            .unwrap();
         // Agent 3 stays idle.
 
         // Advance agent 1 further.
@@ -220,13 +229,25 @@ mod tests {
     async fn test_kernel_agents_by_role() {
         let kernel = AgentKernel::new();
         kernel
-            .register(AgentDescriptor::new("c1", AgentRole::Coder, Framework::Builtin))
+            .register(AgentDescriptor::new(
+                "c1",
+                AgentRole::Coder,
+                Framework::Builtin,
+            ))
             .await;
         kernel
-            .register(AgentDescriptor::new("c2", AgentRole::Coder, Framework::Generic))
+            .register(AgentDescriptor::new(
+                "c2",
+                AgentRole::Coder,
+                Framework::Generic,
+            ))
             .await;
         kernel
-            .register(AgentDescriptor::new("w1", AgentRole::Writer, Framework::Builtin))
+            .register(AgentDescriptor::new(
+                "w1",
+                AgentRole::Writer,
+                Framework::Builtin,
+            ))
             .await;
 
         let coders = kernel.agents_by_role(AgentRole::Coder).await;
@@ -248,7 +269,10 @@ mod tests {
         kernel.register(a2).await;
 
         // Move a1 to Working.
-        kernel.apply_trigger(&id1, Trigger::TaskAssign).await.unwrap();
+        kernel
+            .apply_trigger(&id1, Trigger::TaskAssign)
+            .await
+            .unwrap();
 
         let idle = kernel.agents_by_status(AgentStatus::Idle).await;
         assert_eq!(idle.len(), 1);
@@ -286,10 +310,18 @@ mod tests {
         assert!(kernel.list_agents().await.is_empty());
 
         kernel
-            .register(AgentDescriptor::new("a", AgentRole::Coder, Framework::Builtin))
+            .register(AgentDescriptor::new(
+                "a",
+                AgentRole::Coder,
+                Framework::Builtin,
+            ))
             .await;
         kernel
-            .register(AgentDescriptor::new("b", AgentRole::Writer, Framework::Generic))
+            .register(AgentDescriptor::new(
+                "b",
+                AgentRole::Writer,
+                Framework::Generic,
+            ))
             .await;
 
         let all = kernel.list_agents().await;

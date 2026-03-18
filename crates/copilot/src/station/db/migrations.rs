@@ -2,7 +2,6 @@
 ///
 /// Tracks applied migrations via a `schema_version` table and applies
 /// pending migrations in order.
-
 use rusqlite::Connection;
 
 use super::schema;
