@@ -248,6 +248,47 @@
     "activeCount": "{{active}}/{{max}} 办公室已激活",
     "stats": "{{agents}} 个智能体 · {{skills}} 技能 · {{files}} 文件"
   },
+  "sidebar": {
+    "coworkValley": "协作谷",
+    "tasks": "任务",
+    "taskList": "任务列表",
+    "blocks": "{{count}} 个阻塞",
+    "workspace": "工作区",
+    "filesArtifacts": "文件与产出物",
+    "memory": "记忆",
+    "metrics": "指标",
+    "usageCosts": "用量与费用",
+    "developer": "开发者",
+    "debugConsole": "调试控制台",
+    "addOffice": "添加办公室",
+    "locked": "{{count}} 个未解锁"
+  },
+  "commandCenter": {
+    "title": "指挥中心",
+    "chat": "对话",
+    "agents": "智能体",
+    "commandPlaceholder": "指挥你的团队...",
+    "send": "发送",
+    "skills": "技能",
+    "openChat": "打开对话",
+    "working": "{{count}} 工作中"
+  },
+  "workspace": {
+    "title": "工作区",
+    "files": "文件与产出物",
+    "memory": "记忆",
+    "noFiles": "暂无文件",
+    "noMemory": "暂无记忆条目"
+  },
+  "metrics": {
+    "title": "指标",
+    "totalCost": "总费用",
+    "totalTokens": "总 Token",
+    "tasksDone": "已完成任务",
+    "ddBalance": "DD 余额",
+    "byOffice": "按办公室",
+    "byAgent": "按智能体"
+  },
   "taskPanel": {
     "title": "任务",
     "newTask": "新建任务",

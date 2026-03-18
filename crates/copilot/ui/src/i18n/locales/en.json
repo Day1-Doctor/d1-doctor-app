@@ -248,6 +248,47 @@
     "activeCount": "{{active}}/{{max}} offices active",
     "stats": "{{agents}} agents · {{skills}} skills · {{files}} files"
   },
+  "sidebar": {
+    "coworkValley": "Cowork Valley",
+    "tasks": "Tasks",
+    "taskList": "Task List",
+    "blocks": "{{count}} Blocks",
+    "workspace": "Workspace",
+    "filesArtifacts": "Files & Artifacts",
+    "memory": "Memory",
+    "metrics": "Metrics",
+    "usageCosts": "Usage & Costs",
+    "developer": "Developer",
+    "debugConsole": "Debug Console",
+    "addOffice": "Add Office",
+    "locked": "{{count}} locked"
+  },
+  "commandCenter": {
+    "title": "Command Center",
+    "chat": "Chat",
+    "agents": "Agents",
+    "commandPlaceholder": "Command your team...",
+    "send": "Send",
+    "skills": "Skills",
+    "openChat": "Open Chat",
+    "working": "{{count}} working"
+  },
+  "workspace": {
+    "title": "Workspace",
+    "files": "Files & Artifacts",
+    "memory": "Memory",
+    "noFiles": "No files yet",
+    "noMemory": "No memory entries"
+  },
+  "metrics": {
+    "title": "Metrics",
+    "totalCost": "Total Cost",
+    "totalTokens": "Total Tokens",
+    "tasksDone": "Tasks Done",
+    "ddBalance": "DD Balance",
+    "byOffice": "By Office",
+    "byAgent": "By Agent"
+  },
   "taskPanel": {
     "title": "Tasks",
     "newTask": "New Task",
