@@ -9,13 +9,21 @@
  * - D1D-221: Error/escalation visual indicators (pulsing triangle + speech bubble)
  * - D1D-224: Themed room zones with rich pixel-art tiles, wall backdrop, furniture
  * - Rich floor zones: wood tiles (work) and cool tiles (rest) with detailed rendering
- * - Wall backdrop with windows, bookshelves, clock, and DAY1 neon sign
+ * - 3D isometric room walls: two colored planes (warm left + cool right) with decorations
+ * - Wall decorations: whiteboard with scribbles, clock, picture frame, bookshelf, bulletin board
+ * - Vibrant exterior gradient above walls (warm-to-cool gradient + bokeh glow)
  * - Enhanced desks: wood surface, chair, monitor with state-based screen, accessories
  * - Rest zone furniture: sofa, arcade machine, water cooler, plant, whiteboard
+ * - Agent movement system: agents walk to rest zones when idle, return to desk when working
  */
 
 import type { Agent } from "../../stores/agentStore";
 import { drawPixelCharacter } from "./SpriteRenderer";
+import {
+  type AgentPosition,
+  updateAgentPosition,
+  createAgentPosition,
+} from "./AgentMovement";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -88,14 +96,14 @@ export const STATUS_COLORS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 /**
- * Wall height is now 0 — wall decoration removed entirely.
- * The office canvas is 100% floor + furniture + agents.
+ * Wall height fraction of canvas height.
+ * The walls occupy the top portion of the canvas.
  */
-let _currentWallHeight = 0;
+const WALL_HEIGHT_FRAC = 0.32;
 
 /**
  * Convert grid (col, row) to screen (x, y) given canvas dimensions.
- * The isometric floor fills the entire canvas (wall height is 0).
+ * The isometric floor is placed below the 3D room walls.
  */
 function gridToScreen(
   col: number,
@@ -104,8 +112,8 @@ function gridToScreen(
   canvasH: number,
 ): { x: number; y: number } {
   const offsetX = canvasW / 2;
-  // No wall — floor area is the full canvas
-  const wallH = _currentWallHeight; // always 0
+  // Reserve top portion for walls; floor starts below that
+  const wallH = canvasH * WALL_HEIGHT_FRAC;
   const floorAreaTop = wallH + 8;
   const floorAreaH = canvasH - floorAreaTop;
 
@@ -316,17 +324,328 @@ function drawFloor(
 }
 
 // ---------------------------------------------------------------------------
-// Wall backdrop (~100px at top of canvas)
+// Wall backdrop — proper 3D isometric room walls
 // ---------------------------------------------------------------------------
 
 /**
- * Removed: wall decoration (windows, bookshelves, clock, DAY1 neon).
- * wallHeight is now 0 — office is 100% floor + furniture + agents.
- * This function is kept as a no-op to preserve the call site in drawOffice.
+ * Draw wall decorations placed on the left wall surface.
+ * Coordinates are in screen space; decorations are positioned along the wall.
  */
+function drawLeftWallDecorations(
+  ctx: CanvasRenderingContext2D,
+  cornerX: number,
+  cornerY: number,
+  leftEdgeX: number,
+  leftEdgeY: number,
+  wallHeight: number,
+  frame: number,
+): void {
+  // Helper: interpolate position along the left wall at fraction t (0=corner, 1=left edge)
+  // and height fraction hf (0=base, 1=top of wall)
+  const wallPoint = (t: number, hf: number) => ({
+    x: cornerX + (leftEdgeX - cornerX) * t,
+    y: cornerY + (leftEdgeY - cornerY) * t - wallHeight * hf,
+  });
+
+  // ── Whiteboard ──
+  // 40% along wall, 35% up
+  const wbCenter = wallPoint(0.4, 0.35);
+  const wbW = 64;
+  const wbH = 40;
+  // Board backing (subtle shadow)
+  ctx.fillStyle = "#6A5030";
+  ctx.fillRect(wbCenter.x - wbW / 2 + 2, wbCenter.y - wbH / 2 + 2, wbW, wbH);
+  // Board surface
+  ctx.fillStyle = "#E8E0D0";
+  ctx.fillRect(wbCenter.x - wbW / 2, wbCenter.y - wbH / 2, wbW, wbH);
+  // Subtle frame
+  ctx.strokeStyle = "#A08060";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(wbCenter.x - wbW / 2, wbCenter.y - wbH / 2, wbW, wbH);
+
+  // Scribbles on whiteboard
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(wbCenter.x - wbW / 2 + 2, wbCenter.y - wbH / 2 + 2, wbW - 4, wbH - 4);
+  ctx.clip();
+  // Red marker text scribble
+  ctx.strokeStyle = "#CC3030";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(wbCenter.x - 24, wbCenter.y - 12);
+  ctx.lineTo(wbCenter.x - 16, wbCenter.y - 12);
+  ctx.moveTo(wbCenter.x - 20, wbCenter.y - 12);
+  ctx.lineTo(wbCenter.x - 20, wbCenter.y - 6);
+  ctx.moveTo(wbCenter.x - 16, wbCenter.y - 6);
+  ctx.lineTo(wbCenter.x - 12, wbCenter.y - 6);
+  ctx.stroke();
+  // Blue chart
+  ctx.strokeStyle = "#2060CC";
+  ctx.lineWidth = 1;
+  const chartPts: [number, number][] = [
+    [wbCenter.x - 4, wbCenter.y + 8],
+    [wbCenter.x, wbCenter.y + 2],
+    [wbCenter.x + 6, wbCenter.y + 5],
+    [wbCenter.x + 12, wbCenter.y - 4],
+    [wbCenter.x + 18, wbCenter.y - 10],
+  ];
+  ctx.beginPath();
+  for (let i = 0; i < chartPts.length; i++) {
+    if (i === 0) ctx.moveTo(chartPts[i][0], chartPts[i][1]);
+    else ctx.lineTo(chartPts[i][0], chartPts[i][1]);
+  }
+  ctx.stroke();
+  // Green text "v3.0"
+  ctx.fillStyle = "#208040";
+  ctx.font = 'bold 7px ui-monospace, "SF Mono", Menlo, monospace';
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText("v3.0", wbCenter.x - 26, wbCenter.y - 18);
+  ctx.restore();
+
+  // Sticky notes (small colored squares at the bottom of whiteboard)
+  const stickyColors = ["#FFEE44", "#FF9944", "#44AAFF"];
+  for (let si = 0; si < 3; si++) {
+    const sx = wbCenter.x - wbW / 2 + 4 + si * 16;
+    const sy = wbCenter.y + wbH / 2 - 10;
+    ctx.fillStyle = stickyColors[si];
+    ctx.fillRect(sx, sy, 11, 9);
+    ctx.strokeStyle = "rgba(0,0,0,0.15)";
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(sx, sy, 11, 9);
+  }
+
+  // ── Clock ──
+  // 72% along wall, 65% up
+  const clkCenter = wallPoint(0.72, 0.65);
+  const clkR = 11;
+  // Clock face
+  ctx.fillStyle = "#D0C8B8";
+  ctx.beginPath();
+  ctx.arc(clkCenter.x, clkCenter.y, clkR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#7A6040";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // Hour markers (4 dots at 12/3/6/9)
+  for (let mi = 0; mi < 4; mi++) {
+    const angle = (mi / 4) * Math.PI * 2 - Math.PI / 2;
+    const mx2 = clkCenter.x + Math.cos(angle) * (clkR - 3);
+    const my2 = clkCenter.y + Math.sin(angle) * (clkR - 3);
+    ctx.fillStyle = "#5A4020";
+    ctx.beginPath();
+    ctx.arc(mx2, my2, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Animated clock hands (rotate based on frame)
+  const minuteAngle = (frame * 0.003) % (Math.PI * 2) - Math.PI / 2;
+  const hourAngle = (frame * 0.00025) % (Math.PI * 2) - Math.PI / 2;
+  // Minute hand
+  ctx.strokeStyle = "#3A2810";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(clkCenter.x, clkCenter.y);
+  ctx.lineTo(
+    clkCenter.x + Math.cos(minuteAngle) * (clkR - 3),
+    clkCenter.y + Math.sin(minuteAngle) * (clkR - 3),
+  );
+  ctx.stroke();
+  // Hour hand
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(clkCenter.x, clkCenter.y);
+  ctx.lineTo(
+    clkCenter.x + Math.cos(hourAngle) * (clkR - 5),
+    clkCenter.y + Math.sin(hourAngle) * (clkR - 5),
+  );
+  ctx.stroke();
+  // Center dot
+  ctx.fillStyle = "#3A2810";
+  ctx.beginPath();
+  ctx.arc(clkCenter.x, clkCenter.y, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── Picture frame ──
+  // 18% along wall, 55% up
+  const picCenter = wallPoint(0.18, 0.55);
+  const picW = 28;
+  const picH = 20;
+  // Frame border
+  ctx.fillStyle = "#6A4820";
+  ctx.fillRect(picCenter.x - picW / 2 - 3, picCenter.y - picH / 2 - 3, picW + 6, picH + 6);
+  // Canvas
+  ctx.fillStyle = "#B8D0E8";
+  ctx.fillRect(picCenter.x - picW / 2, picCenter.y - picH / 2, picW, picH);
+  // Simple landscape inside
+  ctx.fillStyle = "#406080";
+  ctx.fillRect(picCenter.x - picW / 2, picCenter.y - picH / 2, picW, picH * 0.6);
+  // Hills
+  ctx.fillStyle = "#3A7040";
+  ctx.beginPath();
+  ctx.arc(picCenter.x - 8, picCenter.y + 1, 8, -Math.PI, 0);
+  ctx.fill();
+  ctx.fillStyle = "#2A5030";
+  ctx.beginPath();
+  ctx.arc(picCenter.x + 5, picCenter.y + 2, 6, -Math.PI, 0);
+  ctx.fill();
+  // "Day1" mini text
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.font = '5px ui-monospace, "SF Mono", Menlo, monospace';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  ctx.fillText("Day1", picCenter.x, picCenter.y + picH / 2 - 1);
+}
+
 /**
- * Draw 3D isometric room walls — back wall (top-right) and left wall (top-left)
- * forming an L-shape that gives depth to the office view.
+ * Draw wall decorations placed on the right wall surface.
+ */
+function drawRightWallDecorations(
+  ctx: CanvasRenderingContext2D,
+  cornerX: number,
+  cornerY: number,
+  rightEdgeX: number,
+  rightEdgeY: number,
+  wallHeight: number,
+  _frame: number,
+): void {
+  // Helper: interpolate position along the right wall at fraction t (0=corner, 1=right edge)
+  // and height fraction hf (0=base, 1=top of wall)
+  const wallPoint = (t: number, hf: number) => ({
+    x: cornerX + (rightEdgeX - cornerX) * t,
+    y: cornerY + (rightEdgeY - cornerY) * t - wallHeight * hf,
+  });
+
+  // ── Bookshelf ──
+  // 28% along right wall
+  const bsCenter = wallPoint(0.28, 0.3);
+  const bsW = 50;
+  const bsH = 52;
+  // Shelf backing (wood)
+  ctx.fillStyle = "#8A6A48";
+  ctx.fillRect(bsCenter.x - bsW / 2, bsCenter.y - bsH / 2, bsW, bsH);
+  ctx.strokeStyle = "#6A4A28";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(bsCenter.x - bsW / 2, bsCenter.y - bsH / 2, bsW, bsH);
+  // 3 shelves
+  const shelfColors = [
+    ["#CC3030", "#3060CC", "#30A040", "#E09020", "#802890"],
+    ["#CC6020", "#204080", "#2A8060", "#CC3070", "#60A020"],
+    ["#802040", "#4040A0", "#308050", "#C08020"],
+  ];
+  for (let shelf = 0; shelf < 3; shelf++) {
+    const shelfY = bsCenter.y - bsH / 2 + 4 + shelf * 16;
+    // Shelf plank
+    ctx.fillStyle = "#A08060";
+    ctx.fillRect(bsCenter.x - bsW / 2 + 1, shelfY + 13, bsW - 2, 3);
+    // Books on this shelf
+    const books = shelfColors[shelf];
+    let bx = bsCenter.x - bsW / 2 + 3;
+    for (let bi = 0; bi < books.length; bi++) {
+      const bw = 6 + (bi % 2) * 2;
+      const bh = 10 + (bi % 3) * 2;
+      ctx.fillStyle = books[bi];
+      ctx.fillRect(bx, shelfY + 13 - bh, bw, bh);
+      ctx.strokeStyle = "rgba(0,0,0,0.2)";
+      ctx.lineWidth = 0.4;
+      ctx.strokeRect(bx, shelfY + 13 - bh, bw, bh);
+      bx += bw + 1;
+    }
+  }
+  // Small plant on top of bookshelf
+  const plantTop = bsCenter.y - bsH / 2 - 10;
+  ctx.fillStyle = "#7A4020";
+  ctx.fillRect(bsCenter.x + bsW / 2 - 14, plantTop + 4, 10, 7);
+  ctx.fillStyle = "#2A8040";
+  ctx.beginPath();
+  ctx.arc(bsCenter.x + bsW / 2 - 9, plantTop, 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(bsCenter.x + bsW / 2 - 14, plantTop + 1, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── Bulletin board ──
+  // 62% along right wall, 55% up
+  const bbCenter = wallPoint(0.62, 0.55);
+  const bbW = 40;
+  const bbH = 28;
+  // Cork background
+  ctx.fillStyle = "#C4A878";
+  ctx.fillRect(bbCenter.x - bbW / 2, bbCenter.y - bbH / 2, bbW, bbH);
+  ctx.strokeStyle = "#8A6840";
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(bbCenter.x - bbW / 2, bbCenter.y - bbH / 2, bbW, bbH);
+  // Cork texture dots
+  ctx.fillStyle = "rgba(150,100,60,0.3)";
+  for (let ci = 0; ci < 8; ci++) {
+    const cdx = ((ci * 47) % (bbW - 4)) + 2;
+    const cdy = ((ci * 31) % (bbH - 4)) + 2;
+    ctx.beginPath();
+    ctx.arc(bbCenter.x - bbW / 2 + cdx, bbCenter.y - bbH / 2 + cdy, 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Pinned notes (small colored rectangles at slight angles)
+  const pinNotes = [
+    { dx: -14, dy: -8, w: 14, h: 10, color: "#FFEE88", angle: -0.08 },
+    { dx: 4, dy: -10, w: 12, h: 9, color: "#AADDFF", angle: 0.06 },
+    { dx: -16, dy: 4, w: 12, h: 10, color: "#FFBBAA", angle: 0.04 },
+    { dx: 6, dy: 2, w: 10, h: 8, color: "#AAFFCC", angle: -0.05 },
+  ];
+  for (const note of pinNotes) {
+    ctx.save();
+    ctx.translate(bbCenter.x + note.dx + note.w / 2, bbCenter.y + note.dy + note.h / 2);
+    ctx.rotate(note.angle);
+    ctx.fillStyle = note.color;
+    ctx.fillRect(-note.w / 2, -note.h / 2, note.w, note.h);
+    ctx.strokeStyle = "rgba(0,0,0,0.1)";
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(-note.w / 2, -note.h / 2, note.w, note.h);
+    // Pin dot
+    ctx.fillStyle = "#EF4444";
+    ctx.beginPath();
+    ctx.arc(0, -note.h / 2 + 1, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+  // Small photo on board
+  ctx.fillStyle = "#608090";
+  ctx.fillRect(bbCenter.x + 8, bbCenter.y - 4, 14, 10);
+  ctx.fillStyle = "#405060";
+  ctx.fillRect(bbCenter.x + 9, bbCenter.y - 3, 12, 6);
+
+  // ── Wall cabinet / cupboard ──
+  // 86% along right wall, 40% up
+  const cabCenter = wallPoint(0.86, 0.4);
+  const cabW = 28;
+  const cabH = 40;
+  // Cabinet body
+  ctx.fillStyle = "#907868";
+  ctx.fillRect(cabCenter.x - cabW / 2, cabCenter.y - cabH / 2, cabW, cabH);
+  ctx.strokeStyle = "#705848";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(cabCenter.x - cabW / 2, cabCenter.y - cabH / 2, cabW, cabH);
+  // Door divider line
+  ctx.strokeStyle = "#705848";
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(cabCenter.x, cabCenter.y - cabH / 2);
+  ctx.lineTo(cabCenter.x, cabCenter.y + cabH / 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cabCenter.x - cabW / 2, cabCenter.y);
+  ctx.lineTo(cabCenter.x + cabW / 2, cabCenter.y);
+  ctx.stroke();
+  // Handles
+  ctx.fillStyle = "#C0A060";
+  ctx.fillRect(cabCenter.x - 5, cabCenter.y - 2, 4, 4);
+  ctx.fillRect(cabCenter.x + 1, cabCenter.y - 2, 4, 4);
+  ctx.fillRect(cabCenter.x - 5, cabCenter.y - cabH / 4 - 2, 4, 4);
+  ctx.fillRect(cabCenter.x + 1, cabCenter.y - cabH / 4 - 2, 4, 4);
+}
+
+/**
+ * Draw 3D isometric room walls — back-left wall (warm brown) and back-right wall
+ * (cooler brown) forming an L-shape. Also draws vibrant exterior above the walls
+ * and decorations on the wall surfaces.
  */
 function drawWallBackdrop(
   ctx: CanvasRenderingContext2D,
@@ -334,147 +653,181 @@ function drawWallBackdrop(
   h: number,
   frame: number,
 ): void {
-  // The isometric floor's top-left corner and top-right corner define where walls go.
-  // We draw two wall planes behind the floor to create a 3D room effect.
+  // Compute the isometric grid's top-most point.
+  // gridToScreen(0,0) gives the top corner of the grid.
+  const { x: gridTopX, y: gridTopY } = gridToScreen(0, 0, w, h);
 
-  const offsetX = w / 2;
-  const offsetY = h * 0.12; // top area for walls
-  const floorTopY = offsetY + TILE_H; // where the floor grid starts
+  // The room corner is where the two walls meet — directly above the grid apex
+  const cornerX = gridTopX;
+  const cornerY = gridTopY;
 
-  // Wall height in pixels
-  const wallH = h * 0.28;
+  // Wall height
+  const wallHeight = h * WALL_HEIGHT_FRAC;
 
-  // ── BACK WALL (runs along the top-right edge of the isometric floor) ──
-  // This wall faces the viewer from the top-right
-  const backWallColor = "#1A1E2E";
-  const backWallDark = "#141828";
-  const backWallLight = "#202640";
+  // Left edge of the floor grid (far left)
+  const leftEdgeX = gridTopX - GRID_ROWS * TILE_W;
+  const leftEdgeY = gridTopY + GRID_ROWS * TILE_H;
 
-  // Back wall polygon: spans the top edge of the floor grid
-  // From the top-left corner of grid to the top-right corner, then up by wallH
-  const gridTopLeftX = offsetX - (GRID_COLS / 2) * TILE_W;
-  const gridTopLeftY = floorTopY;
-  const gridTopRightX = offsetX + (GRID_COLS / 2) * TILE_W;
-  const gridTopRightY = floorTopY;
-  const gridTopCenterX = offsetX;
-  const gridTopCenterY = floorTopY - (GRID_COLS / 2) * TILE_H;
+  // Right edge of the floor grid (far right)
+  const rightEdgeX = gridTopX + GRID_COLS * TILE_W;
+  const rightEdgeY = gridTopY + GRID_COLS * TILE_H;
 
-  // Right back wall (isometric plane going top-right)
-  ctx.fillStyle = backWallColor;
-  ctx.beginPath();
-  ctx.moveTo(gridTopCenterX, gridTopCenterY);              // top of isometric grid
-  ctx.lineTo(gridTopCenterX, gridTopCenterY - wallH);      // up
-  ctx.lineTo(gridTopRightX, gridTopRightY - wallH);        // right along top
-  ctx.lineTo(gridTopRightX, gridTopRightY);                // down to floor edge
-  ctx.closePath();
-  ctx.fill();
+  // ── VIBRANT EXTERIOR above the walls ──
+  // Fill the entire upper region with a warm-to-cool horizontal gradient
+  const extTopY = cornerY - wallHeight - 4;
 
-  // Left back wall (isometric plane going top-left) — slightly darker
-  ctx.fillStyle = backWallDark;
-  ctx.beginPath();
-  ctx.moveTo(gridTopCenterX, gridTopCenterY);
-  ctx.lineTo(gridTopCenterX, gridTopCenterY - wallH);
-  ctx.lineTo(gridTopLeftX, gridTopLeftY - wallH);
-  ctx.lineTo(gridTopLeftX, gridTopLeftY);
-  ctx.closePath();
-  ctx.fill();
+  // Base exterior gradient (horizontal warm-left to cool-right)
+  const extGrad = ctx.createLinearGradient(0, 0, w, 0);
+  extGrad.addColorStop(0, "#2A1828");
+  extGrad.addColorStop(0.3, "#1E1530");
+  extGrad.addColorStop(0.7, "#152030");
+  extGrad.addColorStop(1, "#1A2838");
+  ctx.fillStyle = extGrad;
+  ctx.fillRect(0, 0, w, cornerY + 10);
 
-  // ── Wall details ──
+  // Warm glow from top-left
+  const warmGlow = ctx.createRadialGradient(w * 0.2, 0, 0, w * 0.2, 0, h * 0.6);
+  warmGlow.addColorStop(0, "rgba(180, 80, 40, 0.18)");
+  warmGlow.addColorStop(0.5, "rgba(140, 60, 80, 0.08)");
+  warmGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = warmGlow;
+  ctx.fillRect(0, 0, w, cornerY + 10);
 
-  // Baseboard strip on both walls (darker, 4px from floor edge)
-  ctx.fillStyle = "#0E1220";
-  // Right wall baseboard
-  ctx.beginPath();
-  ctx.moveTo(gridTopCenterX, gridTopCenterY);
-  ctx.lineTo(gridTopCenterX, gridTopCenterY - 6);
-  ctx.lineTo(gridTopRightX, gridTopRightY - 6);
-  ctx.lineTo(gridTopRightX, gridTopRightY);
-  ctx.closePath();
-  ctx.fill();
-  // Left wall baseboard
-  ctx.beginPath();
-  ctx.moveTo(gridTopCenterX, gridTopCenterY);
-  ctx.lineTo(gridTopCenterX, gridTopCenterY - 6);
-  ctx.lineTo(gridTopLeftX, gridTopLeftY - 6);
-  ctx.lineTo(gridTopLeftX, gridTopLeftY);
-  ctx.closePath();
-  ctx.fill();
+  // Cool glow from top-right
+  const coolGlow = ctx.createRadialGradient(w * 0.8, 0, 0, w * 0.8, 0, h * 0.6);
+  coolGlow.addColorStop(0, "rgba(40, 80, 180, 0.15)");
+  coolGlow.addColorStop(0.5, "rgba(20, 60, 140, 0.06)");
+  coolGlow.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = coolGlow;
+  ctx.fillRect(0, 0, w, cornerY + 10);
 
-  // Top trim on both walls (lighter strip at top)
-  ctx.fillStyle = backWallLight;
-  // Right wall top trim
-  ctx.beginPath();
-  ctx.moveTo(gridTopCenterX, gridTopCenterY - wallH);
-  ctx.lineTo(gridTopCenterX, gridTopCenterY - wallH - 4);
-  ctx.lineTo(gridTopRightX, gridTopRightY - wallH - 4);
-  ctx.lineTo(gridTopRightX, gridTopRightY - wallH);
-  ctx.closePath();
-  ctx.fill();
-  // Left wall top trim
-  ctx.beginPath();
-  ctx.moveTo(gridTopCenterX, gridTopCenterY - wallH);
-  ctx.lineTo(gridTopCenterX, gridTopCenterY - wallH - 4);
-  ctx.lineTo(gridTopLeftX, gridTopLeftY - wallH - 4);
-  ctx.lineTo(gridTopLeftX, gridTopLeftY - wallH);
-  ctx.closePath();
-  ctx.fill();
-
-  // Corner edge line (where two walls meet — vertical line)
-  ctx.strokeStyle = "#252A40";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(gridTopCenterX, gridTopCenterY);
-  ctx.lineTo(gridTopCenterX, gridTopCenterY - wallH - 4);
-  ctx.stroke();
-
-  // ── Windows on the right back wall (2 windows) ──
-  const winW = 30;
-  const winH = wallH * 0.45;
-  for (let i = 0; i < 2; i++) {
-    const t = (i + 1) / 3; // position along wall
-    const wx = gridTopCenterX + (gridTopRightX - gridTopCenterX) * t;
-    const wy = gridTopCenterY + (gridTopRightY - gridTopCenterY) * t;
-    const winTop = wy - wallH * 0.7;
-
-    // Window frame
-    ctx.fillStyle = "#0A1530";
-    ctx.fillRect(wx - winW / 2, winTop, winW, winH);
-    ctx.strokeStyle = "#2A3050";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(wx - winW / 2, winTop, winW, winH);
-
-    // Pane cross
-    ctx.strokeStyle = "#2A3050";
-    ctx.lineWidth = 1;
+  // Subtle bokeh circles in the exterior
+  const bokehSeeds = [
+    { x: w * 0.12, y: h * 0.05, r: 18, color: "rgba(200, 100, 50, 0.04)" },
+    { x: w * 0.28, y: h * 0.1, r: 12, color: "rgba(180, 80, 120, 0.03)" },
+    { x: w * 0.55, y: h * 0.04, r: 22, color: "rgba(60, 80, 200, 0.04)" },
+    { x: w * 0.75, y: h * 0.08, r: 16, color: "rgba(40, 100, 180, 0.03)" },
+    { x: w * 0.88, y: h * 0.06, r: 14, color: "rgba(80, 120, 220, 0.04)" },
+  ];
+  for (const bk of bokehSeeds) {
+    const br2 = ctx.createRadialGradient(bk.x, bk.y, 0, bk.x, bk.y, bk.r);
+    br2.addColorStop(0, bk.color);
+    br2.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = br2;
     ctx.beginPath();
-    ctx.moveTo(wx, winTop);
-    ctx.lineTo(wx, winTop + winH);
-    ctx.moveTo(wx - winW / 2, winTop + winH / 2);
-    ctx.lineTo(wx + winW / 2, winTop + winH / 2);
-    ctx.stroke();
-
-    // Stars in window
-    const starSeed = i * 37;
-    for (let s = 0; s < 4; s++) {
-      const sx = wx - winW / 2 + 4 + ((starSeed + s * 17) % (winW - 8));
-      const sy = winTop + 3 + ((starSeed + s * 23) % (winH * 0.4));
-      const alpha = 0.3 + 0.4 * Math.sin(frame * 0.03 + s * 1.5);
-      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-      ctx.fillRect(sx, sy, 1.5, 1.5);
-    }
+    ctx.arc(bk.x, bk.y, bk.r, 0, Math.PI * 2);
+    ctx.fill();
   }
 
-  // ── "DAY1" text on left wall ──
+  // Faint diagonal light rays at very low opacity
   ctx.save();
-  ctx.font = "bold 14px monospace";
-  ctx.fillStyle = "#22C55E";
-  ctx.shadowColor = "#22C55E";
-  ctx.shadowBlur = 6 + Math.sin(frame * 0.04) * 3;
-  const textX = gridTopCenterX + (gridTopLeftX - gridTopCenterX) * 0.5;
-  const textY = gridTopCenterY + (gridTopLeftY - gridTopCenterY) * 0.5 - wallH * 0.5;
-  ctx.fillText("DAY1", textX - 18, textY);
-  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 0.025;
+  ctx.strokeStyle = "rgba(200, 160, 100, 1)";
+  ctx.lineWidth = 1;
+  for (let ri = 0; ri < 8; ri++) {
+    const rx = w * 0.1 + ri * w * 0.12;
+    ctx.beginPath();
+    ctx.moveTo(rx, 0);
+    ctx.lineTo(rx + extTopY * 0.5, extTopY);
+    ctx.stroke();
+  }
   ctx.restore();
+
+  // ── LEFT WALL (warm brown — faces right) ──
+  ctx.fillStyle = "#8B6B50";
+  ctx.beginPath();
+  ctx.moveTo(cornerX, cornerY);
+  ctx.lineTo(cornerX, cornerY - wallHeight);
+  ctx.lineTo(leftEdgeX, leftEdgeY - wallHeight);
+  ctx.lineTo(leftEdgeX, leftEdgeY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Left wall shadow gradient (darker at bottom, lighter at top)
+  const leftShadow = ctx.createLinearGradient(0, cornerY, 0, cornerY - wallHeight);
+  leftShadow.addColorStop(0, "rgba(0,0,0,0.22)");
+  leftShadow.addColorStop(0.5, "rgba(0,0,0,0.06)");
+  leftShadow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = leftShadow;
+  ctx.beginPath();
+  ctx.moveTo(cornerX, cornerY);
+  ctx.lineTo(cornerX, cornerY - wallHeight);
+  ctx.lineTo(leftEdgeX, leftEdgeY - wallHeight);
+  ctx.lineTo(leftEdgeX, leftEdgeY);
+  ctx.closePath();
+  ctx.fill();
+
+  // ── RIGHT WALL (slightly cooler/darker brown — faces left) ──
+  ctx.fillStyle = "#7A6048";
+  ctx.beginPath();
+  ctx.moveTo(cornerX, cornerY);
+  ctx.lineTo(cornerX, cornerY - wallHeight);
+  ctx.lineTo(rightEdgeX, rightEdgeY - wallHeight);
+  ctx.lineTo(rightEdgeX, rightEdgeY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Right wall slightly darker (facing away from primary light source)
+  ctx.fillStyle = "rgba(0,0,0,0.08)";
+  ctx.beginPath();
+  ctx.moveTo(cornerX, cornerY);
+  ctx.lineTo(cornerX, cornerY - wallHeight);
+  ctx.lineTo(rightEdgeX, rightEdgeY - wallHeight);
+  ctx.lineTo(rightEdgeX, rightEdgeY);
+  ctx.closePath();
+  ctx.fill();
+
+  // ── Wall top trim (lighter strip at the very top of each wall) ──
+  ctx.fillStyle = "#A08060";
+  // Left wall top trim
+  ctx.beginPath();
+  ctx.moveTo(cornerX, cornerY - wallHeight - 4);
+  ctx.lineTo(cornerX, cornerY - wallHeight);
+  ctx.lineTo(leftEdgeX, leftEdgeY - wallHeight);
+  ctx.lineTo(leftEdgeX, leftEdgeY - wallHeight - 4);
+  ctx.closePath();
+  ctx.fill();
+  // Right wall top trim
+  ctx.fillStyle = "#957858";
+  ctx.beginPath();
+  ctx.moveTo(cornerX, cornerY - wallHeight - 4);
+  ctx.lineTo(cornerX, cornerY - wallHeight);
+  ctx.lineTo(rightEdgeX, rightEdgeY - wallHeight);
+  ctx.lineTo(rightEdgeX, rightEdgeY - wallHeight - 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // ── Baseboard (darker strip at the floor-wall junction) ──
+  ctx.fillStyle = "#5A4030";
+  // Left wall baseboard
+  ctx.beginPath();
+  ctx.moveTo(cornerX, cornerY);
+  ctx.lineTo(cornerX, cornerY - 6);
+  ctx.lineTo(leftEdgeX, leftEdgeY - 6);
+  ctx.lineTo(leftEdgeX, leftEdgeY);
+  ctx.closePath();
+  ctx.fill();
+  // Right wall baseboard
+  ctx.fillStyle = "#504030";
+  ctx.beginPath();
+  ctx.moveTo(cornerX, cornerY);
+  ctx.lineTo(cornerX, cornerY - 6);
+  ctx.lineTo(rightEdgeX, rightEdgeY - 6);
+  ctx.lineTo(rightEdgeX, rightEdgeY);
+  ctx.closePath();
+  ctx.fill();
+
+  // ── Corner edge (vertical line where the two walls meet) ──
+  ctx.strokeStyle = "#6A5040";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cornerX, cornerY);
+  ctx.lineTo(cornerX, cornerY - wallHeight - 4);
+  ctx.stroke();
+
+  // ── Wall decorations ──
+  drawLeftWallDecorations(ctx, cornerX, cornerY, leftEdgeX, leftEdgeY, wallHeight, frame);
+  drawRightWallDecorations(ctx, cornerX, cornerY, rightEdgeX, rightEdgeY, wallHeight, frame);
 }
 
 // ---------------------------------------------------------------------------
@@ -1582,16 +1935,25 @@ function drawPausedIndicator(
   ctx.restore();
 }
 
-/** Draw a pixel-art agent character + status indicators + label at a desk. */
+/**
+ * Draw a pixel-art agent character + status indicators + label.
+ * If agentPos is provided the character is rendered at the movement position
+ * rather than fixed at the desk. The label always shows near the desk.
+ */
 function drawAgent(
   ctx: CanvasRenderingContext2D,
   desk: DeskPosition,
   state: AgentRenderState,
   w: number,
   h: number,
+  agentPos?: AgentPosition,
 ): void {
-  const { x, y } = gridToScreen(desk.gridX, desk.gridY, w, h);
+  const { x: deskX, y: deskY } = gridToScreen(desk.gridX, desk.gridY, w, h);
   const { agent, frame } = state;
+
+  // Use movement position if provided; otherwise fall back to desk position
+  const charBaseX = agentPos ? agentPos.x : deskX;
+  const charBaseY = agentPos ? agentPos.y : deskY;
 
   // Pulsing alpha for "thinking"
   let alpha = 1;
@@ -1599,30 +1961,39 @@ function drawAgent(
     alpha = 0.5 + 0.5 * Math.abs(Math.sin(frame * 0.08));
   }
 
-  // Position the pixel character above the desk
-  const charY = y - TILE_H * 0.6;
+  // Choose animation state — use walking when moving
+  const displayStatus = agentPos?.isMoving ? "executing" : agent.status;
+  // Detect rest-zone idle for mood bubbles
+  const inRestZone =
+    agentPos !== undefined &&
+    agentPos.currentLocation !== "desk" &&
+    agentPos.currentLocation !== "walking" &&
+    agent.status === "idle";
+
+  // Position the pixel character above the floor position
+  const charY = charBaseY - TILE_H * 0.6;
 
   ctx.save();
   ctx.globalAlpha = alpha;
 
   // Draw pixel-art character at 1.3x scale for improved visibility
-  drawPixelCharacter(ctx, x, charY, 1.3, agent.role, agent.status, frame);
+  drawPixelCharacter(ctx, charBaseX, charY, 1.3, agent.role, displayStatus, frame, agent.id, inRestZone);
 
   ctx.restore();
 
   // D1D-221: Error indicator — red exclamation triangle (positioned above character)
   if (agent.status === "error") {
-    drawErrorIndicator(ctx, x, charY - 28, 10, frame);
+    drawErrorIndicator(ctx, charBaseX, charY - 28, 10, frame);
   }
 
   // D1D-221: Paused indicator — yellow speech bubble
   if (agent.status === "paused") {
-    drawPausedIndicator(ctx, x, charY - 28, 10, frame);
+    drawPausedIndicator(ctx, charBaseX, charY - 28, 10, frame);
   }
 
-  // Name label — below desk
-  const labelY = y + TILE_H * 0.8;
-  const labelX = x;
+  // Name label — stays near the desk (not the moving character)
+  const labelY = deskY + TILE_H * 0.8;
+  const labelX = deskX;
 
   ctx.font = '11px ui-monospace, "SF Mono", Menlo, monospace';
   ctx.textAlign = "center";
@@ -1649,6 +2020,7 @@ function drawAgent(
  * @param desks - Desk layout (positions + label).
  * @param agents - Map of agentId -> AgentRenderState for occupied desks.
  * @param frame - Optional global animation frame counter (for wall animations).
+ * @param agentPositions - Optional map of agentId -> AgentPosition for movement tracking.
  */
 export function drawOffice(
   ctx: CanvasRenderingContext2D,
@@ -1657,19 +2029,15 @@ export function drawOffice(
   desks: DeskPosition[],
   agents: Map<string, AgentRenderState>,
   frame?: number,
+  agentPositions?: Map<string, AgentPosition>,
 ): void {
   const f = frame ?? 0;
 
-  // Atmospheric background: radial gradient from center to dark edges
-  const cx = w / 2;
-  const cy = h / 2;
-  const bgGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.75);
-  bgGrad.addColorStop(0, "#151520");
-  bgGrad.addColorStop(1, "#080810");
-  ctx.fillStyle = bgGrad;
+  // Atmospheric background: deep dark base for the floor area
+  ctx.fillStyle = "#080810";
   ctx.fillRect(0, 0, w, h);
 
-  // Wall backdrop — removed (no-op, wallHeight = 0)
+  // 3D isometric room walls — draws exterior + two colored wall planes + decorations
   drawWallBackdrop(ctx, w, h, f);
 
   // Rich floor tiles (wood / divider carpet / cool)
@@ -1697,13 +2065,18 @@ export function drawOffice(
   // Zone labels
   drawZoneLabels(ctx, w, h);
 
-  // Agents at desks (drawn on top of everything)
+  // Agents (drawn on top of everything) — use movement positions when available
   for (const desk of desks) {
     if (desk.agentId) {
       const state = agents.get(desk.agentId);
       if (state) {
-        drawAgent(ctx, desk, state, w, h);
+        const agentPos = agentPositions?.get(desk.agentId);
+        drawAgent(ctx, desk, state, w, h, agentPos);
       }
     }
   }
 }
+
+// Re-export movement types + helpers so IsometricCanvas can use them
+export { updateAgentPosition, createAgentPosition };
+export type { AgentPosition };

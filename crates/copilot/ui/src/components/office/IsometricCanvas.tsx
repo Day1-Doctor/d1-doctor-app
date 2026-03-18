@@ -4,7 +4,10 @@ import {
   drawOffice,
   OFFICE_LAYOUT,
   type AgentRenderState,
+  type AgentPosition,
   type DeskPosition,
+  updateAgentPosition,
+  createAgentPosition,
 } from "./OfficeRenderer";
 
 interface IsometricCanvasProps {
@@ -33,6 +36,32 @@ function assignDesks(agents: Agent[]): DeskPosition[] {
   return layout;
 }
 
+/** Convert grid coordinates to screen coordinates (must match OfficeRenderer logic). */
+function gridToScreenLocal(
+  col: number,
+  row: number,
+  canvasW: number,
+  canvasH: number,
+): { x: number; y: number } {
+  const GRID_COLS = 8;
+  const GRID_ROWS = 6;
+  const TILE_W = 48;
+  const TILE_H = 24;
+  const WALL_HEIGHT_FRAC = 0.32;
+
+  const offsetX = canvasW / 2;
+  const wallH = canvasH * WALL_HEIGHT_FRAC;
+  const floorAreaTop = wallH + 8;
+  const floorAreaH = canvasH - floorAreaTop;
+  const isoGridH = (GRID_COLS + GRID_ROWS) * TILE_H;
+  const floorCenterY = floorAreaTop + floorAreaH / 2;
+  const offsetY = floorCenterY - isoGridH / 2;
+
+  const x = (col - row) * TILE_W + offsetX;
+  const y = (col + row) * TILE_H + offsetY;
+  return { x, y };
+}
+
 /**
  * `IsometricCanvas` renders the 2.5D isometric office using the Canvas 2D
  * API. It owns the `requestAnimationFrame` loop and delegates all drawing
@@ -58,6 +87,9 @@ export function IsometricCanvas({
 
   const heightRef = useRef(height);
   heightRef.current = height;
+
+  /** Per-agent movement positions, keyed by agent.id. */
+  const agentPositionsRef = useRef<Map<string, AgentPosition>>(new Map());
 
   /** Core render tick. Targets ~30 FPS (33 ms interval). */
   const tick = useCallback((time: number) => {
@@ -90,16 +122,45 @@ export function IsometricCanvas({
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      // Build agent render map
+      // Build agent render map and update movement positions
       const currentAgents = agentsRef.current;
       const desks = assignDesks(currentAgents);
+      const posMap = agentPositionsRef.current;
 
       const agentMap = new Map<string, AgentRenderState>();
       for (const agent of currentAgents) {
         agentMap.set(agent.id, { agent, frame: frameRef.current });
+
+        // Find desk for this agent
+        const desk = desks.find((d) => d.agentId === agent.id);
+        if (!desk) continue;
+
+        const { x: deskX, y: deskY } = gridToScreenLocal(desk.gridX, desk.gridY, w, h);
+
+        // Initialize position if not yet tracked
+        if (!posMap.has(agent.id)) {
+          posMap.set(agent.id, createAgentPosition(deskX, deskY));
+        }
+
+        const pos = posMap.get(agent.id)!;
+        updateAgentPosition(
+          pos,
+          agent.status,
+          deskX,
+          deskY,
+          frameRef.current,
+          (gx, gy) => gridToScreenLocal(gx, gy, w, h),
+        );
       }
 
-      drawOffice(ctx, w, h, desks, agentMap, frameRef.current);
+      // Remove positions for agents no longer present
+      for (const id of posMap.keys()) {
+        if (!currentAgents.some((a) => a.id === id)) {
+          posMap.delete(id);
+        }
+      }
+
+      drawOffice(ctx, w, h, desks, agentMap, frameRef.current, posMap);
     }
 
     rafRef.current = requestAnimationFrame(tick);
