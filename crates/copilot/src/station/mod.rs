@@ -1,5 +1,6 @@
 // Station Runtime — agent orchestration, tool execution, and state management.
 
+pub mod adapters;
 pub mod costs;
 pub mod db;
 pub mod events;
