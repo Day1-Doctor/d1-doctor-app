@@ -29,7 +29,11 @@ impl WebSearchTool {
             .map(|i| SearchResult {
                 title: format!("Result {} for: {}", i + 1, query),
                 url: format!("https://example.com/search?q={}&p={}", query, i),
-                snippet: format!("This is a mock snippet for result {} matching '{}'.", i + 1, query),
+                snippet: format!(
+                    "This is a mock snippet for result {} matching '{}'.",
+                    i + 1,
+                    query
+                ),
                 source: "mock-search-engine".to_string(),
             })
             .collect()

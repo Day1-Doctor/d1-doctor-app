@@ -79,7 +79,11 @@ async fn pipeline_decompose_research_and_write() {
 
     assert!(plan.steps.len() >= 2);
 
-    let roles: Vec<&str> = plan.steps.iter().map(|s| s.suggested_role.as_str()).collect();
+    let roles: Vec<&str> = plan
+        .steps
+        .iter()
+        .map(|s| s.suggested_role.as_str())
+        .collect();
     assert!(roles.contains(&"researcher"));
     assert!(roles.contains(&"writer"));
 }

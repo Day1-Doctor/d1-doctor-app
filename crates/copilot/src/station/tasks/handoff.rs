@@ -124,9 +124,7 @@ impl TaskHandoffManager {
                     .agents_by_status(crate::station::kernel::agent_state::AgentStatus::Idle)
                     .await;
                 if let Some(agent) = idle_agents.first() {
-                    self.agent_kernel
-                        .assign_task(&agent.id, &step.id)
-                        .await?;
+                    self.agent_kernel.assign_task(&agent.id, &step.id).await?;
                 }
 
                 // Start the next step.
@@ -140,9 +138,7 @@ impl TaskHandoffManager {
                 let parent = self.task_engine.status(parent_id).await;
                 if let Some(p) = parent {
                     if p.status == TaskStatus::Running {
-                        self.task_engine
-                            .complete(parent_id, output)
-                            .await?;
+                        self.task_engine.complete(parent_id, output).await?;
                     }
                 }
                 Ok(false)
@@ -159,10 +155,7 @@ mod tests {
     use crate::station::tasks::task_types::{CreateTaskRequest, TaskSpec};
 
     /// Helper to set up a parent task with N sequential subtasks.
-    async fn setup_pipeline(
-        engine: &TaskEngine,
-        n: u32,
-    ) -> (String, Vec<String>) {
+    async fn setup_pipeline(engine: &TaskEngine, n: u32) -> (String, Vec<String>) {
         let parent = engine
             .create(CreateTaskRequest {
                 description: "Parent pipeline".to_string(),
@@ -173,11 +166,7 @@ mod tests {
 
         let mut step_ids = Vec::new();
         for i in 0..n {
-            let step = TaskSpec::new_subtask(
-                &format!("Step {}", i),
-                &parent.id,
-                i,
-            );
+            let step = TaskSpec::new_subtask(&format!("Step {}", i), &parent.id, i);
             let id = engine.add_subtask(&parent.id, step).await.unwrap();
             step_ids.push(id);
         }

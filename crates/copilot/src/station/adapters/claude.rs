@@ -34,7 +34,10 @@ impl ClaudeAdapter {
     pub fn spawn(
         &self,
         agent_id: &str,
-    ) -> (tokio::task::JoinHandle<()>, mpsc::Receiver<AdapterAgentEvent>) {
+    ) -> (
+        tokio::task::JoinHandle<()>,
+        mpsc::Receiver<AdapterAgentEvent>,
+    ) {
         let (tx, rx) = mpsc::channel(32);
         let id = agent_id.to_string();
 

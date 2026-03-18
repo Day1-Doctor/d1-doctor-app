@@ -101,8 +101,7 @@ impl ParallelExecutor {
                         if !dep_failed.is_empty() {
                             drop(comp);
                             drop(fail);
-                            let err =
-                                format!("dependency failed: {}", dep_failed.join(", "));
+                            let err = format!("dependency failed: {}", dep_failed.join(", "));
                             events.write().await.push(ParallelEvent::TaskFailed {
                                 task_id: ptask.spec.id.clone(),
                                 error: err.clone(),
@@ -170,9 +169,7 @@ impl ParallelExecutor {
             .into_iter()
             .enumerate()
             .map(|(i, r)| {
-                r.unwrap_or_else(|| {
-                    Err(format!("task at index {} did not produce a result", i))
-                })
+                r.unwrap_or_else(|| Err(format!("task at index {} did not produce a result", i)))
             })
             .collect()
     }
