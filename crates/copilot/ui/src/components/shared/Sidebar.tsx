@@ -140,6 +140,7 @@ const secondaryItems: NavItem[] = [
   {
     id: "settings",
     label: "Settings",
+    view: "settings",
     icon: (
       <svg
         width="18"
@@ -278,10 +279,12 @@ export function Sidebar() {
           <NavButton
             key={item.id}
             item={item}
-            isActive={false}
+            isActive={item.view === activeView}
             collapsed={collapsed}
             onClick={() => {
-              // placeholder -- secondary items not yet wired
+              if (item.view) {
+                setActiveView(item.view);
+              }
             }}
           />
         ))}
