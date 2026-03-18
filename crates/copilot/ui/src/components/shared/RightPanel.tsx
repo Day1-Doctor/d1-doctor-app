@@ -32,38 +32,56 @@ function formatTimestamp(ts: string): string {
   return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
 }
 
-// ── Chat Panel ─────────────────────────────────────────────────────────────
+// ── Chat Panel (Two modes: Plan Mode + BTW Mode) ──────────────────────────
+
+type ChatMode = "plan" | "btw";
 
 function ChatPanel() {
   const { t } = useTranslation();
-  const agents = useAgentStore((s) => s.agents);
-  const selectedAgentId = useChatStore((s) => s.selectedAgentId);
-  const setSelectedAgent = useChatStore((s) => s.setSelectedAgent);
   const allMessages = useChatStore((s) => s.messages);
   const addMessage = useChatStore((s) => s.addMessage);
 
   const [inputValue, setInputValue] = useState("");
+  const [chatMode, setChatMode] = useState<ChatMode>("plan");
+  const [planConfirmed, setPlanConfirmed] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const selectedAgent = agents.find((a) => a.id === selectedAgentId);
-  const agentMessages = allMessages.filter((m) => m.agentId === selectedAgentId);
+  // Always talk to Dr. Bob (team leader / orchestrator)
+  const drBobId = "orchestrator";
+  const drBobMessages = allMessages.filter((m) => m.agentId === drBobId || m.agentId === "team");
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [agentMessages.length]);
+  }, [drBobMessages.length]);
 
   function handleSend() {
     const text = inputValue.trim();
-    if (!text || !selectedAgent) return;
+    if (!text) return;
     addMessage({
       id: generateMsgId(),
-      agentId: selectedAgentId,
-      agentName: selectedAgent.name,
+      agentId: chatMode === "plan" ? drBobId : "team",
+      agentName: chatMode === "plan" ? "Dr. Bob" : "Team",
       role: "user",
       content: text,
       timestamp: new Date().toISOString(),
     });
     setInputValue("");
+
+    // Simulate Dr. Bob response (in real integration, this calls the gateway)
+    if (chatMode === "plan") {
+      setTimeout(() => {
+        addMessage({
+          id: generateMsgId(),
+          agentId: drBobId,
+          agentName: "Dr. Bob",
+          role: "agent",
+          content: t("chat.drBobAck", {
+            defaultValue: "Got it. Let me think about how to break this down for the team...",
+          }),
+          timestamp: new Date().toISOString(),
+        });
+      }, 800);
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -73,47 +91,86 @@ function ChatPanel() {
     }
   }
 
+  function handleConfirmPlan() {
+    setPlanConfirmed(true);
+    addMessage({
+      id: generateMsgId(),
+      agentId: drBobId,
+      agentName: "Dr. Bob",
+      role: "agent",
+      content: t("chat.planConfirmed", {
+        defaultValue: "Plan confirmed! Handing off to the team now. I'll coordinate the agents to complete all tasks.",
+      }),
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  const isPlanMode = chatMode === "plan";
+  const modeColor = isPlanMode ? "#F97316" : "#3B82F6";
+  const modeLabel = isPlanMode
+    ? t("chat.planMode", { defaultValue: "Plan Mode" })
+    : t("chat.btwMode", { defaultValue: "BTW Mode" });
+  const modeDesc = isPlanMode
+    ? t("chat.planModeDesc", { defaultValue: "Dr. Bob plans & orchestrates" })
+    : t("chat.btwModeDesc", { defaultValue: "Side chat, won't interrupt work" });
+  const placeholder = isPlanMode
+    ? t("chat.planPlaceholder", { defaultValue: "Describe what you need..." })
+    : t("chat.btwPlaceholder", { defaultValue: "Quick note (won't interrupt agents)..." });
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Agent selector */}
-      <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b border-border">
-        <select
-          value={selectedAgentId}
-          onChange={(e) => setSelectedAgent(e.target.value)}
-          className="flex-1 bg-card border border-border rounded px-2 py-1 text-sm text-text-primary
-            focus:outline-none focus:ring-2 focus:ring-accent/50 font-mono cursor-pointer"
-          aria-label={t("chat.selectAgent")}
-        >
-          {agents.map((agent) => (
-            <option key={agent.id} value={agent.id}>
-              {agent.name} ({agent.role})
-            </option>
-          ))}
-        </select>
-        {selectedAgent && (
+      {/* Team header + mode toggle */}
+      <div className="shrink-0 px-3 py-2 border-b border-border space-y-2">
+        {/* Team indicator */}
+        <div className="flex items-center gap-2">
           <span
-            className="w-2 h-2 rounded-full shrink-0"
-            style={{ backgroundColor: statusColor[selectedAgent.status] ?? "#6B7280" }}
-            title={selectedAgent.status}
-            aria-hidden="true"
+            className="w-2.5 h-2.5 rounded-full shrink-0"
+            style={{ backgroundColor: "#F97316" }}
           />
-        )}
+          <span className="text-sm font-semibold text-text-primary">Dr. Bob</span>
+          <span className="text-[12px] text-text-muted">{t("chat.teamLeader", { defaultValue: "Team Leader" })}</span>
+        </div>
+
+        {/* Mode toggle */}
+        <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
+          <button
+            onClick={() => setChatMode("plan")}
+            className={`flex-1 px-2 py-1 rounded text-[12px] font-medium transition-colors duration-100
+              ${isPlanMode ? "bg-card text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
+          >
+            <span className="inline-block w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: "#F97316" }} />
+            {t("chat.planMode", { defaultValue: "Plan" })}
+          </button>
+          <button
+            onClick={() => setChatMode("btw")}
+            className={`flex-1 px-2 py-1 rounded text-[12px] font-medium transition-colors duration-100
+              ${!isPlanMode ? "bg-card text-text-primary shadow-sm" : "text-text-muted hover:text-text-secondary"}`}
+          >
+            <span className="inline-block w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: "#3B82F6" }} />
+            {t("chat.btwMode", { defaultValue: "BTW" })}
+          </button>
+        </div>
+
+        {/* Mode description */}
+        <p className="text-[12px] text-text-muted leading-tight">{modeDesc}</p>
       </div>
 
       {/* Message list */}
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2 min-h-0">
-        {agentMessages.length === 0 && (
+        {drBobMessages.length === 0 && (
           <div className="flex items-center justify-center h-full">
-            <p className="text-text-disabled text-sm text-center px-4">
-              {t("chat.noMessages", { agent: selectedAgent?.name ?? "agent" })}
-            </p>
+            <div className="text-center px-4">
+              <p className="text-text-muted text-sm mb-1">
+                {isPlanMode
+                  ? t("chat.planEmpty", { defaultValue: "Tell Dr. Bob what you need. He'll create a plan and coordinate the team." })
+                  : t("chat.btwEmpty", { defaultValue: "Send a quick note. This won't interrupt ongoing work." })}
+              </p>
+            </div>
           </div>
         )}
-        {agentMessages.map((msg) => {
+        {drBobMessages.map((msg) => {
           const isUser = msg.role === "user";
-          const borderColor = isUser
-            ? "#E5E5E5"
-            : agentRoleColor[selectedAgent?.role ?? "orchestrator"] ?? "#F97316";
+          const borderColor = isUser ? "#E5E5E5" : modeColor;
 
           return (
             <div key={msg.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -146,14 +203,36 @@ function ChatPanel() {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Plan confirm button (only in Plan Mode when there are messages) */}
+      {isPlanMode && drBobMessages.length > 0 && !planConfirmed && (
+        <div className="shrink-0 px-3 py-2 border-t border-border">
+          <button
+            onClick={handleConfirmPlan}
+            className="w-full py-2 rounded-lg bg-accent hover:bg-accent-hover text-background
+              text-sm font-semibold transition-colors duration-100
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+          >
+            {t("chat.confirmPlan", { defaultValue: "Confirm Plan & Start Execution" })}
+          </button>
+        </div>
+      )}
+
       {/* Input area */}
       <div className="shrink-0 border-t border-border px-3 py-2">
+        {/* Mode indicator pill */}
+        <div className="flex items-center gap-1 mb-1.5">
+          <span
+            className="inline-block w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: modeColor }}
+          />
+          <span className="text-[12px] text-text-muted">{modeLabel}</span>
+        </div>
         <div className="flex items-end gap-2">
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={t("commandCenter.commandPlaceholder")}
+            placeholder={placeholder}
             rows={1}
             className="flex-1 bg-card border border-border rounded-lg px-2.5 py-2 text-[13px] text-text-primary
               placeholder:text-text-disabled resize-none font-mono

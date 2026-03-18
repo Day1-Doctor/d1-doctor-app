@@ -87,11 +87,21 @@
   },
   "chat": {
     "title": "Chat",
-    "selectAgent": "Select agent",
-    "inputPlaceholder": "Message {{agent}}...",
+    "teamLeader": "Team Leader",
+    "planMode": "Plan",
+    "btwMode": "BTW",
+    "planModeDesc": "Dr. Bob plans & orchestrates. Confirm to hand off to team.",
+    "btwModeDesc": "Side chat — won't interrupt ongoing agent work.",
+    "planPlaceholder": "Describe what you need...",
+    "btwPlaceholder": "Quick note (won't interrupt agents)...",
+    "planEmpty": "Tell Dr. Bob what you need. He'll create a plan and coordinate the team.",
+    "btwEmpty": "Send a quick note. This won't interrupt ongoing work.",
+    "confirmPlan": "Confirm Plan & Start Execution",
+    "drBobAck": "Got it. Let me think about how to break this down for the team...",
+    "planConfirmed": "Plan confirmed! Handing off to the team. I'll coordinate the agents to complete all tasks.",
     "send": "Send",
-    "noMessages": "No messages yet. Start a conversation with {{agent}}.",
-    "inputHint": "Press Enter to send, Shift+Enter for new line. Messages are stored locally."
+    "noMessages": "No messages yet.",
+    "inputHint": "Press Enter to send, Shift+Enter for new line."
   },
   "settings": {
     "title": "Settings",

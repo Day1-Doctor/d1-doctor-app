@@ -87,11 +87,21 @@
   },
   "chat": {
     "title": "对话",
-    "selectAgent": "选择智能体",
-    "inputPlaceholder": "发送消息给 {{agent}}...",
+    "teamLeader": "团队负责人",
+    "planMode": "计划",
+    "btwMode": "随聊",
+    "planModeDesc": "Dr. Bob 负责规划和协调。确认后交给团队执行。",
+    "btwModeDesc": "随意聊天，不会打断正在进行的工作。",
+    "planPlaceholder": "描述你的需求...",
+    "btwPlaceholder": "快速备注（不会打断智能体）...",
+    "planEmpty": "告诉 Dr. Bob 你需要什么，他会制定计划并协调团队。",
+    "btwEmpty": "发送快速备注，不会打断正在进行的工作。",
+    "confirmPlan": "确认计划并开始执行",
+    "drBobAck": "明白了，让我想想如何为团队分解这个任务...",
+    "planConfirmed": "计划已确认！正在交给团队执行，我会协调所有智能体完成任务。",
     "send": "发送",
-    "noMessages": "暂无消息。与 {{agent}} 开始对话。",
-    "inputHint": "按 Enter 发送，Shift+Enter 换行。消息存储在本地。"
+    "noMessages": "暂无消息。",
+    "inputHint": "按 Enter 发送，Shift+Enter 换行。"
   },
   "settings": {
     "title": "设置",
