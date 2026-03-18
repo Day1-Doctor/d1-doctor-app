@@ -238,16 +238,14 @@
       "atlas": "Atlas 运维中心"
     }
   },
-  "auth": {
-    "signIn": "登录以开始工作",
-    "apiKeyLabel": "输入你的 Day1 API 密钥",
-    "apiKeyPlaceholder": "d1d_sk_...",
-    "connect": "连接",
-    "or": "或",
-    "signInWithAccount": "使用 Day1 账户登录",
-    "createAccount": "没有账户？免费注册",
-    "invalidKey": "API 密钥无效，请检查后重试。",
-    "connecting": "连接中...",
-    "signOut": "退出登录"
+  "campus": {
+    "title": "协作园区",
+    "empty": "空办公室",
+    "setup": "开始设置",
+    "locked": "未解锁",
+    "upgradePlan": "升级方案",
+    "officeLabel": "办公室 #{{number}}",
+    "activeCount": "{{active}}/{{max}} 办公室已激活",
+    "stats": "{{agents}} 个智能体 · {{skills}} 技能 · {{files}} 文件"
   }
 }

@@ -1,86 +1,153 @@
-import { useRef, useCallback } from "react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useRef } from "react";
 import { useViewStore } from "../stores/viewStore";
-import { useTaskStore } from "../stores/taskStore";
 import { useBillingStore } from "../stores/billingStore";
+import { useOfficeStore } from "../stores/officeStore";
 import { useCanvasSize } from "../hooks/useCanvasSize";
 import { ValleyCanvas } from "../components/valley/ValleyCanvas";
-import { TaskTimeline } from "../components/task/TaskTimeline";
-import { VALLEY_LAYOUT } from "../components/valley/ValleyRenderer";
+
+const TIER_MAX_OFFICES: Record<string, number> = {
+  free_man: 1,
+  mini_shop: 3,
+  rocket_inc: 8,
+};
+
+const TIER_LABELS: Record<string, string> = {
+  free_man: "Free",
+  mini_shop: "Mini",
+  rocket_inc: "Rocket",
+};
 
 /**
- * ValleyView — Full-height canvas container that renders the Cowork Valley
- * isometric landscape. Clicking an active building navigates to the office
- * view; clicking a locked building shows an upgrade prompt.
+ * ValleyView — Cowork Campus parcel grid showing 11 office slots.
+ *
+ * Title: "COWORK CAMPUS" (large monospace)
+ * Tier badge beside title
+ * Bottom: "N/M offices active" count
  */
 export function ValleyView() {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const { width, height } = useCanvasSize(containerRef);
+
   const setActiveView = useViewStore((s) => s.setActiveView);
   const openUpgradePrompt = useBillingStore((s) => s.openUpgradePrompt);
+  const tier = useBillingStore((s) => s.tier);
+  const offices = useOfficeStore((s) => s.offices);
 
-  const activeTask = useTaskStore((s) =>
-    s.tasks.find((task) => task.id === s.activeTaskId),
-  );
+  const maxOffices = TIER_MAX_OFFICES[tier] ?? 1;
+  const activeCount = offices.length;
 
-  /** Handle building click — navigate or upgrade prompt. */
-  const handleBuildingClick = useCallback(
-    (buildingId: string, isActive: boolean) => {
-      if (isActive) {
-        // Navigate to the office view
+  const handleParcelClick = useCallback(
+    (parcelIndex: number, state: "running" | "empty" | "locked") => {
+      if (state === "running") {
         setActiveView("office");
+      } else if (state === "empty") {
+        openUpgradePrompt(t("campus.setup"));
       } else {
-        // Find the building name for the prompt
-        const building = VALLEY_LAYOUT.find((b) => b.id === buildingId);
-        const name = building?.name ?? "this office";
-        openUpgradePrompt(
-          t("valley.upgradeToUnlock") + `: ${name}`,
-        );
+        openUpgradePrompt(t("campus.upgradePlan"));
       }
+      void parcelIndex;
     },
     [setActiveView, openUpgradePrompt, t],
   );
 
+  const handleParcelDoubleClick = useCallback((_parcelIndex: number) => {
+    // double-click on running parcel opens inline rename — handled inside ValleyCanvas
+  }, []);
+
   return (
     <div
-      ref={containerRef}
-      className="flex-1 relative"
-      style={{ minHeight: 0, overflow: "hidden" }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        flex: 1,
+        minHeight: 0,
+        overflow: "hidden",
+        background: "#050508",
+      }}
     >
-      {width > 0 && height > 0 && (
-        <ValleyCanvas
-          width={width}
-          height={height}
-          onBuildingClick={handleBuildingClick}
-        />
-      )}
-
-      {/* Task timeline bottom overlay */}
-      {activeTask && activeTask.steps.length > 0 && (
-        <div
-          className="absolute bottom-0 left-0 right-0 border-t border-border/50"
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "10px 16px 6px",
+          borderBottom: "1px solid #1A1A1A",
+          flexShrink: 0,
+        }}
+      >
+        <span
           style={{
-            background: "rgba(5, 5, 5, 0.75)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
+            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+            fontWeight: "bold",
+            fontSize: 15,
+            letterSpacing: 2,
+            color: "#E5E5E5",
+            textTransform: "uppercase",
           }}
         >
-          <div className="flex items-center gap-3 px-4 py-1">
-            <span className="text-text-secondary text-[10px] font-medium shrink-0 uppercase tracking-wider">
-              {t("nav.tasks")}
-            </span>
-            <span className="text-text-primary text-xs truncate max-w-[160px]">
-              {activeTask.title}
-            </span>
-            <div className="w-px h-4 bg-border shrink-0" />
-            <TaskTimeline
-              steps={activeTask.steps}
-              className="flex-1 min-w-0"
-            />
-          </div>
-        </div>
-      )}
+          {t("campus.title")}
+        </span>
+
+        {/* Tier badge */}
+        <span
+          style={{
+            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+            fontSize: 9,
+            fontWeight: "bold",
+            letterSpacing: 1,
+            color: "#F97316",
+            background: "rgba(249,115,22,0.12)",
+            border: "1px solid rgba(249,115,22,0.3)",
+            borderRadius: 4,
+            padding: "1px 6px",
+            textTransform: "uppercase",
+          }}
+        >
+          {TIER_LABELS[tier] ?? tier}
+        </span>
+      </div>
+
+      {/* Canvas area */}
+      <div
+        ref={containerRef}
+        style={{ flex: 1, position: "relative", minHeight: 0, overflow: "hidden" }}
+      >
+        {width > 0 && height > 0 && (
+          <ValleyCanvas
+            width={width}
+            height={height}
+            onParcelClick={handleParcelClick}
+            onParcelDoubleClick={handleParcelDoubleClick}
+          />
+        )}
+      </div>
+
+      {/* Footer: active count */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "6px 16px",
+          borderTop: "1px solid #1A1A1A",
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+            fontSize: 10,
+            color: "#666666",
+            letterSpacing: 0.5,
+          }}
+        >
+          {t("campus.activeCount", { active: activeCount, max: maxOffices })}
+        </span>
+      </div>
     </div>
   );
 }

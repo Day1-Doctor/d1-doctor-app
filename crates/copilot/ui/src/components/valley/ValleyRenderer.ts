@@ -1,631 +1,401 @@
 /**
- * ValleyRenderer — Pure Canvas 2D rendering functions for the Cowork Valley
- * landscape view showing 6 office buildings in an isometric layout.
+ * ValleyRenderer — Pure Canvas 2D rendering functions for the Cowork Campus
+ * parcel grid view showing 11 office parcels in a diamond pattern.
  *
- * Each building represents one agent's office. Active buildings are colorful
- * with lit windows; locked buildings are dimmed with a lock overlay.
+ * Layout (11 parcels):
+ *   Row 0:     [P1]  [P2]  [P3]         (top 3)
+ *   Row 1: [P4] [P5] [P6] [P7] [P8]    (middle 5, widest)
+ *   Row 2:     [P9]  [P10] [P11]        (bottom 3)
+ *
+ * Center parcels P5, P6, P7 are priority active slots.
+ *
+ * Each parcel has one of three states:
+ *   - running: dark card with accent glow border + animated mini agents
+ *   - empty:   unlocked slot with dotted accent border + "+" icon
+ *   - locked:  dark card with padlock icon + "Upgrade plan" text
  */
 
-import { AGENT_COLORS } from "../office/OfficeRenderer";
+import { drawMiniPixelCharacter } from "../office/SpriteRenderer";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export interface OfficeBuilding {
+export type ParcelState = "running" | "empty" | "locked";
+
+export interface Office {
   id: string;
   name: string;
-  agentName: string;
-  agentRole: string;
-  gridX: number;
-  gridY: number;
-  isActive: boolean;
-  isSelected: boolean;
+  agentCount: number;
+  skillCount: number;
+  fileCount: number;
+  taskProgress: number;
+}
+
+export interface Parcel {
+  /** 1-based parcel number (P1..P11) */
+  number: number;
+  /** Screen column in the diamond grid (0-4) */
+  col: number;
+  /** Screen row in the diamond grid (0-2) */
+  row: number;
+  state: ParcelState;
+  /** Populated when state === "running" */
+  office?: Office;
+  isHovered: boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Constants
+// Layout constants
 // ---------------------------------------------------------------------------
 
-export const VALLEY_LAYOUT: OfficeBuilding[] = [
-  {
-    id: "office-1",
-    name: "Dr. Bob's Office",
-    agentName: "Dr. Bob",
-    agentRole: "orchestrator",
-    gridX: 4,
-    gridY: 1,
-    isActive: true,
-    isSelected: false,
-  },
-  {
-    id: "office-2",
-    name: "Scout's Lab",
-    agentName: "Scout",
-    agentRole: "researcher",
-    gridX: 2,
-    gridY: 3,
-    isActive: false,
-    isSelected: false,
-  },
-  {
-    id: "office-3",
-    name: "Sage's Studio",
-    agentName: "Sage",
-    agentRole: "analyst",
-    gridX: 6,
-    gridY: 3,
-    isActive: false,
-    isSelected: false,
-  },
-  {
-    id: "office-4",
-    name: "Quill's Den",
-    agentName: "Quill",
-    agentRole: "writer",
-    gridX: 1,
-    gridY: 5,
-    isActive: false,
-    isSelected: false,
-  },
-  {
-    id: "office-5",
-    name: "Pixel's Lab",
-    agentName: "Pixel",
-    agentRole: "coder",
-    gridX: 5,
-    gridY: 5,
-    isActive: false,
-    isSelected: false,
-  },
-  {
-    id: "office-6",
-    name: "Atlas Ops",
-    agentName: "Atlas",
-    agentRole: "operator",
-    gridX: 3,
-    gridY: 7,
-    isActive: false,
-    isSelected: false,
-  },
+/**
+ * Diamond layout: [col, row] positions for P1..P11 within the 5x3 grid.
+ * Row 0: cols 1,2,3  (P1,P2,P3)
+ * Row 1: cols 0,1,2,3,4  (P4,P5,P6,P7,P8)
+ * Row 2: cols 1,2,3  (P9,P10,P11)
+ */
+export const PARCEL_POSITIONS: Array<{ col: number; row: number }> = [
+  { col: 1, row: 0 }, // P1
+  { col: 2, row: 0 }, // P2
+  { col: 3, row: 0 }, // P3
+  { col: 0, row: 1 }, // P4
+  { col: 1, row: 1 }, // P5  (priority)
+  { col: 2, row: 1 }, // P6  (priority)
+  { col: 3, row: 1 }, // P7  (priority)
+  { col: 4, row: 1 }, // P8
+  { col: 1, row: 2 }, // P9
+  { col: 2, row: 2 }, // P10
+  { col: 3, row: 2 }, // P11
 ];
 
-/** Valley isometric tile sizes (larger than office tiles for the landscape). */
-const V_TILE_W = 60;
-const V_TILE_H = 30;
+/**
+ * Priority fill order: center first, then ring.
+ * Indices are 0-based into PARCEL_POSITIONS (P1=0, P5=4, P6=5, P7=6...).
+ */
+export const FILL_ORDER = [4, 5, 6, 1, 3, 7, 9, 0, 2, 8, 10];
 
-/** Building dimensions in pixels. */
-const BUILDING_W = 80;
-const BUILDING_H = 60;
-const ROOF_H = 30;
+/** Parcel card dimensions */
+const PARCEL_W = 160;
+const PARCEL_H = 120;
+const PARCEL_GAP_X = 16;
+const PARCEL_GAP_Y = 16;
+const PARCEL_RADIUS = 8;
 
 /** Colors */
-const GROUND_COLOR = "#0A1A0A";
-const GROUND_LINE_COLOR = "#0F2A0F";
-const PATH_COLOR = "#1A1A1A";
-const PATH_LINE_COLOR = "#242424";
-const LOCKED_FILL = "#1A1A1A";
-const LOCK_COLOR = "#F59E0B";
-const BUILDING_OUTLINE = "#242424";
-const LABEL_ACTIVE = "#E5E5E5";
-const LABEL_LOCKED = "#555555";
+const ACCENT = "#F97316";
+const BG_RUNNING = "#0D0D0D";
+const BG_EMPTY = "#111115";
+const BG_LOCKED = "#0A0A0E";
+const BORDER_LOCKED = "#1A1A1E";
+const TEXT_WHITE = "#E5E5E5";
+const TEXT_LOCKED = "#555555";
+const TEXT_UPGRADE = "#444444";
+const TEXT_PARCEL_NUM = "#333340";
 
 // ---------------------------------------------------------------------------
 // Coordinate helpers
 // ---------------------------------------------------------------------------
 
-/** Number of grid columns / rows for the valley landscape. */
-const V_GRID_COLS = 9;
-const V_GRID_ROWS = 9;
+/** Total grid width in columns (0..4), height in rows (0..2). */
+const GRID_COLS = 5;
+const GRID_ROWS = 3;
 
-function valleyGridToScreen(
+function gridToScreen(
   col: number,
   row: number,
   canvasW: number,
   canvasH: number,
 ): { x: number; y: number } {
-  const offsetX = canvasW / 2;
-  const offsetY = canvasH / 2 - (V_GRID_ROWS * V_TILE_H) / 2 + 20;
-
-  const x = (col - row) * V_TILE_W + offsetX;
-  const y = (col + row) * V_TILE_H + offsetY;
-  return { x, y };
-}
-
-/** Get the screen position for a building (centered on its grid cell). */
-function buildingScreenPos(
-  building: OfficeBuilding,
-  canvasW: number,
-  canvasH: number,
-): { x: number; y: number } {
-  return valleyGridToScreen(building.gridX, building.gridY, canvasW, canvasH);
-}
-
-// ---------------------------------------------------------------------------
-// Color helpers
-// ---------------------------------------------------------------------------
-
-function darken(hex: string, amount: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const factor = 1 - amount;
-  return `rgb(${Math.floor(r * factor)}, ${Math.floor(g * factor)}, ${Math.floor(b * factor)})`;
-}
-
-function withAlpha(hex: string, alpha: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  const totalW = GRID_COLS * (PARCEL_W + PARCEL_GAP_X) - PARCEL_GAP_X;
+  const totalH = GRID_ROWS * (PARCEL_H + PARCEL_GAP_Y) - PARCEL_GAP_Y;
+  const startX = (canvasW - totalW) / 2;
+  const startY = (canvasH - totalH) / 2;
+  return {
+    x: startX + col * (PARCEL_W + PARCEL_GAP_X),
+    y: startY + row * (PARCEL_H + PARCEL_GAP_Y),
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Drawing primitives
 // ---------------------------------------------------------------------------
 
-/** Draw a ground tile (grass). */
-function drawGrassTile(
+function roundedRect(
   ctx: CanvasRenderingContext2D,
-  cx: number,
-  cy: number,
-): void {
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - V_TILE_H);
-  ctx.lineTo(cx + V_TILE_W, cy);
-  ctx.lineTo(cx, cy + V_TILE_H);
-  ctx.lineTo(cx - V_TILE_W, cy);
-  ctx.closePath();
-  ctx.fillStyle = GROUND_COLOR;
-  ctx.fill();
-  ctx.strokeStyle = GROUND_LINE_COLOR;
-  ctx.lineWidth = 0.5;
-  ctx.stroke();
-}
-
-/** Draw the ground grid. */
-export function drawGround(
-  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
   w: number,
   h: number,
+  r: number,
 ): void {
-  for (let row = 0; row < V_GRID_ROWS; row++) {
-    for (let col = 0; col < V_GRID_COLS; col++) {
-      const { x, y } = valleyGridToScreen(col, row, w, h);
-      drawGrassTile(ctx, x, y);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ---------------------------------------------------------------------------
+// Parcel renderers
+// ---------------------------------------------------------------------------
+
+function drawRunningParcel(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  office: Office,
+  parcelNum: number,
+  isHovered: boolean,
+  frame: number,
+): void {
+  // Glow pulse intensity
+  const glowPulse = 0.5 + 0.5 * Math.sin(frame * 0.05);
+  const glowBlur = 8 + glowPulse * 8;
+
+  ctx.save();
+
+  // Background
+  roundedRect(ctx, x, y, PARCEL_W, PARCEL_H, PARCEL_RADIUS);
+  ctx.fillStyle = BG_RUNNING;
+  ctx.fill();
+
+  // Accent glow border
+  ctx.save();
+  ctx.shadowColor = ACCENT;
+  ctx.shadowBlur = glowBlur;
+  roundedRect(ctx, x, y, PARCEL_W, PARCEL_H, PARCEL_RADIUS);
+  ctx.strokeStyle = ACCENT;
+  ctx.lineWidth = isHovered ? 2 : 1.5;
+  ctx.stroke();
+  ctx.restore();
+
+  // ---- Interior: mini desks (2x3 grid) ----
+  const deskStartX = x + 10;
+  const deskStartY = y + 28;
+  const deskW = 20;
+  const deskH = 11;
+  const deskGapX = 8;
+  const deskGapY = 6;
+
+  const agentRoles = ["orchestrator", "researcher", "analyst", "writer", "coder", "operator"];
+
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 3; col++) {
+      const deskX = deskStartX + col * (deskW + deskGapX);
+      const deskY = deskStartY + row * (deskH + deskGapY);
+
+      // Desk surface (brown rect)
+      ctx.fillStyle = "#3D2B1A";
+      ctx.fillRect(deskX, deskY, deskW, deskH);
+      ctx.strokeStyle = "#5A3E28";
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(deskX, deskY, deskW, deskH);
+
+      // Mini monitor on desk
+      ctx.fillStyle = "#1A1A1A";
+      ctx.fillRect(deskX + 6, deskY - 6, 8, 6);
+      ctx.strokeStyle = "#333333";
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(deskX + 6, deskY - 6, 8, 6);
+
+      // Monitor screen glow
+      const screenAlpha = 0.4 + 0.3 * Math.sin(frame * 0.04 + col + row);
+      ctx.fillStyle = `rgba(249, 115, 22, ${screenAlpha})`;
+      ctx.fillRect(deskX + 7, deskY - 5, 6, 4);
+
+      // Mini pixel agent at desk (if within agentCount)
+      const agentIdx = row * 3 + col;
+      if (agentIdx < office.agentCount) {
+        const agentX = deskX + deskW / 2;
+        const agentY = deskY - 2;
+        const roleIndex = agentIdx % agentRoles.length;
+        const state = agentIdx === 0 ? "working" : (frame + agentIdx * 17) % 60 < 40 ? "typing" : "idle";
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(x, y, PARCEL_W, PARCEL_H);
+        ctx.clip();
+        drawMiniPixelCharacter(ctx, agentX, agentY, agentRoles[roleIndex], state, frame + agentIdx * 13);
+        ctx.restore();
+      }
     }
   }
-}
 
-/** Path segment between two grid positions. */
-function drawPathSegment(
-  ctx: CanvasRenderingContext2D,
-  x1: number,
-  y1: number,
-  x2: number,
-  y2: number,
-): void {
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.strokeStyle = PATH_LINE_COLOR;
-  ctx.lineWidth = 6;
-  ctx.stroke();
+  // ---- Progress bar ----
+  const barX = x + 10;
+  const barY = y + PARCEL_H - 22;
+  const barW = PARCEL_W - 20;
+  const barH = 5;
+  const progress = Math.max(0, Math.min(1, office.taskProgress));
 
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.strokeStyle = PATH_COLOR;
-  ctx.lineWidth = 4;
-  ctx.stroke();
-}
-
-/** Draw connecting paths between buildings. */
-export function drawPaths(
-  ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
-): void {
-  const positions = VALLEY_LAYOUT.map((b) => buildingScreenPos(b, w, h));
-
-  // Connect: Dr. Bob (0) -> Scout (1), Dr. Bob (0) -> Sage (2)
-  drawPathSegment(ctx, positions[0].x, positions[0].y, positions[1].x, positions[1].y);
-  drawPathSegment(ctx, positions[0].x, positions[0].y, positions[2].x, positions[2].y);
-  // Scout (1) -> Quill (3)
-  drawPathSegment(ctx, positions[1].x, positions[1].y, positions[3].x, positions[3].y);
-  // Sage (2) -> Pixel (4)
-  drawPathSegment(ctx, positions[2].x, positions[2].y, positions[4].x, positions[4].y);
-  // Quill (3) -> Atlas (5)
-  drawPathSegment(ctx, positions[3].x, positions[3].y, positions[5].x, positions[5].y);
-  // Pixel (4) -> Atlas (5)
-  drawPathSegment(ctx, positions[4].x, positions[4].y, positions[5].x, positions[5].y);
-}
-
-/** Draw an isometric building. */
-export function drawBuilding(
-  ctx: CanvasRenderingContext2D,
-  building: OfficeBuilding,
-  w: number,
-  h: number,
-  frame: number,
-): void {
-  const { x, y } = buildingScreenPos(building, w, h);
-  const roleColor = AGENT_COLORS[building.agentRole] ?? "#6B7280";
-
-  const halfW = BUILDING_W / 2;
-  const baseY = y;
-
-  // Hover/selection glow
-  if (building.isSelected) {
-    ctx.save();
-    ctx.shadowColor = withAlpha(roleColor, 0.6);
-    ctx.shadowBlur = 20;
-  }
-
-  if (building.isActive) {
-    // --- Active building ---
-    const wallColor = darken(roleColor, 0.7);
-    const sideColor = darken(roleColor, 0.8);
-    const roofColor = darken(roleColor, 0.4);
-
-    // Front wall
-    ctx.beginPath();
-    ctx.moveTo(x - halfW, baseY - BUILDING_H);
-    ctx.lineTo(x, baseY - BUILDING_H + halfW * 0.4);
-    ctx.lineTo(x, baseY + halfW * 0.4);
-    ctx.lineTo(x - halfW, baseY);
-    ctx.closePath();
-    ctx.fillStyle = wallColor;
-    ctx.fill();
-    ctx.strokeStyle = BUILDING_OUTLINE;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Side wall
-    ctx.beginPath();
-    ctx.moveTo(x, baseY - BUILDING_H + halfW * 0.4);
-    ctx.lineTo(x + halfW, baseY - BUILDING_H);
-    ctx.lineTo(x + halfW, baseY);
-    ctx.lineTo(x, baseY + halfW * 0.4);
-    ctx.closePath();
-    ctx.fillStyle = sideColor;
-    ctx.fill();
-    ctx.strokeStyle = BUILDING_OUTLINE;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Roof
-    ctx.beginPath();
-    ctx.moveTo(x, baseY - BUILDING_H - ROOF_H);
-    ctx.lineTo(x + halfW, baseY - BUILDING_H);
-    ctx.lineTo(x, baseY - BUILDING_H + halfW * 0.4);
-    ctx.lineTo(x - halfW, baseY - BUILDING_H);
-    ctx.closePath();
-    ctx.fillStyle = roofColor;
-    ctx.fill();
-    ctx.strokeStyle = BUILDING_OUTLINE;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Window (lit, on front wall)
-    const winX = x - halfW * 0.55;
-    const winY = baseY - BUILDING_H * 0.55;
-    const winW = 14;
-    const winH = 10;
-    const windowGlow = 0.6 + 0.2 * Math.sin(frame * 0.04);
-
-    ctx.fillStyle = withAlpha(roleColor, windowGlow);
-    ctx.fillRect(winX, winY, winW, winH);
-    ctx.strokeStyle = withAlpha(roleColor, 0.8);
-    ctx.lineWidth = 0.5;
-    ctx.strokeRect(winX, winY, winW, winH);
-
-    // Cross-bar in window
-    ctx.beginPath();
-    ctx.moveTo(winX + winW / 2, winY);
-    ctx.lineTo(winX + winW / 2, winY + winH);
-    ctx.moveTo(winX, winY + winH / 2);
-    ctx.lineTo(winX + winW, winY + winH / 2);
-    ctx.strokeStyle = withAlpha(roleColor, 0.3);
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-
-    // Mini agent sprite visible in window (small colored square)
-    const spriteX = winX + winW / 2 - 3;
-    const spriteY = winY + winH / 2 - 2;
-    const bobOffset = Math.sin(frame * 0.06) * 1;
-    ctx.fillStyle = roleColor;
-    ctx.fillRect(spriteX, spriteY + bobOffset, 6, 5);
-    // Head
-    ctx.fillStyle = withAlpha(roleColor, 0.9);
-    ctx.fillRect(spriteX + 1, spriteY - 3 + bobOffset, 4, 4);
-
-    // Side window
-    const swinX = x + halfW * 0.15;
-    const swinY = baseY - BUILDING_H * 0.55;
-    ctx.fillStyle = withAlpha(roleColor, windowGlow * 0.7);
-    ctx.fillRect(swinX, swinY, winW - 2, winH);
-    ctx.strokeStyle = withAlpha(roleColor, 0.5);
-    ctx.lineWidth = 0.5;
-    ctx.strokeRect(swinX, swinY, winW - 2, winH);
-  } else {
-    // --- Locked building ---
-    ctx.save();
-    ctx.globalAlpha = 0.5;
-
-    // Front wall
-    ctx.beginPath();
-    ctx.moveTo(x - halfW, baseY - BUILDING_H);
-    ctx.lineTo(x, baseY - BUILDING_H + halfW * 0.4);
-    ctx.lineTo(x, baseY + halfW * 0.4);
-    ctx.lineTo(x - halfW, baseY);
-    ctx.closePath();
-    ctx.fillStyle = LOCKED_FILL;
-    ctx.fill();
-    ctx.strokeStyle = BUILDING_OUTLINE;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Side wall
-    ctx.beginPath();
-    ctx.moveTo(x, baseY - BUILDING_H + halfW * 0.4);
-    ctx.lineTo(x + halfW, baseY - BUILDING_H);
-    ctx.lineTo(x + halfW, baseY);
-    ctx.lineTo(x, baseY + halfW * 0.4);
-    ctx.closePath();
-    ctx.fillStyle = "#111111";
-    ctx.fill();
-    ctx.strokeStyle = BUILDING_OUTLINE;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Roof
-    ctx.beginPath();
-    ctx.moveTo(x, baseY - BUILDING_H - ROOF_H);
-    ctx.lineTo(x + halfW, baseY - BUILDING_H);
-    ctx.lineTo(x, baseY - BUILDING_H + halfW * 0.4);
-    ctx.lineTo(x - halfW, baseY - BUILDING_H);
-    ctx.closePath();
-    ctx.fillStyle = "#151515";
-    ctx.fill();
-    ctx.strokeStyle = BUILDING_OUTLINE;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Dark window
-    const winX = x - halfW * 0.55;
-    const winY = baseY - BUILDING_H * 0.55;
-    ctx.fillStyle = "#0A0A0A";
-    ctx.fillRect(winX, winY, 14, 10);
-    ctx.strokeStyle = "#222222";
-    ctx.lineWidth = 0.5;
-    ctx.strokeRect(winX, winY, 14, 10);
-
-    ctx.restore();
-
-    // Lock icon overlay (drawn at full opacity)
-    const lockX = x - 6;
-    const lockY = baseY - BUILDING_H * 0.5 - 8;
-
-    // Lock body
-    ctx.fillStyle = LOCK_COLOR;
-    ctx.fillRect(lockX - 1, lockY + 4, 14, 10);
-    ctx.strokeStyle = darken("#F59E0B", 0.3);
-    ctx.lineWidth = 1;
-    ctx.strokeRect(lockX - 1, lockY + 4, 14, 10);
-
-    // Lock shackle (arc)
-    ctx.beginPath();
-    ctx.arc(lockX + 6, lockY + 4, 5, Math.PI, 0);
-    ctx.strokeStyle = LOCK_COLOR;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Keyhole
-    ctx.fillStyle = darken("#F59E0B", 0.5);
-    ctx.beginPath();
-    ctx.arc(lockX + 6, lockY + 10, 2, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  if (building.isSelected) {
-    ctx.restore();
-  }
-
-  // Name label
-  ctx.fillStyle = building.isActive ? LABEL_ACTIVE : LABEL_LOCKED;
-  ctx.font = '11px ui-monospace, "SF Mono", Menlo, monospace';
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.fillText(building.name, x, baseY + halfW * 0.4 + 6);
-
-  // Role label (smaller, below name)
-  ctx.fillStyle = building.isActive
-    ? withAlpha(AGENT_COLORS[building.agentRole] ?? "#6B7280", 0.7)
-    : "#333333";
-  ctx.font = '9px ui-monospace, "SF Mono", Menlo, monospace';
-  ctx.fillText(building.agentRole, x, baseY + halfW * 0.4 + 20);
-}
-
-/** Draw decorations: trees, lamp posts, benches, clouds. */
-export function drawDecorations(
-  ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
-  frame: number,
-): void {
-  // Trees at various positions
-  const treePositions = [
-    { col: 0, row: 0 },
-    { col: 8, row: 0 },
-    { col: 0, row: 8 },
-    { col: 8, row: 8 },
-    { col: 3, row: 0 },
-    { col: 7, row: 2 },
-    { col: 0, row: 4 },
-    { col: 8, row: 6 },
-  ];
-
-  for (const pos of treePositions) {
-    const { x, y } = valleyGridToScreen(pos.col, pos.row, w, h);
-    drawTree(ctx, x, y, frame);
-  }
-
-  // Lamp posts near paths
-  const lampPositions = [
-    { col: 3, row: 2 },
-    { col: 5, row: 2 },
-    { col: 2, row: 6 },
-    { col: 4, row: 6 },
-  ];
-
-  for (const pos of lampPositions) {
-    const { x, y } = valleyGridToScreen(pos.col, pos.row, w, h);
-    drawLampPost(ctx, x, y, frame);
-  }
-
-  // Benches
-  const benchPositions = [
-    { col: 1, row: 2 },
-    { col: 7, row: 4 },
-  ];
-
-  for (const pos of benchPositions) {
-    const { x, y } = valleyGridToScreen(pos.col, pos.row, w, h);
-    drawBench(ctx, x, y);
-  }
-
-  // Clouds (floating slowly)
-  drawClouds(ctx, w, frame);
-}
-
-function drawTree(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  frame: number,
-): void {
-  const sway = Math.sin(frame * 0.02 + x * 0.1) * 1;
-
-  // Trunk
-  ctx.fillStyle = "#2A1A0A";
-  ctx.fillRect(x - 2, y - 20, 4, 20);
-
-  // Foliage layers (3 triangles stacked)
-  const foliageColor = "#0A3A0A";
-  const foliageLight = "#0F4F0F";
-
-  for (let i = 0; i < 3; i++) {
-    const layerY = y - 18 - i * 10;
-    const layerW = 14 - i * 2;
-    ctx.beginPath();
-    ctx.moveTo(x + sway, layerY - 12);
-    ctx.lineTo(x + layerW + sway, layerY);
-    ctx.lineTo(x - layerW + sway, layerY);
-    ctx.closePath();
-    ctx.fillStyle = i % 2 === 0 ? foliageColor : foliageLight;
-    ctx.fill();
-    ctx.strokeStyle = "#0A2A0A";
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-  }
-}
-
-function drawLampPost(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  frame: number,
-): void {
-  // Post
-  ctx.fillStyle = "#333333";
-  ctx.fillRect(x - 1, y - 28, 2, 28);
-
-  // Lamp head
-  ctx.fillStyle = "#444444";
-  ctx.fillRect(x - 4, y - 30, 8, 3);
-
-  // Glow
-  const glowAlpha = 0.15 + 0.05 * Math.sin(frame * 0.03);
-  ctx.beginPath();
-  ctx.arc(x, y - 28, 12, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(255, 230, 150, ${glowAlpha})`;
-  ctx.fill();
-}
-
-function drawBench(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-): void {
-  // Seat
-  ctx.fillStyle = "#2A1A0A";
-  ctx.fillRect(x - 10, y - 4, 20, 3);
-
-  // Legs
   ctx.fillStyle = "#1A1A1A";
-  ctx.fillRect(x - 8, y - 1, 2, 4);
-  ctx.fillRect(x + 6, y - 1, 2, 4);
+  ctx.beginPath();
+  ctx.roundRect(barX, barY, barW, barH, 2);
+  ctx.fill();
 
-  // Back rest
-  ctx.fillStyle = "#2A1A0A";
-  ctx.fillRect(x - 10, y - 10, 2, 8);
-  ctx.fillRect(x + 8, y - 10, 2, 8);
-  ctx.fillRect(x - 10, y - 10, 20, 2);
-}
-
-function drawClouds(
-  ctx: CanvasRenderingContext2D,
-  w: number,
-  frame: number,
-): void {
-  const clouds = [
-    { baseX: 100, y: 30, size: 1.0 },
-    { baseX: 300, y: 20, size: 0.7 },
-    { baseX: 500, y: 40, size: 0.85 },
-  ];
-
-  for (const cloud of clouds) {
-    const drift = (frame * 0.15 + cloud.baseX) % (w + 200) - 100;
-    const scale = cloud.size;
-
-    ctx.save();
-    ctx.globalAlpha = 0.06;
-    ctx.translate(drift, cloud.y);
-    ctx.scale(scale, scale);
-
-    // Cloud puffs
-    ctx.fillStyle = "#FFFFFF";
+  if (progress > 0) {
+    const grad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+    grad.addColorStop(0, "#22C55E");
+    grad.addColorStop(1, ACCENT);
+    ctx.fillStyle = grad;
     ctx.beginPath();
-    ctx.arc(0, 0, 16, 0, Math.PI * 2);
-    ctx.arc(18, -4, 12, 0, Math.PI * 2);
-    ctx.arc(-14, -2, 10, 0, Math.PI * 2);
-    ctx.arc(8, 6, 10, 0, Math.PI * 2);
+    ctx.roundRect(barX, barY, barW * progress, barH, 2);
     ctx.fill();
-
-    ctx.restore();
   }
-}
 
-/** Draw "Cowork Valley" title at the top. */
-export function drawValleyTitle(
-  ctx: CanvasRenderingContext2D,
-  w: number,
-  _h: number,
-): void {
-  ctx.fillStyle = "#E5E5E5";
-  ctx.font = 'bold 16px ui-monospace, "SF Mono", Menlo, monospace';
+  // ---- Office name ----
+  ctx.fillStyle = TEXT_WHITE;
+  ctx.font = `bold 11px ui-monospace, "SF Mono", Menlo, monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText("Cowork Valley", w / 2, 14);
+  ctx.fillText(office.name, x + PARCEL_W / 2, y + 6, PARCEL_W - 12);
 
-  // Subtle underline
-  ctx.strokeStyle = "#333333";
-  ctx.lineWidth = 0.5;
-  ctx.beginPath();
-  ctx.moveTo(w / 2 - 60, 34);
-  ctx.lineTo(w / 2 + 60, 34);
+  // ---- Stats ----
+  ctx.fillStyle = "#666666";
+  ctx.font = `9px ui-monospace, "SF Mono", Menlo, monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "bottom";
+  const statsText = `${office.agentCount} agents · ${office.skillCount} skills · ${office.fileCount} files`;
+  ctx.fillText(statsText, x + PARCEL_W / 2, y + PARCEL_H - 6, PARCEL_W - 12);
+
+  ctx.restore();
+
+  void parcelNum;
+}
+
+function drawEmptyParcel(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  parcelNum: number,
+  isHovered: boolean,
+  frame: number,
+): void {
+  ctx.save();
+
+  // Background
+  roundedRect(ctx, x, y, PARCEL_W, PARCEL_H, PARCEL_RADIUS);
+  ctx.fillStyle = BG_EMPTY;
+  ctx.fill();
+
+  // Dotted accent border
+  roundedRect(ctx, x, y, PARCEL_W, PARCEL_H, PARCEL_RADIUS);
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = isHovered ? ACCENT : `rgba(249, 115, 22, ${0.5 + 0.3 * Math.sin(frame * 0.04)})`;
+  ctx.lineWidth = 1.5;
   ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Large "+" icon
+  const cx = x + PARCEL_W / 2;
+  const cy = y + PARCEL_H / 2 - 10;
+  ctx.strokeStyle = ACCENT;
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(cx - 12, cy);
+  ctx.lineTo(cx + 12, cy);
+  ctx.moveTo(cx, cy - 12);
+  ctx.lineTo(cx, cy + 12);
+  ctx.stroke();
+
+  // "Empty Office" text
+  ctx.fillStyle = "#AAAAAA";
+  ctx.font = `11px ui-monospace, "SF Mono", Menlo, monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText("Empty Office", cx, cy + 18);
+
+  // "Set up" link text
+  ctx.fillStyle = ACCENT;
+  ctx.font = `10px ui-monospace, "SF Mono", Menlo, monospace`;
+  ctx.fillText("Set up", cx, cy + 32);
+
+  // "Office #N" bottom label
+  ctx.fillStyle = "#444455";
+  ctx.font = `9px ui-monospace, "SF Mono", Menlo, monospace`;
+  ctx.textBaseline = "bottom";
+  ctx.fillText(`Office #${parcelNum}`, cx, y + PARCEL_H - 6);
+
+  ctx.restore();
+}
+
+function drawLockedParcel(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  parcelNum: number,
+): void {
+  ctx.save();
+
+  // Background
+  roundedRect(ctx, x, y, PARCEL_W, PARCEL_H, PARCEL_RADIUS);
+  ctx.fillStyle = BG_LOCKED;
+  ctx.fill();
+
+  // Subtle border
+  roundedRect(ctx, x, y, PARCEL_W, PARCEL_H, PARCEL_RADIUS);
+  ctx.strokeStyle = BORDER_LOCKED;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // ---- Padlock icon ----
+  const cx = x + PARCEL_W / 2;
+  const cy = y + PARCEL_H / 2 - 14;
+
+  // Lock body (rounded rect)
+  ctx.fillStyle = "#2A2A2A";
+  ctx.strokeStyle = "#3A3A3A";
+  ctx.lineWidth = 1;
+  const bodyX = cx - 9;
+  const bodyY = cy + 6;
+  const bodyW = 18;
+  const bodyH = 14;
+  ctx.beginPath();
+  ctx.roundRect(bodyX, bodyY, bodyW, bodyH, 3);
+  ctx.fill();
+  ctx.stroke();
+
+  // Shackle (U-shaped arc)
+  ctx.beginPath();
+  ctx.arc(cx, cy + 6, 7, Math.PI, 0);
+  ctx.strokeStyle = "#3A3A3A";
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.stroke();
+
+  // Keyhole (circle + notch)
+  ctx.fillStyle = "#1A1A1A";
+  ctx.beginPath();
+  ctx.arc(cx, bodyY + 6, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(cx - 1, bodyY + 8, 2, 4);
+
+  // "LOCKED" text
+  ctx.fillStyle = TEXT_LOCKED;
+  ctx.font = `bold 10px ui-monospace, "SF Mono", Menlo, monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText("LOCKED", cx, cy + 24);
+
+  // "Upgrade plan" text
+  ctx.fillStyle = TEXT_UPGRADE;
+  ctx.font = `9px ui-monospace, "SF Mono", Menlo, monospace`;
+  ctx.fillText("Upgrade plan", cx, cy + 37);
+
+  // "Office #N" bottom label
+  ctx.fillStyle = TEXT_PARCEL_NUM;
+  ctx.font = `9px ui-monospace, "SF Mono", Menlo, monospace`;
+  ctx.textBaseline = "bottom";
+  ctx.fillText(`Office #${parcelNum}`, cx, y + PARCEL_H - 6);
+
+  ctx.restore();
 }
 
 // ---------------------------------------------------------------------------
@@ -633,27 +403,20 @@ export function drawValleyTitle(
 // ---------------------------------------------------------------------------
 
 /**
- * Test if a click at (px, py) hits any building. Returns the building ID
- * or null if nothing was hit.
+ * Test if (px, py) hits any parcel. Returns the 0-based parcel index
+ * into PARCEL_POSITIONS (same as parcel.number - 1), or null.
  */
-export function hitTestBuilding(
+export function hitTestParcel(
   px: number,
   py: number,
   canvasW: number,
   canvasH: number,
-): string | null {
-  for (const building of VALLEY_LAYOUT) {
-    const { x, y } = buildingScreenPos(building, canvasW, canvasH);
-    const halfW = BUILDING_W / 2;
-
-    // Simple rectangular hit test around the building body
-    const left = x - halfW;
-    const right = x + halfW;
-    const top = y - BUILDING_H - ROOF_H;
-    const bottom = y + halfW * 0.4 + 24; // include label area
-
-    if (px >= left && px <= right && py >= top && py <= bottom) {
-      return building.id;
+): number | null {
+  for (let i = 0; i < PARCEL_POSITIONS.length; i++) {
+    const { col, row } = PARCEL_POSITIONS[i];
+    const { x, y } = gridToScreen(col, row, canvasW, canvasH);
+    if (px >= x && px <= x + PARCEL_W && py >= y && py <= y + PARCEL_H) {
+      return i;
     }
   }
   return null;
@@ -664,34 +427,36 @@ export function hitTestBuilding(
 // ---------------------------------------------------------------------------
 
 /**
- * Render the full Cowork Valley scene.
+ * Render the full Cowork Campus parcel grid.
  */
-export function drawValley(
+export function drawCampus(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
-  buildings: OfficeBuilding[],
+  parcels: Parcel[],
   frame: number,
 ): void {
   // Clear
-  ctx.fillStyle = "#050505";
+  ctx.fillStyle = "#050508";
   ctx.fillRect(0, 0, w, h);
 
-  // Ground tiles
-  drawGround(ctx, w, h);
+  // Draw each parcel
+  for (const parcel of parcels) {
+    const { col, row } = PARCEL_POSITIONS[parcel.number - 1];
+    const { x, y } = gridToScreen(col, row, w, h);
 
-  // Paths between buildings
-  drawPaths(ctx, w, h);
-
-  // Decorations (behind buildings in draw order)
-  drawDecorations(ctx, w, h, frame);
-
-  // Buildings — sort by gridY for proper overlap (back to front)
-  const sorted = [...buildings].sort((a, b) => a.gridY - b.gridY);
-  for (const building of sorted) {
-    drawBuilding(ctx, building, w, h, frame);
+    switch (parcel.state) {
+      case "running":
+        if (parcel.office) {
+          drawRunningParcel(ctx, x, y, parcel.office, parcel.number, parcel.isHovered, frame);
+        }
+        break;
+      case "empty":
+        drawEmptyParcel(ctx, x, y, parcel.number, parcel.isHovered, frame);
+        break;
+      case "locked":
+        drawLockedParcel(ctx, x, y, parcel.number);
+        break;
+    }
   }
-
-  // Title overlay
-  drawValleyTitle(ctx, w, h);
 }
