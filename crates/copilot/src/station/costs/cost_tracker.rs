@@ -48,10 +48,7 @@ impl ModelTier {
             || lower.contains("haiku")
         {
             ModelTier::Medium
-        } else if lower.contains("opus")
-            || lower.contains("gpt-4o")
-            || lower.contains("gpt-4-")
-        {
+        } else if lower.contains("opus") || lower.contains("gpt-4o") || lower.contains("gpt-4-") {
             ModelTier::Heavy
         } else {
             ModelTier::Light

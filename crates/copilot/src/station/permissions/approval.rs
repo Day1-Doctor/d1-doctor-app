@@ -201,18 +201,16 @@ impl PermissionEngine {
     ///
     /// The UI uses this to render stacked notification cards.
     pub async fn get_pending_ordered(&self) -> Vec<ApprovalRequest> {
-        self.approval_queue
-            .read()
-            .await
-            .iter()
-            .cloned()
-            .collect()
+        self.approval_queue.read().await.iter().cloned().collect()
     }
 
     /// Respond to a queued approval request by its ID and remove it from the queue.
     ///
     /// Returns `Ok(ApprovalResponse)` if the request was found, or `Err` if not.
-    pub async fn respond_queued(&self, response: ApprovalResponse) -> Result<ApprovalResponse, String> {
+    pub async fn respond_queued(
+        &self,
+        response: ApprovalResponse,
+    ) -> Result<ApprovalResponse, String> {
         let mut queue = self.approval_queue.write().await;
         let idx = queue
             .iter()
@@ -426,7 +424,13 @@ mod tests {
 
         // Default trust score is 0.5 → MEDIUM needs approval.
         let result = engine
-            .check_permission("a1", "Agent A", "filesystem", &json!({"operation": "write"}), "ctx")
+            .check_permission(
+                "a1",
+                "Agent A",
+                "filesystem",
+                &json!({"operation": "write"}),
+                "ctx",
+            )
             .await;
         assert!(result.is_err());
 
@@ -435,7 +439,13 @@ mod tests {
 
         // Now MEDIUM should auto-approve.
         let result = engine
-            .check_permission("a1", "Agent A", "filesystem", &json!({"operation": "write"}), "ctx")
+            .check_permission(
+                "a1",
+                "Agent A",
+                "filesystem",
+                &json!({"operation": "write"}),
+                "ctx",
+            )
             .await;
         assert!(result.is_ok());
     }

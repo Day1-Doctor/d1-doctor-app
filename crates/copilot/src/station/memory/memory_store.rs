@@ -77,9 +77,7 @@ impl MemoryStore {
     /// Creates the v2.x memory tables if they are missing.
     pub fn new(db: DbHandle) -> Result<Self, String> {
         {
-            let conn = db
-                .lock()
-                .map_err(|e| format!("failed to lock db: {e}"))?;
+            let conn = db.lock().map_err(|e| format!("failed to lock db: {e}"))?;
             conn.execute_batch(CREATE_MEMORY_TABLES)
                 .map_err(|e| format!("failed to create memory tables: {e}"))?;
         }
@@ -126,9 +124,7 @@ impl MemoryStore {
                     })
                 })
                 .map_err(|e| format!("failed to execute recall query: {e}"))?;
-            let mut entries: Vec<MemoryEntry> = rows
-                .filter_map(|r| r.ok())
-                .collect();
+            let mut entries: Vec<MemoryEntry> = rows.filter_map(|r| r.ok()).collect();
             entries.reverse(); // chronological order
             Ok(entries)
         } else {
@@ -149,9 +145,7 @@ impl MemoryStore {
                     })
                 })
                 .map_err(|e| format!("failed to execute recall query: {e}"))?;
-            let mut entries: Vec<MemoryEntry> = rows
-                .filter_map(|r| r.ok())
-                .collect();
+            let mut entries: Vec<MemoryEntry> = rows.filter_map(|r| r.ok()).collect();
             entries.reverse();
             Ok(entries)
         }
@@ -159,11 +153,7 @@ impl MemoryStore {
 
     /// Search for memory entries by category, optionally filtering by a
     /// content substring query.
-    pub fn search(
-        &self,
-        category: &str,
-        query: &str,
-    ) -> Result<Vec<MemoryEntry>, String> {
+    pub fn search(&self, category: &str, query: &str) -> Result<Vec<MemoryEntry>, String> {
         let conn = self
             .db
             .lock()
@@ -185,9 +175,7 @@ impl MemoryStore {
                     })
                 })
                 .map_err(|e| format!("failed to execute search query: {e}"))?;
-            let mut entries: Vec<MemoryEntry> = rows
-                .filter_map(|r| r.ok())
-                .collect();
+            let mut entries: Vec<MemoryEntry> = rows.filter_map(|r| r.ok()).collect();
             entries.reverse();
             Ok(entries)
         } else {
@@ -208,9 +196,7 @@ impl MemoryStore {
                     })
                 })
                 .map_err(|e| format!("failed to execute search query: {e}"))?;
-            let mut entries: Vec<MemoryEntry> = rows
-                .filter_map(|r| r.ok())
-                .collect();
+            let mut entries: Vec<MemoryEntry> = rows.filter_map(|r| r.ok()).collect();
             entries.reverse();
             Ok(entries)
         }
@@ -319,9 +305,7 @@ mod tests {
         let store = MemoryStore::new(db).unwrap();
 
         for i in 0..5 {
-            store
-                .store("fact", &format!("Memory entry {}", i))
-                .unwrap();
+            store.store("fact", &format!("Memory entry {}", i)).unwrap();
         }
 
         let entries = store.recall("", 3).unwrap();

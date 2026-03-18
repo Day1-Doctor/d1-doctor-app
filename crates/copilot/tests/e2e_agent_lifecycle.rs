@@ -44,24 +44,39 @@ async fn lifecycle_full_fsm_cycle() {
     let id = kernel.register(agent).await;
 
     // idle -> working
-    let (old, new) = kernel.apply_trigger(&id, Trigger::TaskAssign).await.unwrap();
+    let (old, new) = kernel
+        .apply_trigger(&id, Trigger::TaskAssign)
+        .await
+        .unwrap();
     assert_eq!(old, AgentStatus::Idle);
     assert_eq!(new, AgentStatus::Working);
 
     // working -> thinking
-    let (_, new) = kernel.apply_trigger(&id, Trigger::LlmCallStart).await.unwrap();
+    let (_, new) = kernel
+        .apply_trigger(&id, Trigger::LlmCallStart)
+        .await
+        .unwrap();
     assert_eq!(new, AgentStatus::Thinking);
 
     // thinking -> executing
-    let (_, new) = kernel.apply_trigger(&id, Trigger::ToolCallStart).await.unwrap();
+    let (_, new) = kernel
+        .apply_trigger(&id, Trigger::ToolCallStart)
+        .await
+        .unwrap();
     assert_eq!(new, AgentStatus::Executing);
 
     // executing -> working
-    let (_, new) = kernel.apply_trigger(&id, Trigger::ToolCallEnd).await.unwrap();
+    let (_, new) = kernel
+        .apply_trigger(&id, Trigger::ToolCallEnd)
+        .await
+        .unwrap();
     assert_eq!(new, AgentStatus::Working);
 
     // working -> idle (complete)
-    let (_, new) = kernel.apply_trigger(&id, Trigger::TaskComplete).await.unwrap();
+    let (_, new) = kernel
+        .apply_trigger(&id, Trigger::TaskComplete)
+        .await
+        .unwrap();
     assert_eq!(new, AgentStatus::Idle);
 }
 
@@ -72,7 +87,10 @@ async fn lifecycle_error_and_recovery() {
     let id = kernel.register(agent).await;
 
     // idle -> working
-    kernel.apply_trigger(&id, Trigger::TaskAssign).await.unwrap();
+    kernel
+        .apply_trigger(&id, Trigger::TaskAssign)
+        .await
+        .unwrap();
 
     // working -> error
     let (_, new) = kernel
@@ -98,14 +116,23 @@ async fn lifecycle_approval_flow() {
     let id = kernel.register(agent).await;
 
     // idle -> working
-    kernel.apply_trigger(&id, Trigger::TaskAssign).await.unwrap();
+    kernel
+        .apply_trigger(&id, Trigger::TaskAssign)
+        .await
+        .unwrap();
 
     // working -> paused (approval needed)
-    let (_, new) = kernel.apply_trigger(&id, Trigger::ApprovalNeeded).await.unwrap();
+    let (_, new) = kernel
+        .apply_trigger(&id, Trigger::ApprovalNeeded)
+        .await
+        .unwrap();
     assert_eq!(new, AgentStatus::Paused);
 
     // paused -> working (approved)
-    let (_, new) = kernel.apply_trigger(&id, Trigger::ApprovalGranted).await.unwrap();
+    let (_, new) = kernel
+        .apply_trigger(&id, Trigger::ApprovalGranted)
+        .await
+        .unwrap();
     assert_eq!(new, AgentStatus::Working);
 }
 

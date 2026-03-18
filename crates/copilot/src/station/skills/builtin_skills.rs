@@ -435,8 +435,7 @@ fn code_review() -> SkillDefinition {
     SkillDefinition {
         id: "code-review".into(),
         name: "Code Review".into(),
-        description: "Automated code review covering style, bugs, security, and performance"
-            .into(),
+        description: "Automated code review covering style, bugs, security, and performance".into(),
         used_by: vec!["coder".into()],
         steps: vec![
             SkillStep {
@@ -660,7 +659,11 @@ mod tests {
     #[test]
     fn test_all_skills_have_names() {
         for skill in all_skills() {
-            assert!(!skill.name.is_empty(), "skill '{}' must have a name", skill.id);
+            assert!(
+                !skill.name.is_empty(),
+                "skill '{}' must have a name",
+                skill.id
+            );
             assert!(
                 !skill.description.is_empty(),
                 "skill '{}' must have a description",

@@ -97,6 +97,9 @@ mod tests {
     fn test_classify_critical_risk() {
         let empty = json!({});
         assert_eq!(classify_risk("unknown-tool", &empty), RiskLevel::Critical);
-        assert_eq!(classify_risk("something-random", &empty), RiskLevel::Critical);
+        assert_eq!(
+            classify_risk("something-random", &empty),
+            RiskLevel::Critical
+        );
     }
 }

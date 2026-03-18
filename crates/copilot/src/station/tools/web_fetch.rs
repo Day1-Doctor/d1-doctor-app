@@ -47,10 +47,7 @@ impl WebFetchTool {
     pub fn extract_tables(&self, url: &str) -> Vec<Table> {
         vec![Table {
             headers: vec!["Column A".to_string(), "Column B".to_string()],
-            rows: vec![vec![
-                format!("mock-row-from-{}", url),
-                "value".to_string(),
-            ]],
+            rows: vec![vec![format!("mock-row-from-{}", url), "value".to_string()]],
         }]
     }
 }

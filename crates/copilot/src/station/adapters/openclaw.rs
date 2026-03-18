@@ -122,8 +122,7 @@ mod tests {
         let oc_dir = tmp.path().join(".openclaw");
         fs::create_dir(&oc_dir).unwrap();
 
-        let adapter =
-            OpenClawAdapter::with_config(oc_dir, "127.0.0.1:19999".to_string());
+        let adapter = OpenClawAdapter::with_config(oc_dir, "127.0.0.1:19999".to_string());
         // health_check should fail because the gateway isn't running.
         assert!(!adapter.health_check().await);
     }
@@ -139,10 +138,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_adapter_type() {
-        let adapter = OpenClawAdapter::with_config(
-            PathBuf::from("/tmp/fake"),
-            "127.0.0.1:0".to_string(),
-        );
+        let adapter =
+            OpenClawAdapter::with_config(PathBuf::from("/tmp/fake"), "127.0.0.1:0".to_string());
         assert_eq!(adapter.adapter_type(), "openclaw");
     }
 }
