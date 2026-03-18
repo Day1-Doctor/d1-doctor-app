@@ -11,7 +11,8 @@
     "chat": "对话",
     "agents": "智能体",
     "memory": "记忆",
-    "settings": "设置"
+    "settings": "设置",
+    "valley": "协作谷"
   },
   "office": {
     "title": "Dr. Bob 办公室",
@@ -205,5 +206,20 @@
     "invalidKey": "API 密钥无效，请检查后重试。",
     "connecting": "连接中...",
     "signOut": "退出登录"
+  },
+  "valley": {
+    "title": "协作谷",
+    "yourOffice": "你的办公室",
+    "locked": "未解锁",
+    "clickToEnter": "点击进入",
+    "upgradeToUnlock": "升级解锁",
+    "offices": {
+      "drBob": "Dr. Bob 办公室",
+      "scout": "Scout 研究室",
+      "sage": "Sage 工作室",
+      "quill": "Quill 书房",
+      "pixel": "Pixel 实验室",
+      "atlas": "Atlas 运维中心"
+    }
   }
 }

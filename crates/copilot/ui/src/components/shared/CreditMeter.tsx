@@ -14,6 +14,7 @@ export function CreditMeter() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const rawBalance = useCostStore((s) => s.balance);
   const rawLimit = useCostStore((s) => s.limit);
+  // Show real data when authenticated, zeros when not
   const balance = isAuthenticated ? rawBalance : 0;
   const limit = isAuthenticated ? rawLimit : 0;
   const sessionCost = useCostStore((s) => s.sessionCost);

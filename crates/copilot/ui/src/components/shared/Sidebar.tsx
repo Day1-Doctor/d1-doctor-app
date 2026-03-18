@@ -11,6 +11,28 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
+    id: "valley",
+    labelKey: "nav.valley",
+    view: "valley",
+    icon: (
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M2 22L7 7l5 8 4-5 6 12H2z" />
+        <path d="M17 3l2 2-2 2" />
+        <circle cx="6" cy="4" r="1.5" />
+      </svg>
+    ),
+  },
+  {
     id: "office",
     labelKey: "nav.office",
     view: "office",

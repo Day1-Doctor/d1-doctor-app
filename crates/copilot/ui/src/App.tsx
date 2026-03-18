@@ -10,6 +10,7 @@ import { Sidebar } from "./components/shared/Sidebar";
 import { StatusBar } from "./components/shared/StatusBar";
 import { RightPanel } from "./components/shared/RightPanel";
 import { AuthWall } from "./components/shared/AuthWall";
+import { ValleyView } from "./views/ValleyView";
 import { OfficeView } from "./views/OfficeView";
 import { TaskView } from "./views/TaskView";
 import { ChatView } from "./views/ChatView";
@@ -36,6 +37,7 @@ function LazyFallback() {
 }
 
 const viewComponents = {
+  valley: ValleyView,
   office: OfficeView,
   task: TaskView,
   debug: DebugView,

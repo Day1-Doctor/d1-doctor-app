@@ -2,6 +2,7 @@ import { useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useAgentStore } from "../stores/agentStore";
 import { useTaskStore } from "../stores/taskStore";
+import { useViewStore } from "../stores/viewStore";
 import { useCanvasSize } from "../hooks/useCanvasSize";
 import { IsometricCanvas } from "../components/office/IsometricCanvas";
 import { AgentDetailPanel } from "../components/office/AgentDetailPanel";
@@ -25,6 +26,7 @@ export function OfficeView() {
   const agents = useAgentStore((s) => s.agents);
   const selectAgent = useAgentStore((s) => s.selectAgent);
   const selectedAgentId = useAgentStore((s) => s.selectedAgentId);
+  const setActiveView = useViewStore((s) => s.setActiveView);
 
   const activeTask = useTaskStore((s) =>
     s.tasks.find((t) => t.id === s.activeTaskId),
@@ -63,6 +65,32 @@ export function OfficeView() {
       style={{ minHeight: 0, overflow: "hidden" }}
       onClick={handleCanvasClick}
     >
+      {/* Back to Valley button */}
+      <button
+        onClick={() => setActiveView("valley")}
+        className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-3 py-1.5
+          rounded-md text-xs text-text-secondary hover:text-text-primary
+          bg-black/50 hover:bg-black/70 border border-border/30
+          backdrop-blur-sm transition-colors duration-100
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+        aria-label={t("valley.title")}
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        {t("valley.title")}
+      </button>
+
       {width > 0 && height > 0 && (
         <IsometricCanvas agents={agents} width={width} height={height} />
       )}

@@ -1,6 +1,12 @@
 import { create } from "zustand";
 
-export type ViewType = "office" | "task" | "debug" | "chat" | "settings";
+export type ViewType =
+  | "valley"
+  | "office"
+  | "task"
+  | "debug"
+  | "chat"
+  | "settings";
 
 interface ViewState {
   activeView: ViewType;
@@ -8,6 +14,6 @@ interface ViewState {
 }
 
 export const useViewStore = create<ViewState>((set) => ({
-  activeView: "office",
+  activeView: "valley",
   setActiveView: (view) => set({ activeView: view }),
 }));

@@ -11,7 +11,8 @@
     "chat": "Chat",
     "agents": "Agents",
     "memory": "Memory",
-    "settings": "Settings"
+    "settings": "Settings",
+    "valley": "Valley"
   },
   "office": {
     "title": "Dr. Bob's Office",
@@ -205,5 +206,20 @@
     "invalidKey": "Invalid API key. Please check and try again.",
     "connecting": "Connecting...",
     "signOut": "Sign Out"
+  },
+  "valley": {
+    "title": "Cowork Valley",
+    "yourOffice": "Your Office",
+    "locked": "Locked",
+    "clickToEnter": "Click to enter",
+    "upgradeToUnlock": "Upgrade to unlock",
+    "offices": {
+      "drBob": "Dr. Bob's Office",
+      "scout": "Scout's Lab",
+      "sage": "Sage's Studio",
+      "quill": "Quill's Den",
+      "pixel": "Pixel's Lab",
+      "atlas": "Atlas Ops"
+    }
   }
 }
