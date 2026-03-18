@@ -1,9 +1,11 @@
-import { useRef } from "react";
+import { useRef, useCallback } from "react";
 import { useAgentStore } from "../stores/agentStore";
 import { useTaskStore } from "../stores/taskStore";
 import { useCanvasSize } from "../hooks/useCanvasSize";
 import { IsometricCanvas } from "../components/office/IsometricCanvas";
+import { AgentDetailPanel } from "../components/office/AgentDetailPanel";
 import { TaskTimeline } from "../components/task/TaskTimeline";
+import { OFFICE_LAYOUT, hitTestAgent } from "../components/office/OfficeRenderer";
 
 /**
  * OfficeView — Full-height canvas container that renders the 2.5D
@@ -12,14 +14,44 @@ import { TaskTimeline } from "../components/task/TaskTimeline";
  *
  * When a task is active, a glassmorphic TaskTimeline bar is shown
  * at the bottom of the canvas.
+ *
+ * Clicking on an agent in the canvas opens the AgentDetailPanel.
  */
 export function OfficeView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { width, height } = useCanvasSize(containerRef);
   const agents = useAgentStore((s) => s.agents);
+  const selectAgent = useAgentStore((s) => s.selectAgent);
+  const selectedAgentId = useAgentStore((s) => s.selectedAgentId);
 
   const activeTask = useTaskStore((s) =>
     s.tasks.find((t) => t.id === s.activeTaskId),
+  );
+
+  /** Handle clicks on the canvas to select/deselect agents. */
+  const handleCanvasClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (width === 0 || height === 0) return;
+
+      const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      // Check if any agent was clicked
+      for (const desk of OFFICE_LAYOUT) {
+        const agent = agents.find((a) => a.name === desk.label);
+        if (!agent) continue;
+
+        if (hitTestAgent(desk, clickX, clickY, width, height)) {
+          selectAgent(agent.id);
+          return;
+        }
+      }
+
+      // Clicked on empty space — deselect
+      selectAgent(null);
+    },
+    [agents, width, height, selectAgent],
   );
 
   return (
@@ -27,6 +59,7 @@ export function OfficeView() {
       ref={containerRef}
       className="flex-1 relative"
       style={{ minHeight: 0, overflow: "hidden" }}
+      onClick={handleCanvasClick}
     >
       {width > 0 && height > 0 && (
         <IsometricCanvas agents={agents} width={width} height={height} />
@@ -57,6 +90,9 @@ export function OfficeView() {
           </div>
         </div>
       )}
+
+      {/* Agent detail slide-in panel */}
+      {selectedAgentId && <AgentDetailPanel />}
     </div>
   );
 }
