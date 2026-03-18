@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useViewStore } from "./stores/viewStore";
+import { useEventStream } from "./hooks/useEventStream";
 import { TopBar } from "./components/shared/TopBar";
 import { Sidebar } from "./components/shared/Sidebar";
 import { StatusBar } from "./components/shared/StatusBar";
@@ -29,6 +30,7 @@ const reducedMotion =
 const transitionDuration = reducedMotion ? 0 : 0.15;
 
 function App() {
+  useEventStream(); // Connect to Station Runtime Event Bus
   const activeView = useViewStore((s) => s.activeView);
   const ActiveViewComponent = viewComponents[activeView];
 

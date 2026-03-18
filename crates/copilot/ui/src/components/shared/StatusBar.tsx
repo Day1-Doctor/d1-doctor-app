@@ -1,8 +1,10 @@
 import { useAgentStore } from "../../stores/agentStore";
+import { useConnectionStore } from "../../stores/connectionStore";
 
 export function StatusBar() {
   const agents = useAgentStore((s) => s.agents);
   const selectedAgentId = useAgentStore((s) => s.selectedAgentId);
+  const isConnected = useConnectionStore((s) => s.isConnected);
 
   const activeAgent =
     agents.find((a) => a.id === selectedAgentId) ?? agents[0];
@@ -50,10 +52,14 @@ export function StatusBar() {
         <span>Latency: --</span>
         <div className="flex items-center gap-1.5">
           <span
-            className="inline-block w-1.5 h-1.5 rounded-full bg-success"
-            aria-label="Connected"
+            className={`inline-block w-1.5 h-1.5 rounded-full ${
+              isConnected ? "bg-success" : "bg-error"
+            }`}
+            aria-label={isConnected ? "Connected" : "Disconnected"}
           />
-          <span className="text-text-muted">Connected</span>
+          <span className="text-text-muted">
+            {isConnected ? "Connected" : "Disconnected"}
+          </span>
         </div>
       </div>
     </footer>
