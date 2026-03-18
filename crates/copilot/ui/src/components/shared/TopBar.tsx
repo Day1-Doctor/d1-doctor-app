@@ -1,4 +1,5 @@
 import { useTaskStore } from "../../stores/taskStore";
+import { CreditMeter } from "./CreditMeter";
 
 export function TopBar() {
   const tasks = useTaskStore((s) => s.tasks);
@@ -38,26 +39,7 @@ export function TopBar() {
 
       {/* Right: Credits + Settings */}
       <div className="flex items-center gap-3 min-w-[180px] justify-end">
-        <div
-          className="flex items-center gap-1.5 text-xs text-text-secondary"
-          aria-label="DD Credits: 500"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-warning"
-            aria-hidden="true"
-          >
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-          </svg>
-          <span>500 DD</span>
-        </div>
+        <CreditMeter />
         <button
           className="p-1.5 rounded hover:bg-muted text-text-secondary hover:text-text-primary
             transition-colors duration-100 focus:outline-none focus-visible:ring-2
