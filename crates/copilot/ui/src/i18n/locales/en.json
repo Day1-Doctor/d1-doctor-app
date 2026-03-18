@@ -223,14 +223,12 @@
   },
   "auth": {
     "signIn": "Sign in to start working",
-    "apiKeyLabel": "Enter your Day1 API Key",
-    "apiKeyPlaceholder": "d1d_sk_...",
-    "connect": "Connect",
+    "signInDesc": "Sign in to start using Day1 Copilot",
+    "continueWithGoogle": "Continue with Google",
+    "continueWithEmail": "Continue with Email",
     "or": "or",
-    "signInWithAccount": "Sign in with Day1 Account",
-    "createAccount": "New to Day1? Create a free account",
-    "invalidKey": "Invalid API key. Please check and try again.",
-    "connecting": "Connecting...",
+    "noAccount": "No account?",
+    "createFree": "Create one for free",
     "signOut": "Sign Out"
   },
   "valley": {

@@ -223,14 +223,12 @@
   },
   "auth": {
     "signIn": "登录以开始工作",
-    "apiKeyLabel": "输入你的 Day1 API 密钥",
-    "apiKeyPlaceholder": "d1d_sk_...",
-    "connect": "连接",
+    "signInDesc": "登录以使用 Day1 Copilot",
+    "continueWithGoogle": "使用 Google 账号继续",
+    "continueWithEmail": "使用邮箱继续",
     "or": "或",
-    "signInWithAccount": "使用 Day1 账户登录",
-    "createAccount": "没有账户？免费注册",
-    "invalidKey": "API 密钥无效，请检查后重试。",
-    "connecting": "连接中...",
+    "noAccount": "没有账户？",
+    "createFree": "免费注册",
     "signOut": "退出登录"
   },
   "valley": {

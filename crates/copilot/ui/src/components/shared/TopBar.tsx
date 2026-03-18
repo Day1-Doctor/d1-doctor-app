@@ -14,7 +14,6 @@ export function TopBar({ onAuthRequired }: TopBarProps) {
   const activeTaskId = useTaskStore((s) => s.activeTaskId);
   const activeTask = tasks.find((t) => t.id === activeTaskId);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const apiKeyPrefix = useAuthStore((s) => s.apiKeyPrefix);
   const logout = useAuthStore((s) => s.logout);
 
   return (
@@ -26,13 +25,14 @@ export function TopBar({ onAuthRequired }: TopBarProps) {
     >
       {/* Left: Logo */}
       <div className="flex items-center gap-2 min-w-[180px]">
+        <img src="/logo-32.png" alt="Day1" width={24} height={24} className="shrink-0" />
         <span
           className="text-accent font-semibold text-sm tracking-tight"
           aria-label={t("app.name")}
         >
           {t("app.name")}
         </span>
-        <span className="text-text-muted text-sm">v0.1.0</span>
+        <span className="text-text-muted text-sm">v3.0</span>
       </div>
 
       {/* Center: Active task */}
@@ -53,16 +53,14 @@ export function TopBar({ onAuthRequired }: TopBarProps) {
         {/* Auth indicator */}
         {isAuthenticated ? (
           <div className="flex items-center gap-2">
-            <span className="text-text-secondary text-sm font-mono">
-              {apiKeyPrefix}...
-            </span>
+            <span className="w-2 h-2 rounded-full bg-success shrink-0" />
             <button
               onClick={logout}
-              className="text-text-muted text-[12px] hover:text-error
+              className="text-text-muted text-sm hover:text-error
                 transition-colors duration-100 focus:outline-none
                 focus-visible:ring-2 focus-visible:ring-accent/50 rounded px-1"
             >
-              {t("auth.signOut")}
+              {t("auth.signOut", { defaultValue: "Sign Out" })}
             </button>
           </div>
         ) : (
