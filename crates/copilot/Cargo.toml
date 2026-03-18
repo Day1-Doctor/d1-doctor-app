@@ -22,6 +22,7 @@ rusqlite = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 dirs = "5"
+toml = { workspace = true }
 tracing = { workspace = true }
 axum = { version = "0.7", features = ["ws"] }
 tower = { version = "0.5", features = ["util"] }

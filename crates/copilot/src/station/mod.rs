@@ -3,4 +3,5 @@
 pub mod db;
 pub mod events;
 pub mod kernel;
+pub mod runtime;
 pub mod server;
