@@ -1,3 +1,4 @@
+pub mod decomposer;
 pub mod task_engine;
 pub mod task_types;
 
