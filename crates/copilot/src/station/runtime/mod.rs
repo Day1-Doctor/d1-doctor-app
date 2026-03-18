@@ -1,4 +1,5 @@
 pub mod config;
+pub mod hot_update;
 pub mod presets;
 pub mod runtime;
 
