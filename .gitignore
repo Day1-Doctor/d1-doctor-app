@@ -15,3 +15,9 @@ target/
 *.key
 credentials.json
 service-account*.json
+
+# Node
+node_modules/
+
+# Tauri codegen
+crates/copilot/gen/

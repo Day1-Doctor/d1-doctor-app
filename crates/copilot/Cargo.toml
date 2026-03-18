@@ -1,0 +1,20 @@
+[package]
+name = "d1-copilot"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Day1 Copilot — Dr. Bob's Office (Tauri v2 + React 19)"
+
+[lib]
+name = "d1_copilot_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
