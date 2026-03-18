@@ -19,7 +19,6 @@ import {
   useOnboarding,
 } from "./components/shared/OnboardingWizard";
 
-// D1D-240: Lazy load heavy views
 const DebugView = lazy(() =>
   import("./views/DebugView").then((m) => ({ default: m.DebugView })),
 );
@@ -45,7 +44,6 @@ const viewComponents = {
   settings: SettingsView,
 } as const;
 
-// D1D-239: Smooth Framer Motion transitions with fade + slide
 const motionVariants = {
   initial: { opacity: 0, x: 10 },
   animate: { opacity: 1, x: 0 },
@@ -61,7 +59,6 @@ const transitionConfig = {
   ease: "easeOut" as const,
 };
 
-// D1D-240: Memoize the main content area to avoid unnecessary re-renders
 const MainContent = memo(function MainContent({
   activeView,
 }: {
@@ -90,7 +87,7 @@ const MainContent = memo(function MainContent({
 });
 
 function App() {
-  useEventStream(); // Connect to Station Runtime Event Bus
+  useEventStream();
   const activeView = useViewStore((s) => s.activeView);
   const { hasOnboarded, completeOnboarding } = useOnboarding();
   const fetchAgents = useAgentStore((s) => s.fetchAgents);
@@ -104,7 +101,6 @@ function App() {
     checkStoredAuth();
   }, [checkStoredAuth]);
 
-  // Fetch real agent data from Tauri runtime on mount
   React.useEffect(() => {
     const timer = setTimeout(() => fetchAgents(), 500);
     return () => clearTimeout(timer);
@@ -130,9 +126,7 @@ function App() {
 
   return (
     <div className="h-screen flex flex-col bg-background font-mono overflow-hidden">
-      {/* D1D-255: Onboarding wizard on first launch */}
       {!hasOnboarded && <OnboardingWizard onComplete={completeOnboarding} />}
-
       {/* Auth wall modal */}
       {showAuthWall && <AuthWall onAuthenticated={handleAuthenticated} />}
 
@@ -140,12 +134,9 @@ function App() {
 
       <div className="flex flex-1 min-h-0">
         <Sidebar />
-
-        {/* Main Canvas */}
         <main className="flex-1 flex min-w-0 relative" role="main">
           <MainContent activeView={activeView} />
         </main>
-
         <RightPanel />
       </div>
 
