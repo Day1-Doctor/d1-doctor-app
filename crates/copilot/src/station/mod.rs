@@ -9,5 +9,6 @@ pub mod memory;
 pub mod permissions;
 pub mod runtime;
 pub mod server;
+pub mod billing;
 pub mod tasks;
 pub mod tools;
