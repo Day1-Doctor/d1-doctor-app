@@ -4,6 +4,10 @@
  * All drawing is done through the Canvas 2D API. No DOM manipulation,
  * no React dependencies. The module exports a single entry point
  * `drawOffice` plus supporting types and constants.
+ *
+ * Features:
+ * - D1D-221: Error/escalation visual indicators (pulsing triangle + speech bubble)
+ * - D1D-224: Themed room zones with tinted tiles, labels, and furniture decorations
  */
 
 import type { Agent } from "../../stores/agentStore";
