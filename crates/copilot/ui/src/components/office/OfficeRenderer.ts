@@ -79,6 +79,67 @@ const LABEL_COLOR = "#A0A0A0";
 const FALLBACK_AGENT_COLOR = "#6B7280";
 
 // ---------------------------------------------------------------------------
+// D1D-224: Room tileset definitions
+// ---------------------------------------------------------------------------
+
+interface RoomZone {
+  name: string;
+  /** Grid column range [start, end) */
+  colRange: [number, number];
+  /** Grid row range [start, end) */
+  rowRange: [number, number];
+  /** Subtle tint color (RGBA) */
+  tint: string;
+  /** Label position offset from room center. */
+  labelOffset: { dx: number; dy: number };
+}
+
+const ROOM_ZONES: RoomZone[] = [
+  {
+    name: "Research Room",
+    colRange: [0, 3],
+    rowRange: [0, 3],
+    tint: "rgba(59, 130, 246, 0.04)", // blue
+    labelOffset: { dx: 0, dy: -8 },
+  },
+  {
+    name: "Analysis Station",
+    colRange: [5, 8],
+    rowRange: [0, 3],
+    tint: "rgba(139, 92, 246, 0.04)", // purple
+    labelOffset: { dx: 0, dy: -8 },
+  },
+  {
+    name: "Writing Desk",
+    colRange: [0, 3],
+    rowRange: [3, 6],
+    tint: "rgba(16, 185, 129, 0.04)", // green
+    labelOffset: { dx: 0, dy: -8 },
+  },
+  {
+    name: "Coding Room",
+    colRange: [5, 8],
+    rowRange: [3, 6],
+    tint: "rgba(236, 72, 153, 0.04)", // pink
+    labelOffset: { dx: 0, dy: -8 },
+  },
+  {
+    name: "Operations",
+    colRange: [2, 6],
+    rowRange: [4, 6],
+    tint: "rgba(245, 158, 11, 0.03)", // amber
+    labelOffset: { dx: 0, dy: -8 },
+  },
+  {
+    name: "Manager",
+    colRange: [2, 6],
+    rowRange: [1, 4],
+    tint: "rgba(249, 115, 22, 0.03)", // orange
+    labelOffset: { dx: 0, dy: -8 },
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Coordinate helpers
 // ---------------------------------------------------------------------------
 
@@ -102,6 +163,31 @@ function gridToScreen(
 }
 
 // ---------------------------------------------------------------------------
+// Hit testing (for click interaction)
+// ---------------------------------------------------------------------------
+
+/**
+ * Test whether a screen coordinate (px, py) is within the clickable area
+ * of an agent at the given desk position. The hit area covers the agent
+ * circle and indicator icons above it.
+ */
+export function hitTestAgent(
+  desk: DeskPosition,
+  px: number,
+  py: number,
+  canvasW: number,
+  canvasH: number,
+): boolean {
+  const { x, y } = gridToScreen(desk.gridX, desk.gridY, canvasW, canvasH);
+  const circleY = y - TILE_H * 1.5;
+  const hitRadius = 24; // generous click target
+
+  const dx = px - x;
+  const dy = py - circleY;
+  return dx * dx + dy * dy <= hitRadius * hitRadius;
+}
+
+// ---------------------------------------------------------------------------
 // Drawing primitives
 // ---------------------------------------------------------------------------
 
@@ -111,6 +197,7 @@ function drawTile(
   cx: number,
   cy: number,
   fill: boolean,
+  tintColor?: string,
 ): void {
   ctx.beginPath();
   ctx.moveTo(cx, cy - TILE_H);
@@ -124,12 +211,34 @@ function drawTile(
     ctx.fill();
   }
 
+  // Apply room tint overlay
+  if (tintColor) {
+    ctx.fillStyle = tintColor;
+    ctx.fill();
+  }
+
   ctx.strokeStyle = FLOOR_LINE_COLOR;
   ctx.lineWidth = 1;
   ctx.stroke();
 }
 
-/** Draw the entire floor grid. */
+/** Get the room tint for a tile at (col, row). Returns the last matching zone's tint. */
+function getRoomTint(col: number, row: number): string | undefined {
+  let tint: string | undefined;
+  for (const zone of ROOM_ZONES) {
+    if (
+      col >= zone.colRange[0] &&
+      col < zone.colRange[1] &&
+      row >= zone.rowRange[0] &&
+      row < zone.rowRange[1]
+    ) {
+      tint = zone.tint;
+    }
+  }
+  return tint;
+}
+
+/** Draw the entire floor grid with room tints. */
 function drawFloor(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -138,9 +247,119 @@ function drawFloor(
   for (let row = 0; row < GRID_ROWS; row++) {
     for (let col = 0; col < GRID_COLS; col++) {
       const { x, y } = gridToScreen(col, row, w, h);
-      drawTile(ctx, x, y, true);
+      const tint = getRoomTint(col, row);
+      drawTile(ctx, x, y, true, tint);
     }
   }
+}
+
+/** Draw room labels at approximate center of each zone. */
+function drawRoomLabels(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+): void {
+  ctx.font = '9px ui-monospace, "SF Mono", Menlo, monospace';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffffff18";
+
+  for (const zone of ROOM_ZONES) {
+    const centerCol = (zone.colRange[0] + zone.colRange[1]) / 2;
+    const centerRow = (zone.rowRange[0] + zone.rowRange[1]) / 2;
+    const { x, y } = gridToScreen(centerCol, centerRow, w, h);
+    ctx.fillText(
+      zone.name.toUpperCase(),
+      x + zone.labelOffset.dx,
+      y + zone.labelOffset.dy,
+    );
+  }
+}
+
+/** Draw a simple bookshelf decoration (Research Room). */
+function drawBookshelf(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+): void {
+  const { x, y } = gridToScreen(0, 0, w, h);
+  // Small isometric bookshelf shape
+  const bw = 14;
+  const bh = 20;
+
+  ctx.fillStyle = "#1a1510";
+  ctx.fillRect(x - bw / 2, y - bh - 4, bw, bh);
+  ctx.strokeStyle = "#2a2218";
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(x - bw / 2, y - bh - 4, bw, bh);
+
+  // Book spines
+  const colors = ["#3B82F640", "#8B5CF640", "#10B98140"];
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = colors[i];
+    ctx.fillRect(x - bw / 2 + 2 + i * 4, y - bh - 2, 3, bh - 4);
+  }
+}
+
+/** Draw a small chart decoration (Analysis Station). */
+function drawChart(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+): void {
+  const { x, y } = gridToScreen(7, 0, w, h);
+  const cw = 16;
+  const ch = 14;
+  const bx = x - cw / 2;
+  const by = y - ch - 6;
+
+  // Background
+  ctx.fillStyle = "#0f0f14";
+  ctx.fillRect(bx, by, cw, ch);
+  ctx.strokeStyle = "#24242a";
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(bx, by, cw, ch);
+
+  // Bars
+  const barColors = ["#8B5CF650", "#8B5CF680", "#8B5CF6A0"];
+  const barHeights = [4, 8, 6];
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = barColors[i];
+    ctx.fillRect(bx + 2 + i * 5, by + ch - barHeights[i] - 1, 3, barHeights[i]);
+  }
+}
+
+/** Draw extra monitor decorations at selected desks. */
+function drawFurnitureDecorations(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+): void {
+  // Draw a second monitor at certain desks for visual variety
+  // Scout desk (researcher) - extra book
+  const scoutPos = gridToScreen(1, 1, w, h);
+  ctx.fillStyle = "#3B82F615";
+  ctx.fillRect(scoutPos.x + 18, scoutPos.y - 8, 6, 8);
+  ctx.strokeStyle = "#3B82F630";
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(scoutPos.x + 18, scoutPos.y - 8, 6, 8);
+
+  // Pixel desk (coder) - second monitor
+  const pixelPos = gridToScreen(5, 4, w, h);
+  const mw = TILE_W * 0.6 * 0.3;
+  const mh = TILE_H * 0.6 * 0.25;
+  const dh = TILE_H * 0.6;
+  ctx.beginPath();
+  ctx.moveTo(pixelPos.x + 16, pixelPos.y - dh - mh * 2 + 2);
+  ctx.lineTo(pixelPos.x + 16 + mw, pixelPos.y - dh - mh + 2);
+  ctx.lineTo(pixelPos.x + 16, pixelPos.y - dh + 2);
+  ctx.lineTo(pixelPos.x + 16 - mw, pixelPos.y - dh - mh + 2);
+  ctx.closePath();
+  ctx.fillStyle = "#110811";
+  ctx.fill();
+  ctx.strokeStyle = "#331833";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
 }
 
 /** Draw an isometric desk at a grid position. */
@@ -183,6 +402,106 @@ function drawDesk(
   ctx.strokeStyle = MONITOR_BORDER;
   ctx.lineWidth = 0.5;
   ctx.stroke();
+}
+
+// ---------------------------------------------------------------------------
+// D1D-221: Error/Escalation visual indicators
+// ---------------------------------------------------------------------------
+
+/**
+ * Draw a red exclamation triangle above the agent for 'error' status.
+ * Includes pulsing animation.
+ */
+function drawErrorIndicator(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  circleY: number,
+  radius: number,
+  frame: number,
+): void {
+  const pulseScale = 0.85 + 0.15 * Math.abs(Math.sin(frame * 0.06));
+  const iconY = circleY - radius - 18;
+
+  ctx.save();
+  ctx.translate(x, iconY);
+  ctx.scale(pulseScale, pulseScale);
+
+  // Triangle
+  const triSize = 8;
+  ctx.beginPath();
+  ctx.moveTo(0, -triSize);
+  ctx.lineTo(triSize * 0.87, triSize * 0.5);
+  ctx.lineTo(-triSize * 0.87, triSize * 0.5);
+  ctx.closePath();
+
+  ctx.fillStyle = "#EF444420";
+  ctx.fill();
+  ctx.strokeStyle = "#EF4444";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Exclamation mark
+  ctx.fillStyle = "#EF4444";
+  ctx.font = 'bold 8px ui-monospace, "SF Mono", Menlo, monospace';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("!", 0, 0);
+
+  ctx.restore();
+}
+
+/**
+ * Draw a yellow speech bubble icon above the agent for 'paused' (approval needed).
+ * Includes pulsing animation.
+ */
+function drawPausedIndicator(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  circleY: number,
+  radius: number,
+  frame: number,
+): void {
+  const pulseScale = 0.85 + 0.15 * Math.abs(Math.sin(frame * 0.06));
+  const iconY = circleY - radius - 18;
+
+  ctx.save();
+  ctx.translate(x, iconY);
+  ctx.scale(pulseScale, pulseScale);
+
+  // Speech bubble body (rounded rect approximation)
+  const bw = 12;
+  const bh = 8;
+  const br = 2;
+
+  ctx.beginPath();
+  // Rounded rectangle
+  ctx.moveTo(-bw / 2 + br, -bh / 2);
+  ctx.lineTo(bw / 2 - br, -bh / 2);
+  ctx.quadraticCurveTo(bw / 2, -bh / 2, bw / 2, -bh / 2 + br);
+  ctx.lineTo(bw / 2, bh / 2 - br);
+  ctx.quadraticCurveTo(bw / 2, bh / 2, bw / 2 - br, bh / 2);
+  // Tail
+  ctx.lineTo(2, bh / 2);
+  ctx.lineTo(0, bh / 2 + 4);
+  ctx.lineTo(-1, bh / 2);
+  ctx.lineTo(-bw / 2 + br, bh / 2);
+  ctx.quadraticCurveTo(-bw / 2, bh / 2, -bw / 2, bh / 2 - br);
+  ctx.lineTo(-bw / 2, -bh / 2 + br);
+  ctx.quadraticCurveTo(-bw / 2, -bh / 2, -bw / 2 + br, -bh / 2);
+  ctx.closePath();
+
+  ctx.fillStyle = "#F59E0B20";
+  ctx.fill();
+  ctx.strokeStyle = "#F59E0B";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Pause bars inside bubble
+  ctx.fillStyle = "#F59E0B";
+  ctx.fillRect(-3, -2.5, 2, 5);
+  ctx.fillRect(1.5, -2.5, 2, 5);
+
+  ctx.restore();
 }
 
 /** Draw an agent circle + status dot + label at a desk. */
@@ -246,13 +565,25 @@ function drawAgent(
     ctx.stroke();
   }
 
-  // Status indicator dot — above the agent circle
-  const dotY = circleY - radius - 8;
-  const statusColor = STATUS_COLORS[agent.status] ?? STATUS_COLORS.idle;
-  ctx.beginPath();
-  ctx.arc(x, dotY, 4, 0, Math.PI * 2);
-  ctx.fillStyle = statusColor;
-  ctx.fill();
+  // D1D-221: Error indicator — red exclamation triangle
+  if (agent.status === "error") {
+    drawErrorIndicator(ctx, x, circleY, radius, frame);
+  }
+
+  // D1D-221: Paused indicator — yellow speech bubble
+  if (agent.status === "paused") {
+    drawPausedIndicator(ctx, x, circleY, radius, frame);
+  }
+
+  // Status indicator dot — above the agent circle (only for non-error/paused which have their own icons)
+  if (agent.status !== "error" && agent.status !== "paused") {
+    const dotY = circleY - radius - 8;
+    const statusColor = STATUS_COLORS[agent.status] ?? STATUS_COLORS.idle;
+    ctx.beginPath();
+    ctx.arc(x, dotY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = statusColor;
+    ctx.fill();
+  }
 
   // Name label — below desk
   ctx.fillStyle = LABEL_COLOR;
@@ -286,8 +617,16 @@ export function drawOffice(
   ctx.fillStyle = "#050505";
   ctx.fillRect(0, 0, w, h);
 
-  // Floor
+  // Floor with room tints (D1D-224)
   drawFloor(ctx, w, h);
+
+  // Room labels (D1D-224)
+  drawRoomLabels(ctx, w, h);
+
+  // Furniture decorations (D1D-224)
+  drawBookshelf(ctx, w, h);
+  drawChart(ctx, w, h);
+  drawFurnitureDecorations(ctx, w, h);
 
   // Desks (drawn before agents so agents overlay)
   for (const desk of desks) {
