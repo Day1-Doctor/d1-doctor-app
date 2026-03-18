@@ -1,6 +1,5 @@
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useRef } from "react";
 import { useViewStore } from "../stores/viewStore";
 import { useBillingStore } from "../stores/billingStore";
 import { useOfficeStore } from "../stores/officeStore";
@@ -35,6 +34,7 @@ export function ValleyView() {
   const openUpgradePrompt = useBillingStore((s) => s.openUpgradePrompt);
   const tier = useBillingStore((s) => s.tier);
   const offices = useOfficeStore((s) => s.offices);
+  const addOffice = useOfficeStore((s) => s.addOffice);
 
   const maxOffices = TIER_MAX_OFFICES[tier] ?? 1;
   const activeCount = offices.length;
@@ -44,13 +44,25 @@ export function ValleyView() {
       if (state === "running") {
         setActiveView("office");
       } else if (state === "empty") {
-        openUpgradePrompt(t("campus.setup"));
+        // If user has unlocked slots available, create a new office; otherwise show upgrade
+        if (offices.length < maxOffices) {
+          addOffice({
+            id: `office-${Date.now()}`,
+            name: `Office #${offices.length + 1}`,
+            agentCount: 0,
+            skillCount: 0,
+            fileCount: 0,
+            taskProgress: 0,
+          });
+        } else {
+          openUpgradePrompt(t("campus.upgradePlan"));
+        }
       } else {
         openUpgradePrompt(t("campus.upgradePlan"));
       }
       void parcelIndex;
     },
-    [setActiveView, openUpgradePrompt, t],
+    [setActiveView, openUpgradePrompt, addOffice, offices.length, maxOffices, t],
   );
 
   const handleParcelDoubleClick = useCallback((_parcelIndex: number) => {

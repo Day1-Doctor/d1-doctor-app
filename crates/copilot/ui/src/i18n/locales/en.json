@@ -247,5 +247,19 @@
     "officeLabel": "Office #{{number}}",
     "activeCount": "{{active}}/{{max}} offices active",
     "stats": "{{agents}} agents · {{skills}} skills · {{files}} files"
+  },
+  "taskPanel": {
+    "title": "Tasks",
+    "newTask": "New Task",
+    "noTasks": "No tasks yet. Create one to get started.",
+    "progress": "{{percent}}%",
+    "subtasks": "{{count}} sub-tasks",
+    "pendingApprovals": "Pending Approvals",
+    "noApprovals": "No pending approvals",
+    "approve": "Approve",
+    "deny": "Deny",
+    "viewDetail": "View Detail",
+    "riskLevel": "Risk: {{level}}",
+    "wantsTo": "wants to run: {{tool}} — {{context}}"
   }
 }
