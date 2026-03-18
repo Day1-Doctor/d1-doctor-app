@@ -49,6 +49,23 @@ const MOCK_TOKENS: Record<string, number> = {
   operator: 1200,
 };
 
+/** Mock trust scores by role (0-100). */
+const MOCK_TRUST_SCORES: Record<string, number> = {
+  orchestrator: 95,
+  researcher: 78,
+  analyst: 82,
+  writer: 88,
+  coder: 72,
+  operator: 65,
+};
+
+function trustScoreColor(score: number): string {
+  if (score >= 80) return "#22C55E";
+  if (score >= 60) return "#F59E0B";
+  if (score >= 40) return "#F97316";
+  return "#EF4444";
+}
+
 /**
  * AgentDetailPanel — Slide-in panel from the right that shows detailed info
  * about the selected agent. Uses glassmorphic styling with backdrop-blur.
@@ -68,6 +85,8 @@ export function AgentDetailPanel() {
   const tokenCount = MOCK_TOKENS[agent.role] ?? 0;
   const cost = agentCosts[agent.name] ?? 0;
   const taskName = MOCK_TASKS[agent.role] ?? "No active task";
+  const trustScore = MOCK_TRUST_SCORES[agent.role] ?? 50;
+  const tsColor = trustScoreColor(trustScore);
 
   return (
     <div
@@ -139,6 +158,30 @@ export function AgentDetailPanel() {
             <span className="text-xs text-text-primary font-medium">
               {fsmLabel(agent.status)}
             </span>
+          </div>
+        </div>
+
+        {/* Trust Score (D1D-238) */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[10px] text-text-muted uppercase tracking-wider">
+              Trust Score
+            </p>
+            <span
+              className="text-xs font-medium tabular-nums"
+              style={{ color: tsColor }}
+            >
+              {trustScore}%
+            </span>
+          </div>
+          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-300"
+              style={{
+                width: `${trustScore}%`,
+                backgroundColor: tsColor,
+              }}
+            />
           </div>
         </div>
 

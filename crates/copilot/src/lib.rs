@@ -1,4 +1,4 @@
-mod station;
+pub mod station;
 
 #[tauri::command]
 fn greet(name: &str) -> String {

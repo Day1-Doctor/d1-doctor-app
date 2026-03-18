@@ -1,0 +1,77 @@
+name: "Copilot Release -- Build macOS .dmg"
+
+on:
+  push:
+    tags:
+      - 'v3.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v3.0.0). Leave empty to build without releasing.'
+        required: false
+        type: string
+
+concurrency:
+  group: copilot-release-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  COPILOT_DIR: crates/copilot
+  UI_DIR: crates/copilot/ui
+
+jobs:
+  build-copilot-macos:
+    name: Build Copilot macOS DMG (aarch64)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install frontend dependencies
+        working-directory: ${{ env.UI_DIR }}
+        run: npm ci
+
+      - name: Build Tauri Copilot app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: ${{ env.COPILOT_DIR }}
+          args: --target aarch64-apple-darwin
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || inputs.tag || '' }}
+          releaseName: ${{ github.ref_type == 'tag' && format('Day1 Copilot {0}', github.ref_name) || inputs.tag && format('Day1 Copilot {0}', inputs.tag) || '' }}
+          releaseBody: |
+            ## Day1 Copilot
+
+            Dr. Bob's Office -- AI-powered multi-agent desktop workspace.
+
+            See the [changelog](https://github.com/Day1-Doctor/d1-doctor-app/blob/main/CHANGELOG.md) for details.
+
+            ### Install
+            - **macOS Apple Silicon**: Download `.dmg` (aarch64)
+          releaseDraft: true
+          prerelease: false
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: copilot-macos-aarch64
+          path: |
+            ${{ env.COPILOT_DIR }}/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            ${{ env.COPILOT_DIR }}/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
+            ${{ env.COPILOT_DIR }}/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz.sig
+          if-no-files-found: warn
