@@ -5,12 +5,14 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use station::events::EventBus;
 use station::kernel::{AgentKernel, AgentRole, AgentStatus};
+use station::llm::{LlmClient, LlmDecomposer};
 use station::runtime::BuiltinRuntime;
 use station::server::StationServer;
-use station::tasks::task_engine::TaskEngine;
 use station::tasks::decomposer::TaskDecomposer;
 use station::tasks::router::TaskRouter;
+use station::tasks::task_engine::TaskEngine;
 use tauri::Manager;
+use tokio::sync::RwLock;
 
 /// Shared application state accessible from Tauri commands.
 pub struct AppState {
@@ -20,6 +22,7 @@ pub struct AppState {
     pub runtime: Arc<BuiltinRuntime>,
     pub decomposer: Arc<TaskDecomposer>,
     pub router: Arc<TaskRouter>,
+    pub llm_client: Arc<RwLock<LlmClient>>,
 }
 
 // --- Serializable response types for Tauri commands ---
@@ -84,14 +87,20 @@ async fn create_task(
     description: String,
     #[allow(unused_variables)] max_agents: Option<usize>,
 ) -> Result<TaskInfo, String> {
-    // Decompose the task
-    let mut plan = state.decomposer.decompose(&description);
+    // Decompose the task using LLM-powered decomposer (falls back to keyword-based)
+    let client = state.llm_client.read().await.clone();
+    let llm_decomposer = LlmDecomposer::new(client);
+    let mut plan = llm_decomposer.decompose(&description).await;
 
     // Office Spot enforcement: if the plan requires more agent roles than
     // the user's tier allows, collapse all steps to the orchestrator role
     // (single-agent fallback via Dr. Bob).
     if let Some(limit) = max_agents {
-        let mut roles: Vec<&str> = plan.steps.iter().map(|s| s.suggested_role.as_str()).collect();
+        let mut roles: Vec<&str> = plan
+            .steps
+            .iter()
+            .map(|s| s.suggested_role.as_str())
+            .collect();
         roles.sort();
         roles.dedup();
         if roles.len() > limit {
@@ -223,11 +232,7 @@ async fn get_runtime_status(
     state: tauri::State<'_, Arc<AppState>>,
 ) -> Result<serde_json::Value, String> {
     let agent_count = state.kernel.agent_count().await;
-    let idle = state
-        .kernel
-        .agents_by_status(AgentStatus::Idle)
-        .await
-        .len();
+    let idle = state.kernel.agents_by_status(AgentStatus::Idle).await.len();
     Ok(serde_json::json!({
         "version": "3.0.0-alpha",
         "agents_total": agent_count,
@@ -239,7 +244,10 @@ async fn get_runtime_status(
 // --- Auth Commands ---
 
 #[tauri::command]
-async fn store_api_key(key: String) -> Result<String, String> {
+async fn store_api_key(
+    state: tauri::State<'_, Arc<AppState>>,
+    key: String,
+) -> Result<String, String> {
     if !key.starts_with("d1d_sk_") {
         return Err("Invalid API key format. Must start with d1d_sk_".into());
     }
@@ -258,6 +266,11 @@ async fn store_api_key(key: String) -> Result<String, String> {
         serde_json::to_string_pretty(&auth_data).unwrap(),
     )
     .map_err(|e| e.to_string())?;
+
+    // Update LLM client with new API key
+    let mut client = state.llm_client.write().await;
+    *client = client.clone().with_api_key(&key);
+
     Ok(key[..prefix_len].to_string())
 }
 
@@ -333,6 +346,13 @@ pub fn run() {
                 event_bus.clone(),
             ));
 
+            // Create LLM client and try to load stored API key
+            let mut llm_client = LlmClient::new("https://gateway.day1.doctor");
+            if let Err(e) = llm_client.load_api_key() {
+                tracing::info!("LLM client: no stored key ({}), will use fallback decomposer until authenticated", e);
+            }
+            let llm_client = Arc::new(RwLock::new(llm_client));
+
             let app_state = Arc::new(AppState {
                 kernel: kernel.clone(),
                 event_bus: event_bus.clone(),
@@ -340,6 +360,7 @@ pub fn run() {
                 runtime: runtime.clone(),
                 decomposer,
                 router,
+                llm_client,
             });
 
             // Store state for Tauri commands
