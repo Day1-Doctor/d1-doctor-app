@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useViewStore, type ViewType } from "../../stores/viewStore";
 import { useLayoutStore } from "../../stores/layoutStore";
+import { useOfficeStore } from "../../stores/officeStore";
+import { useBillingStore } from "../../stores/billingStore";
 
 interface NavItem {
   id: string;
@@ -9,50 +12,9 @@ interface NavItem {
   view?: ViewType;
 }
 
+const MAX_OFFICES = 11;
+
 const navItems: NavItem[] = [
-  {
-    id: "valley",
-    labelKey: "nav.valley",
-    view: "valley",
-    icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M2 22L7 7l5 8 4-5 6 12H2z" />
-        <path d="M17 3l2 2-2 2" />
-        <circle cx="6" cy="4" r="1.5" />
-      </svg>
-    ),
-  },
-  {
-    id: "office",
-    labelKey: "nav.office",
-    view: "office",
-    icon: (
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
-      </svg>
-    ),
-  },
   {
     id: "task",
     labelKey: "nav.tasks",
@@ -230,6 +192,187 @@ function NavButton({
   );
 }
 
+/** Cowork Valley collapsible section with nested office items */
+function ValleySection({
+  collapsed,
+}: {
+  collapsed: boolean;
+}) {
+  const { t } = useTranslation();
+  const [isExpanded, setIsExpanded] = useState(true);
+  const activeView = useViewStore((s) => s.activeView);
+  const setActiveView = useViewStore((s) => s.setActiveView);
+  const offices = useOfficeStore((s) => s.offices);
+  const maxOffices = useBillingStore((s) => s.maxAgents);
+
+  const isValleyActive = activeView === "valley" || activeView === "office";
+  const lockedCount = Math.max(0, MAX_OFFICES - offices.length);
+  // How many locked slots beyond what billing allows
+  const billingLockedCount = Math.max(0, MAX_OFFICES - Math.min(maxOffices, MAX_OFFICES));
+
+  const handleValleyClick = () => {
+    setActiveView("valley");
+    setIsExpanded((prev) => !prev);
+  };
+
+  const valleyLabel = t("nav.valley");
+
+  if (collapsed) {
+    // When sidebar is collapsed, just show the valley icon
+    return (
+      <button
+        onClick={() => setActiveView("valley")}
+        className={`
+          w-full flex items-center justify-center py-2 rounded-md text-xs
+          transition-colors duration-100 relative
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50
+          ${isValleyActive ? "text-text-primary bg-muted" : "text-text-secondary hover:text-text-primary hover:bg-muted/50"}
+        `}
+        aria-label={valleyLabel}
+        title={valleyLabel}
+        tabIndex={0}
+      >
+        {isValleyActive && (
+          <span
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-accent rounded-r"
+            aria-hidden="true"
+          />
+        )}
+        <span className={`shrink-0 ${isValleyActive ? "text-accent" : ""}`}>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M2 22L7 7l5 8 4-5 6 12H2z" />
+            <path d="M17 3l2 2-2 2" />
+            <circle cx="6" cy="4" r="1.5" />
+          </svg>
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <div>
+      {/* Cowork Valley parent item */}
+      <button
+        onClick={handleValleyClick}
+        className={`
+          w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs
+          transition-colors duration-100 relative
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50
+          ${isValleyActive ? "text-text-primary bg-muted" : "text-text-secondary hover:text-text-primary hover:bg-muted/50"}
+        `}
+        aria-label={valleyLabel}
+        aria-expanded={isExpanded}
+        tabIndex={0}
+      >
+        {isValleyActive && (
+          <span
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-accent rounded-r"
+            aria-hidden="true"
+          />
+        )}
+        <span className={`shrink-0 ${isValleyActive ? "text-accent" : ""}`}>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M2 22L7 7l5 8 4-5 6 12H2z" />
+            <path d="M17 3l2 2-2 2" />
+            <circle cx="6" cy="4" r="1.5" />
+          </svg>
+        </span>
+        <span className="flex-1 text-left">{valleyLabel}</span>
+        {/* Expand/collapse chevron */}
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          className={`shrink-0 transition-transform duration-150 ${isExpanded ? "rotate-180" : ""}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {/* Nested office items */}
+      {isExpanded && (
+        <div className="mt-0.5 space-y-0.5">
+          {offices.map((office) => {
+            const isOfficeActive = activeView === "office";
+            const isEmpty = office.agentCount === 0;
+            return (
+              <button
+                key={office.id}
+                onClick={() => setActiveView("office")}
+                className={`
+                  w-full flex items-center gap-2 pl-8 pr-3 py-1.5 rounded-md text-xs
+                  transition-colors duration-100 relative
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50
+                  ${isOfficeActive ? "text-text-primary bg-muted border-l-2 border-accent" : ""}
+                  ${isEmpty ? "text-text-muted hover:text-text-secondary hover:bg-muted/30" : "text-text-secondary hover:text-text-primary hover:bg-muted/50"}
+                `}
+                aria-label={office.name}
+                tabIndex={0}
+              >
+                {/* Tree connector icon */}
+                <span className="text-text-muted shrink-0" aria-hidden="true">├</span>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className={`shrink-0 ${isOfficeActive ? "text-accent" : isEmpty ? "text-text-muted" : ""}`}
+                >
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                <span className="truncate">{office.name}</span>
+                {isEmpty && (
+                  <span className="ml-auto text-text-muted text-[10px]">empty</span>
+                )}
+              </button>
+            );
+          })}
+
+          {/* Locked count */}
+          {lockedCount > 0 && (
+            <div className="flex items-center gap-2 pl-8 pr-3 py-1 text-[10px] text-text-muted select-none">
+              <span aria-hidden="true">└</span>
+              <span>+ {billingLockedCount > 0 ? billingLockedCount : lockedCount} locked</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Sidebar() {
   const { t } = useTranslation();
   const activeView = useViewStore((s) => s.activeView);
@@ -279,7 +422,18 @@ export function Sidebar() {
       </div>
 
       {/* Primary nav */}
-      <nav className="flex-1 px-2 space-y-0.5" aria-label="Primary">
+      <nav className="flex-1 px-2 space-y-0.5 overflow-y-auto" aria-label="Primary">
+        {/* Cowork Valley collapsible section */}
+        <ValleySection collapsed={collapsed} />
+
+        {/* Separator */}
+        <div
+          className="my-2 border-t border-border"
+          role="separator"
+          aria-hidden="true"
+        />
+
+        {/* Other primary nav items */}
         {navItems.map((item) => (
           <NavButton
             key={item.id}

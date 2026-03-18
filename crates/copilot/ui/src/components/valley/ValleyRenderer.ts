@@ -176,20 +176,36 @@ function drawRunningParcel(
   ctx.stroke();
   ctx.restore();
 
-  // ---- Interior: mini desks (2x3 grid) ----
-  const deskStartX = x + 10;
-  const deskStartY = y + 28;
+  // ---- Office name (title at top) ----
+  ctx.fillStyle = TEXT_WHITE;
+  ctx.font = `bold 11px ui-monospace, "SF Mono", Menlo, monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(office.name, x + PARCEL_W / 2, y + 8, PARCEL_W - 12);
+
+  // ---- Interior: mini desks (3x2 grid) centered in middle area ----
+  // Area for agents: starts at y+36 (after title), ends at y+h-50 (before progress bar)
+  const agentAreaTop = y + 36;
+  const agentAreaBottom = y + PARCEL_H - 50;
+  const agentAreaH = agentAreaBottom - agentAreaTop;
+
   const deskW = 20;
   const deskH = 11;
   const deskGapX = 8;
   const deskGapY = 6;
+  const numCols = 3;
+  const numRows = 2;
+  const totalDeskW = numCols * deskW + (numCols - 1) * deskGapX;
+  const totalDeskH = numRows * (deskH + 14) + (numRows - 1) * deskGapY; // include agent height
+  const deskStartX = x + (PARCEL_W - totalDeskW) / 2;
+  const deskStartY = agentAreaTop + (agentAreaH - totalDeskH) / 2;
 
   const agentRoles = ["orchestrator", "researcher", "analyst", "writer", "coder", "operator"];
 
-  for (let row = 0; row < 2; row++) {
-    for (let col = 0; col < 3; col++) {
+  for (let row = 0; row < numRows; row++) {
+    for (let col = 0; col < numCols; col++) {
       const deskX = deskStartX + col * (deskW + deskGapX);
-      const deskY = deskStartY + row * (deskH + deskGapY);
+      const deskY = deskStartY + row * (deskH + 14 + deskGapY);
 
       // Desk surface (brown rect)
       ctx.fillStyle = "#3D2B1A";
@@ -211,9 +227,10 @@ function drawRunningParcel(
       ctx.fillRect(deskX + 7, deskY - 5, 6, 4);
 
       // Mini pixel agent at desk (if within agentCount)
-      const agentIdx = row * 3 + col;
+      const agentIdx = row * numCols + col;
       if (agentIdx < office.agentCount) {
         const agentX = deskX + deskW / 2;
+        // Agent drawn ABOVE the desk, within the card bounds
         const agentY = deskY - 2;
         const roleIndex = agentIdx % agentRoles.length;
         const state = agentIdx === 0 ? "working" : (frame + agentIdx * 17) % 60 < 40 ? "typing" : "idle";
@@ -227,9 +244,9 @@ function drawRunningParcel(
     }
   }
 
-  // ---- Progress bar ----
+  // ---- Progress bar (near bottom) ----
   const barX = x + 10;
-  const barY = y + PARCEL_H - 22;
+  const barY = y + PARCEL_H - 26;
   const barW = PARCEL_W - 20;
   const barH = 5;
   const progress = Math.max(0, Math.min(1, office.taskProgress));
@@ -249,19 +266,12 @@ function drawRunningParcel(
     ctx.fill();
   }
 
-  // ---- Office name ----
-  ctx.fillStyle = TEXT_WHITE;
-  ctx.font = `bold 11px ui-monospace, "SF Mono", Menlo, monospace`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.fillText(office.name, x + PARCEL_W / 2, y + 6, PARCEL_W - 12);
-
-  // ---- Stats ----
+  // ---- Stats at very bottom ----
   ctx.fillStyle = "#666666";
   ctx.font = `9px ui-monospace, "SF Mono", Menlo, monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
-  const statsText = `${office.agentCount} agents · ${office.skillCount} skills · ${office.fileCount} files`;
+  const statsText = `${office.agentCount} agents · ${office.skillCount} skills`;
   ctx.fillText(statsText, x + PARCEL_W / 2, y + PARCEL_H - 6, PARCEL_W - 12);
 
   ctx.restore();
@@ -427,6 +437,53 @@ export function hitTestParcel(
 // ---------------------------------------------------------------------------
 
 /**
+ * Draw the atmospheric campus background: gradient sky, star dots, subtle grid lines.
+ */
+function drawCampusBackground(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  frame: number,
+): void {
+  // Gradient background: dark navy top → slightly warmer dark bottom
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, "#080812");
+  grad.addColorStop(1, "#0A0A18");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Subtle tech grid lines (very low opacity)
+  ctx.strokeStyle = "rgba(100, 100, 180, 0.04)";
+  ctx.lineWidth = 1;
+  const gridSpacing = 40;
+  for (let gx = 0; gx < w; gx += gridSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(gx, 0);
+    ctx.lineTo(gx, h);
+    ctx.stroke();
+  }
+  for (let gy = 0; gy < h; gy += gridSpacing) {
+    ctx.beginPath();
+    ctx.moveTo(0, gy);
+    ctx.lineTo(w, gy);
+    ctx.stroke();
+  }
+
+  // Scattered tiny star dots (seeded positions, animated twinkle)
+  // Use a deterministic pattern based on position
+  const starCount = Math.floor((w * h) / 4000);
+  for (let si = 0; si < starCount; si++) {
+    // Pseudo-random positions using a simple LCG
+    const sx = ((si * 7919 + 1337) % w);
+    const sy = ((si * 6271 + 2749) % h);
+    const twinkle = 0.1 + 0.1 * Math.abs(Math.sin(frame * 0.03 + si * 0.7));
+    ctx.fillStyle = `rgba(255, 255, 255, ${twinkle})`;
+    const size = si % 5 === 0 ? 1.5 : 1;
+    ctx.fillRect(sx, sy, size, size);
+  }
+}
+
+/**
  * Render the full Cowork Campus parcel grid.
  */
 export function drawCampus(
@@ -436,9 +493,8 @@ export function drawCampus(
   parcels: Parcel[],
   frame: number,
 ): void {
-  // Clear
-  ctx.fillStyle = "#050508";
-  ctx.fillRect(0, 0, w, h);
+  // Atmospheric background (gradient + stars + grid)
+  drawCampusBackground(ctx, w, h, frame);
 
   // Draw each parcel
   for (const parcel of parcels) {
