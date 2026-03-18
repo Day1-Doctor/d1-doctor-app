@@ -11,7 +11,7 @@ pub enum SubscriptionTier {
     FreMan,
     /// Mid tier — 3 agents, 1 000 DD/month.
     MiniShop,
-    /// Enterprise tier — 6 agents (full office), 5 000 DD/month.
+    /// Enterprise tier — 8 agents (full campus), 5 000 DD/month.
     RocketInc,
 }
 
@@ -57,7 +57,7 @@ pub fn get_tier_config(tier: SubscriptionTier) -> TierConfig {
             name: "Rocket Inc.".to_string(),
             price_monthly: 49.0,
             price_annual: 490.0,
-            max_agents: 6,
+            max_agents: 8,
             monthly_dd_credits: 5_000,
         },
     }
@@ -93,7 +93,7 @@ mod tests {
         assert_eq!(config.name, "Rocket Inc.");
         assert!((config.price_monthly - 49.0).abs() < f64::EPSILON);
         assert!((config.price_annual - 490.0).abs() < f64::EPSILON);
-        assert_eq!(config.max_agents, 6);
+        assert_eq!(config.max_agents, 8);
         assert_eq!(config.monthly_dd_credits, 5_000);
     }
 }

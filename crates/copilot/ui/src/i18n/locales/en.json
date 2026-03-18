@@ -238,16 +238,14 @@
       "atlas": "Atlas Ops"
     }
   },
-  "auth": {
-    "signIn": "Sign in to start working",
-    "apiKeyLabel": "Enter your Day1 API Key",
-    "apiKeyPlaceholder": "d1d_sk_...",
-    "connect": "Connect",
-    "or": "or",
-    "signInWithAccount": "Sign in with Day1 Account",
-    "createAccount": "New to Day1? Create a free account",
-    "invalidKey": "Invalid API key. Please check and try again.",
-    "connecting": "Connecting...",
-    "signOut": "Sign Out"
+  "campus": {
+    "title": "Cowork Campus",
+    "empty": "Empty Office",
+    "setup": "Set up",
+    "locked": "LOCKED",
+    "upgradePlan": "Upgrade plan",
+    "officeLabel": "Office #{{number}}",
+    "activeCount": "{{active}}/{{max}} offices active",
+    "stats": "{{agents}} agents · {{skills}} skills · {{files}} files"
   }
 }

@@ -25,7 +25,7 @@ const TIER_CONFIG: Record<
 > = {
   free_man: { maxAgents: 1, monthlyCredits: 100 },
   mini_shop: { maxAgents: 3, monthlyCredits: 1_000 },
-  rocket_inc: { maxAgents: 6, monthlyCredits: 5_000 },
+  rocket_inc: { maxAgents: 8, monthlyCredits: 5_000 },
 };
 
 export const useBillingStore = create<BillingState>((set) => ({
