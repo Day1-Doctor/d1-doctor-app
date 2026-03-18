@@ -155,6 +155,18 @@
     "powerPack": "能量包",
     "custom": "自定义"
   },
+  "approval": {
+    "title": "权限请求",
+    "agentRequests": "{{agent}} 请求权限",
+    "action": "操作",
+    "command": "命令",
+    "riskLevel": "风险等级",
+    "context": "上下文",
+    "allowOnce": "允许一次",
+    "allowAlways": "始终允许",
+    "reject": "拒绝",
+    "trustCheckbox": "信任此智能体执行 {{level}} 级操作"
+  },
   "upgrade": {
     "title": "需要更多办公位",
     "defaultMessage": "你的任务需要 Scout 和 Sage，但你只有 1 个办公位。",

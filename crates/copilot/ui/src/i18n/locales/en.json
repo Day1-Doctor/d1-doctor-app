@@ -155,6 +155,18 @@
     "powerPack": "Power Pack",
     "custom": "Custom"
   },
+  "approval": {
+    "title": "Permission Request",
+    "agentRequests": "{{agent}} requests permission",
+    "action": "Action",
+    "command": "Command",
+    "riskLevel": "Risk Level",
+    "context": "Context",
+    "allowOnce": "Allow Once",
+    "allowAlways": "Allow Always",
+    "reject": "Reject",
+    "trustCheckbox": "Trust this agent for {{level}} actions"
+  },
   "upgrade": {
     "title": "More Office Spots Needed",
     "defaultMessage": "Your task needs Scout and Sage, but you only have 1 office spot.",

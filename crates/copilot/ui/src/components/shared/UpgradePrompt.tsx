@@ -1,18 +1,30 @@
 import { useTranslation } from "react-i18next";
 import { useBillingStore } from "../../stores/billingStore";
 
+const PRICING_URL = "https://day1.doctor/dashboard/pricing";
+
 /**
- * UpgradePrompt — Modal shown when a user's task requires more agents
+ * UpgradePrompt -- Modal shown when a user's task requires more agents
  * than their current subscription tier allows.
+ *
+ * Two actions:
+ * - "Upgrade" opens the pricing page in the default browser.
+ * - "Run with Dr. Bob only" closes the modal (caller should fallback to
+ *   single-agent mode).
  */
 export function UpgradePrompt() {
   const { t } = useTranslation();
   const showUpgradePrompt = useBillingStore((s) => s.showUpgradePrompt);
   const upgradeMessage = useBillingStore((s) => s.upgradeMessage);
   const closeUpgradePrompt = useBillingStore((s) => s.closeUpgradePrompt);
-  const setTier = useBillingStore((s) => s.setTier);
 
   if (!showUpgradePrompt) return null;
+
+  const handleUpgrade = () => {
+    // Open pricing page in default browser.
+    window.open(PRICING_URL, "_blank");
+    closeUpgradePrompt();
+  };
 
   return (
     <div
@@ -70,10 +82,7 @@ export function UpgradePrompt() {
         {/* Actions */}
         <div className="flex flex-col gap-3">
           <button
-            onClick={() => {
-              setTier("mini_shop");
-              closeUpgradePrompt();
-            }}
+            onClick={handleUpgrade}
             className="w-full rounded-lg bg-accent px-4 py-2.5 text-sm font-medium
               text-white transition-colors hover:bg-accent/90
               focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
