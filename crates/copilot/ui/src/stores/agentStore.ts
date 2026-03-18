@@ -23,15 +23,18 @@ interface AgentState {
   updateAgentStatus: (id: string, status: AgentStatus) => void;
 }
 
+/** Mock agents for development — one per office desk. */
+const mockAgents: Agent[] = [
+  { id: "1", name: "Dr. Bob", role: "orchestrator", status: "idle" },
+  { id: "2", name: "Scout", role: "researcher", status: "thinking" },
+  { id: "3", name: "Sage", role: "analyst", status: "idle" },
+  { id: "4", name: "Quill", role: "writer", status: "executing" },
+  { id: "5", name: "Pixel", role: "coder", status: "working" },
+  { id: "6", name: "Atlas", role: "operator", status: "idle" },
+];
+
 export const useAgentStore = create<AgentState>((set) => ({
-  agents: [
-    {
-      id: "researcher-1",
-      name: "Researcher",
-      role: "Research & Analysis",
-      status: "idle",
-    },
-  ],
+  agents: mockAgents,
   selectedAgentId: null,
   setAgents: (agents) => set({ agents }),
   selectAgent: (id) => set({ selectedAgentId: id }),
