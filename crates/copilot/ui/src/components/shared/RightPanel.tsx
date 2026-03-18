@@ -309,19 +309,61 @@ export function RightPanel() {
   const setRightPanelWidth = useLayoutStore((s) => s.setRightPanelWidth);
   const toggleRightPanel = useLayoutStore((s) => s.toggleRightPanel);
 
-  const isExpanded = rightPanelWidth === 420;
+  // Drag-resize state
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartWidth.current = rightPanelWidth;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const handleDragMove = (moveEvent: MouseEvent) => {
+      if (!isDragging.current) return;
+      // Dragging LEFT edge: moving left = wider panel
+      const delta = dragStartX.current - moveEvent.clientX;
+      const newWidth = Math.min(600, Math.max(200, dragStartWidth.current + delta));
+      setRightPanelWidth(newWidth);
+    };
+
+    const handleDragEnd = () => {
+      isDragging.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", handleDragMove);
+      document.removeEventListener("mouseup", handleDragEnd);
+    };
+
+    document.addEventListener("mousemove", handleDragMove);
+    document.addEventListener("mouseup", handleDragEnd);
+  };
+
+  const isExpanded = rightPanelWidth >= 400;
 
   return (
     <aside
       className={`
         border-l border-border bg-card/40 shrink-0
-        transition-[width] duration-150 ease-out overflow-hidden flex flex-col
+        overflow-hidden flex flex-col relative
         ${collapsed ? "w-0 border-l-0" : ""}
       `}
       style={collapsed ? undefined : { width: rightPanelWidth }}
       role="complementary"
       aria-label={t("commandCenter.title")}
     >
+      {/* Drag handle — left edge */}
+      {!collapsed && (
+        <div
+          onMouseDown={handleDragStart}
+          className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-10
+            hover:bg-accent/40 active:bg-accent/60 transition-colors"
+          title="Drag to resize"
+        />
+      )}
       {!collapsed && (
         <>
           {/* Header */}
