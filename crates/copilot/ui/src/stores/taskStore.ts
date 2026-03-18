@@ -30,6 +30,7 @@ export interface Task {
 interface TaskState {
   tasks: Task[];
   activeTaskId: string | null;
+  expandedTaskIds: Set<string>;
   setTasks: (tasks: Task[]) => void;
   setActiveTask: (id: string | null) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
@@ -40,6 +41,8 @@ interface TaskState {
     duration?: number,
   ) => void;
   getActiveTask: () => Task | undefined;
+  toggleExpand: (taskId: string) => void;
+  addTask: (title: string) => void;
 }
 
 const mockSteps: TaskStep[] = [
@@ -130,6 +133,7 @@ const mockTasks: Task[] = [
 export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: mockTasks,
   activeTaskId: "task-1",
+  expandedTaskIds: new Set(["task-1"]),
   setTasks: (tasks) => set({ tasks }),
   setActiveTask: (id) => set({ activeTaskId: id }),
   updateTaskStatus: (id, status) =>
@@ -157,4 +161,27 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     const state = get();
     return state.tasks.find((t) => t.id === state.activeTaskId);
   },
+  toggleExpand: (taskId) =>
+    set((state) => {
+      const next = new Set(state.expandedTaskIds);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return { expandedTaskIds: next };
+    }),
+  addTask: (title) =>
+    set((state) => {
+      const newTask: Task = {
+        id: `task-${Date.now()}`,
+        title,
+        status: "pending",
+        steps: [],
+      };
+      return {
+        tasks: [newTask, ...state.tasks],
+        expandedTaskIds: new Set([newTask.id, ...state.expandedTaskIds]),
+      };
+    }),
 }));

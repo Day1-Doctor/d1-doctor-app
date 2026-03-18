@@ -88,15 +88,15 @@ export const STATUS_COLORS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 /**
- * Wall height constant: max 20% of canvas height, capped at 140px.
+ * Wall height constant: max 8% of canvas height, capped at 60px (thin decorative strip).
  * Computed at render time but stored here for coordinate calculations.
  * We use a module-level variable updated each frame.
  */
-let _currentWallHeight = 100;
+let _currentWallHeight = 50;
 
 /**
  * Convert grid (col, row) to screen (x, y) given canvas dimensions.
- * The isometric floor is centered in the space BELOW the compact wall.
+ * The isometric floor is centered in the space BELOW the thin wall strip.
  */
 function gridToScreen(
   col: number,
@@ -105,9 +105,9 @@ function gridToScreen(
   canvasH: number,
 ): { x: number; y: number } {
   const offsetX = canvasW / 2;
-  // Wall is compact (20% or 140px max). Floor starts right below wall.
+  // Wall is a thin strip (8% or 60px max). Floor starts right below wall.
   const wallH = _currentWallHeight;
-  const floorAreaTop = wallH + 20; // floor area starts just below wall
+  const floorAreaTop = wallH + 8; // floor area starts just below wall (reduced gap)
   const floorAreaH = canvasH - floorAreaTop;
 
   // Total isometric grid height
@@ -326,9 +326,9 @@ function drawWallBackdrop(
   h: number,
   frame: number,
 ): void {
-  // Compact wall: max 20% of canvas height, capped at 140px
-  // Structure: baseboard (3px) + main wall (up to 100px) + trim (3px)
-  const wallH = Math.min(h * 0.2, 140);
+  // Thin decorative strip: max 8% of canvas height, capped at 60px
+  // Floor with agents is the dominant visual — wall is just a subtle backdrop edge
+  const wallH = Math.min(h * 0.08, 60);
   _currentWallHeight = wallH;
   const wallTop = 0;
   const wallBottom = wallH;
@@ -340,27 +340,48 @@ function drawWallBackdrop(
   ctx.fillStyle = wallGrad;
   ctx.fillRect(0, wallTop, w, wallH);
 
-  // Top trim strip (3px)
+  // Top trim strip (2px)
   ctx.fillStyle = "#2A3A5A";
-  ctx.fillRect(0, wallTop, w, 3);
+  ctx.fillRect(0, wallTop, w, 2);
 
-  // Baseboard at bottom of wall (3px)
+  // Baseboard at bottom of wall (2px)
   ctx.fillStyle = "#152040";
-  ctx.fillRect(0, wallBottom - 3, w, 3);
+  ctx.fillRect(0, wallBottom - 2, w, 2);
 
-  // ---- Windows (smaller, scaled to compact wall) ----
-  const winMargin = 16;
+  // Only render wall details if strip is tall enough
+  if (wallH < 50) {
+    // Very thin — just draw the DAY1 neon text centered in the strip
+    const neonX = w * 0.5;
+    const neonY = wallTop + wallH * 0.5;
+    const neonGlow = 0.6 + 0.4 * Math.abs(Math.sin(frame * 0.04));
+    ctx.save();
+    ctx.font = 'bold 10px ui-monospace, "SF Mono", Menlo, monospace';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.shadowColor = "#22C55E";
+    ctx.shadowBlur = 8 * neonGlow;
+    ctx.fillStyle = `rgba(134, 255, 134, ${0.8 + 0.2 * neonGlow})`;
+    ctx.fillText("DAY1", neonX, neonY);
+    ctx.restore();
+    return;
+  }
+
+  // ---- Windows (tiny, 30px tall) ----
+  const winMargin = 6;
   const winY = wallTop + winMargin;
-  const winW = Math.min(36, w * 0.06);
-  const winH = wallH - winMargin * 2;
+  const winW = Math.min(22, w * 0.04);
+  const winH = 30; // fixed 30px tall
   const winPositions = [w * 0.2, w * 0.5, w * 0.8];
 
   for (let wi = 0; wi < winPositions.length; wi++) {
     const wx = winPositions[wi] - winW / 2;
 
+    // Only draw windows if they fit in wall height
+    if (winY + winH + 2 > wallBottom) continue;
+
     // Window frame outer
     ctx.fillStyle = "#243458";
-    ctx.fillRect(wx - 3, winY - 3, winW + 6, winH + 6);
+    ctx.fillRect(wx - 2, winY - 2, winW + 4, winH + 4);
 
     // Dark glass
     ctx.fillStyle = "#0A1530";
@@ -368,7 +389,7 @@ function drawWallBackdrop(
 
     // Window pane cross
     ctx.strokeStyle = "#243458";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(wx + winW / 2, winY);
     ctx.lineTo(wx + winW / 2, winY + winH);
@@ -376,217 +397,84 @@ function drawWallBackdrop(
     ctx.lineTo(wx + winW, winY + winH / 2);
     ctx.stroke();
 
-    // Twinkling stars (alpha oscillation per star, per window)
+    // Twinkling stars (fewer, smaller)
     const starPositions = [
-      { sx: 0.15, sy: 0.2 },
-      { sx: 0.7, sy: 0.15 },
-      { sx: 0.35, sy: 0.55 },
-      { sx: 0.8, sy: 0.6 },
-      { sx: 0.5, sy: 0.35 },
-      { sx: 0.2, sy: 0.75 },
-      { sx: 0.65, sy: 0.8 },
+      { sx: 0.2, sy: 0.25 },
+      { sx: 0.7, sy: 0.2 },
+      { sx: 0.45, sy: 0.6 },
+      { sx: 0.75, sy: 0.7 },
     ];
     for (let si = 0; si < starPositions.length; si++) {
       const sp = starPositions[si];
       const twinkle = 0.3 + 0.7 * Math.abs(Math.sin(frame * 0.05 + wi * 2.1 + si * 1.3));
       ctx.fillStyle = `rgba(200, 220, 255, ${twinkle})`;
-      const starX = wx + sp.sx * winW;
-      const starY = winY + sp.sy * winH;
-      const starSize = si % 3 === 0 ? 1.5 : 1;
-      ctx.fillRect(starX - starSize / 2, starY - starSize / 2, starSize, starSize);
-    }
-
-    // Center moon in middle window
-    if (wi === 1) {
-      const moonX = wx + winW * 0.7;
-      const moonY = winY + winH * 0.3;
-      ctx.fillStyle = "#D4C880";
-      ctx.beginPath();
-      ctx.arc(moonX, moonY, 7, 0, Math.PI * 2);
-      ctx.fill();
-      // Moon shadow (crescent)
-      ctx.fillStyle = "#0A1530";
-      ctx.beginPath();
-      ctx.arc(moonX + 3, moonY - 2, 6, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillRect(wx + sp.sx * winW, winY + sp.sy * winH, 1, 1);
     }
 
     // Window sill
     ctx.fillStyle = "#2E4060";
-    ctx.fillRect(wx - 5, winY + winH, winW + 10, 4);
+    ctx.fillRect(wx - 3, winY + winH, winW + 6, 3);
   }
 
-  // ---- Bookshelves (scaled to compact wall) ----
-  const shelfW = Math.min(24, w * 0.04);
-  const shelfPositions = [w * 0.07, w * 0.93 - shelfW];
-  for (let si = 0; si < shelfPositions.length; si++) {
-    const sx = shelfPositions[si];
-    const sy = wallTop + 4;
-    const sw = shelfW;
-    const sh = wallH - 8;
+  // ---- Clock (16px diameter, tiny) ----
+  const winW2 = Math.min(22, w * 0.04); // same as winW above
+  const clockX = w * 0.5 + (winW2 / 2) + 18;
+  const clockY = wallTop + wallH * 0.5;
+  const clockR = 8; // 16px diameter
 
-    // Shelf wood frame
-    ctx.fillStyle = "#6A5030";
-    ctx.fillRect(sx, sy, sw, sh);
-    ctx.fillStyle = "#4A3018";
-    ctx.fillRect(sx, sy, sw, 3); // top
-    ctx.fillRect(sx, sy + sh - 3, sw, 3); // bottom
-    ctx.fillRect(sx, sy, 3, sh); // left side
-    ctx.fillRect(sx + sw - 3, sy, 3, sh); // right side
-
-    // Shelf dividers
-    const numShelves = 3;
-    const shelfH = (sh - 6) / numShelves;
-    for (let shelf = 0; shelf < numShelves; shelf++) {
-      const shelfY = sy + 3 + shelf * shelfH;
-      ctx.fillStyle = "#5A4020";
-      ctx.fillRect(sx + 3, shelfY + shelfH - 3, sw - 6, 3);
-
-      // Books on each shelf
-      const bookColors = [
-        ["#3B82F6", "#EC4899", "#10B981"],
-        ["#F97316", "#8B5CF6", "#F59E0B"],
-        ["#EF4444", "#22C55E", "#3B82F6"],
-      ];
-      const shelfBooks = bookColors[shelf % bookColors.length];
-      const bookW = Math.floor((sw - 8) / shelfBooks.length);
-      for (let bi = 0; bi < shelfBooks.length; bi++) {
-        const bx = sx + 4 + bi * (bookW + 1);
-        const bh = 8 + (bi % 2) * 3;
-        const by2 = shelfY + shelfH - 6 - bh;
-        ctx.fillStyle = shelfBooks[bi] + "CC";
-        ctx.fillRect(bx, by2, bookW, bh);
-        // Book spine line
-        ctx.fillStyle = "#00000040";
-        ctx.fillRect(bx, by2, 1, bh);
-      }
-    }
-  }
-
-  // ---- Clock (smaller, in compact wall) ----
-  const clockX = w * 0.5 + (winW / 2) + 22;
-  const clockY = wallTop + wallH * 0.45;
-  const clockR = Math.min(10, wallH * 0.25);
-
-  ctx.fillStyle = "#1A2848";
-  ctx.beginPath();
-  ctx.arc(clockX, clockY, clockR + 2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "#4A6090";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(clockX, clockY, clockR + 2, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.fillStyle = "#0E1830";
-  ctx.beginPath();
-  ctx.arc(clockX, clockY, clockR, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Clock tick marks
-  ctx.strokeStyle = "#3A5080";
-  ctx.lineWidth = 1;
-  for (let tick = 0; tick < 12; tick++) {
-    const angle = (tick / 12) * Math.PI * 2 - Math.PI / 2;
-    const isHour = tick % 3 === 0;
-    const innerR = isHour ? clockR - 4 : clockR - 2;
+  if (clockX + clockR < w - 10) {
+    ctx.fillStyle = "#1A2848";
     ctx.beginPath();
-    ctx.moveTo(clockX + Math.cos(angle) * innerR, clockY + Math.sin(angle) * innerR);
-    ctx.lineTo(clockX + Math.cos(angle) * (clockR - 1), clockY + Math.sin(angle) * (clockR - 1));
+    ctx.arc(clockX, clockY, clockR + 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#0E1830";
+    ctx.beginPath();
+    ctx.arc(clockX, clockY, clockR, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Clock hands (animated, simplified)
+    const totalSeconds = frame * 0.5;
+    const minuteAngle = (totalSeconds / 60) * Math.PI * 2 - Math.PI / 2;
+    const hourAngle = (totalSeconds / 720) * Math.PI * 2 - Math.PI / 2;
+
+    ctx.strokeStyle = "#8AA0C0";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(clockX, clockY);
+    ctx.lineTo(clockX + Math.cos(hourAngle) * (clockR * 0.55), clockY + Math.sin(hourAngle) * (clockR * 0.55));
+    ctx.stroke();
+
+    ctx.strokeStyle = "#C0D0E0";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(clockX, clockY);
+    ctx.lineTo(clockX + Math.cos(minuteAngle) * (clockR * 0.8), clockY + Math.sin(minuteAngle) * (clockR * 0.8));
     ctx.stroke();
   }
 
-  // Clock hands (animated)
-  const totalSeconds = frame * 0.5; // simulate time passage
-  const minuteAngle = (totalSeconds / 60) * Math.PI * 2 - Math.PI / 2;
-  const hourAngle = (totalSeconds / 720) * Math.PI * 2 - Math.PI / 2;
-
-  // Hour hand
-  ctx.strokeStyle = "#8AA0C0";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(clockX, clockY);
-  ctx.lineTo(clockX + Math.cos(hourAngle) * (clockR * 0.55), clockY + Math.sin(hourAngle) * (clockR * 0.55));
-  ctx.stroke();
-
-  // Minute hand
-  ctx.strokeStyle = "#C0D0E0";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(clockX, clockY);
-  ctx.lineTo(clockX + Math.cos(minuteAngle) * (clockR * 0.8), clockY + Math.sin(minuteAngle) * (clockR * 0.8));
-  ctx.stroke();
-
-  // Center dot
-  ctx.fillStyle = "#E0E8F0";
-  ctx.beginPath();
-  ctx.arc(clockX, clockY, 1.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // ---- DAY1 Neon Text (centered in compact wall) ----
+  // ---- DAY1 Neon Text (small, 10px font, centered in thin strip) ----
   const neonX = w * 0.5;
-  const neonY = wallTop + wallH * 0.55;
+  const neonY = wallTop + wallH * 0.5;
   const neonGlow = 0.6 + 0.4 * Math.abs(Math.sin(frame * 0.04));
   const neonText = "DAY1";
 
   ctx.save();
-  ctx.font = 'bold 14px ui-monospace, "SF Mono", Menlo, monospace';
+  ctx.font = 'bold 10px ui-monospace, "SF Mono", Menlo, monospace';
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  // Outer glow layers
+  // Glow layers (subtle)
   ctx.shadowColor = "#22C55E";
-  ctx.shadowBlur = 16 * neonGlow;
-  ctx.fillStyle = `rgba(34, 197, 94, ${0.3 * neonGlow})`;
-  ctx.fillText(neonText, neonX, neonY);
-
   ctx.shadowBlur = 8 * neonGlow;
-  ctx.fillStyle = `rgba(34, 197, 94, ${0.6 * neonGlow})`;
+  ctx.fillStyle = `rgba(34, 197, 94, ${0.4 * neonGlow})`;
   ctx.fillText(neonText, neonX, neonY);
 
   // Core neon text
-  ctx.shadowBlur = 4;
+  ctx.shadowBlur = 3;
   ctx.fillStyle = `rgba(134, 255, 134, ${0.8 + 0.2 * neonGlow})`;
   ctx.fillText(neonText, neonX, neonY);
   ctx.restore();
-
-  // ---- Whiteboard on wall (work zone side, left of center) ----
-  const wbX = w * 0.32;
-  const wbW2 = Math.min(48, wallH * 1.5);
-  const wbH2 = Math.min(wallH * 0.55, 60);
-  const wbY = wallTop + (wallH - wbH2) / 2;
-
-  // Frame
-  ctx.fillStyle = "#404040";
-  ctx.fillRect(wbX - wbW2 / 2 - 2, wbY - 2, wbW2 + 4, wbH2 + 4);
-  // Surface
-  ctx.fillStyle = "#E8E8E0";
-  ctx.fillRect(wbX - wbW2 / 2, wbY, wbW2, wbH2);
-
-  // Scribble lines
-  ctx.strokeStyle = "#1A3A8060";
-  ctx.lineWidth = 1;
-  const wbScribbles = [
-    { x1: 4, y1: 6, x2: wbW2 * 0.6, y2: 6 },
-    { x1: 4, y1: 12, x2: wbW2 * 0.8, y2: 12 },
-    { x1: 4, y1: 18, x2: wbW2 * 0.5, y2: 18 },
-    { x1: 4, y1: 24, x2: wbW2 * 0.7, y2: 24 },
-  ];
-  for (const sc of wbScribbles) {
-    if (sc.y1 < wbH2 - 4) {
-      ctx.beginPath();
-      ctx.moveTo(wbX - wbW2 / 2 + sc.x1, wbY + sc.y1);
-      ctx.lineTo(wbX - wbW2 / 2 + sc.x2, wbY + sc.y2);
-      ctx.stroke();
-    }
-  }
-
-  // "v3.0" text on whiteboard
-  ctx.fillStyle = "#1A3A80";
-  ctx.font = 'bold 7px ui-monospace, "SF Mono", Menlo, monospace';
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.fillText("v3.0", wbX + wbW2 * 0.2, wbY + wbH2 - 12);
 }
 
 // ---------------------------------------------------------------------------

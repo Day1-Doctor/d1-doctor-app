@@ -247,5 +247,19 @@
     "officeLabel": "办公室 #{{number}}",
     "activeCount": "{{active}}/{{max}} 办公室已激活",
     "stats": "{{agents}} 个智能体 · {{skills}} 技能 · {{files}} 文件"
+  },
+  "taskPanel": {
+    "title": "任务",
+    "newTask": "新建任务",
+    "noTasks": "暂无任务，创建一个开始吧。",
+    "progress": "{{percent}}%",
+    "subtasks": "{{count}} 个子任务",
+    "pendingApprovals": "待审批",
+    "noApprovals": "暂无待审批项",
+    "approve": "批准",
+    "deny": "拒绝",
+    "viewDetail": "查看详情",
+    "riskLevel": "风险：{{level}}",
+    "wantsTo": "想要执行：{{tool}} — {{context}}"
   }
 }

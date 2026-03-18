@@ -203,7 +203,9 @@ function ValleySection({
   const activeView = useViewStore((s) => s.activeView);
   const setActiveView = useViewStore((s) => s.setActiveView);
   const offices = useOfficeStore((s) => s.offices);
+  const addOffice = useOfficeStore((s) => s.addOffice);
   const maxOffices = useBillingStore((s) => s.maxAgents);
+  const openUpgradePrompt = useBillingStore((s) => s.openUpgradePrompt);
 
   const isValleyActive = activeView === "valley" || activeView === "office";
   const lockedCount = Math.max(0, MAX_OFFICES - offices.length);
@@ -213,6 +215,22 @@ function ValleySection({
   const handleValleyClick = () => {
     setActiveView("valley");
     setIsExpanded((prev) => !prev);
+  };
+
+  const handleAddOffice = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (offices.length < maxOffices) {
+      addOffice({
+        id: `office-${Date.now()}`,
+        name: `Office #${offices.length + 1}`,
+        agentCount: 0,
+        skillCount: 0,
+        fileCount: 0,
+        taskProgress: 0,
+      });
+    } else {
+      openUpgradePrompt(t("campus.upgradePlan"));
+    }
   };
 
   const valleyLabel = t("nav.valley");
@@ -359,6 +377,20 @@ function ValleySection({
               </button>
             );
           })}
+
+          {/* Add office "+" button */}
+          <div className="flex items-center gap-2 pl-8 pr-3 py-1">
+            <button
+              onClick={handleAddOffice}
+              className="flex items-center justify-center w-5 h-5 rounded-full bg-accent/20 hover:bg-accent/40
+                text-accent text-xs font-bold transition-colors duration-100
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+              aria-label="Add new office"
+              title={offices.length < maxOffices ? "Add new office" : "Upgrade to add more offices"}
+            >
+              +
+            </button>
+          </div>
 
           {/* Locked count */}
           {lockedCount > 0 && (
