@@ -65,6 +65,38 @@
   }
 }
 
+/* Task timeline step pulse animation */
+@keyframes step-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+}
+
+.step-pulse {
+  animation: step-pulse 1.5s ease-in-out infinite;
+}
+
+/* Animated connector for in-progress transitions */
+@keyframes connector-flow {
+  0% {
+    stroke-dashoffset: 14;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.connector-active {
+  stroke-dasharray: 4 3 !important;
+  animation: connector-flow 0.8s linear infinite;
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
