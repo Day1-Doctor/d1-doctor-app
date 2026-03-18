@@ -2,7 +2,6 @@
 ///
 /// Opens or creates an SQLite database at `~/.day1copilot/data.db`,
 /// enables WAL mode, and runs pending migrations on startup.
-
 pub mod migrations;
 pub mod schema;
 
@@ -40,16 +39,15 @@ pub fn init() -> Result<DbHandle, String> {
             .map_err(|e| format!("failed to create db directory: {e}"))?;
     }
 
-    let conn =
-        Connection::open(&path).map_err(|e| format!("failed to open database: {e}"))?;
+    let conn = Connection::open(&path).map_err(|e| format!("failed to open database: {e}"))?;
 
     // Enable WAL mode for better concurrent read performance.
     conn.pragma_update(None, "journal_mode", "WAL")
         .map_err(|e| format!("failed to enable WAL mode: {e}"))?;
 
     // Run pending migrations.
-    let applied = migrations::run_migrations(&conn)
-        .map_err(|e| format!("migration failed: {e}"))?;
+    let applied =
+        migrations::run_migrations(&conn).map_err(|e| format!("migration failed: {e}"))?;
 
     if applied > 0 {
         tracing::info!(applied, "database migrations complete");

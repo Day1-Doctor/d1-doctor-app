@@ -45,8 +45,7 @@ fn migration_creates_all_tables() {
 
 #[test]
 fn migration_is_idempotent() {
-    let conn =
-        rusqlite::Connection::open_in_memory().expect("failed to open in-memory db");
+    let conn = rusqlite::Connection::open_in_memory().expect("failed to open in-memory db");
 
     // Run migrations twice — should not error.
     let first = migrations::run_migrations(&conn).expect("first migration failed");
@@ -57,11 +56,9 @@ fn migration_is_idempotent() {
 
     // Verify version was recorded.
     let version: i64 = conn
-        .query_row(
-            "SELECT MAX(version) FROM schema_version",
-            [],
-            |row| row.get(0),
-        )
+        .query_row("SELECT MAX(version) FROM schema_version", [], |row| {
+            row.get(0)
+        })
         .expect("failed to query schema_version");
     assert_eq!(version, 1);
 }
@@ -86,9 +83,11 @@ fn crud_agents() {
     .expect("insert agent");
 
     let name: String = conn
-        .query_row("SELECT name FROM agents WHERE id = ?1", params![id], |row| {
-            row.get(0)
-        })
+        .query_row(
+            "SELECT name FROM agents WHERE id = ?1",
+            params![id],
+            |row| row.get(0),
+        )
         .expect("query agent");
 
     assert_eq!(name, "Dr. Bob");
@@ -155,7 +154,15 @@ fn crud_artifacts() {
     conn.execute(
         "INSERT INTO artifacts (id, task_id, agent_id, type, name, path, created_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
-        params![artifact_id, task_id, agent_id, "document", "report.md", "/tmp/report.md", ts],
+        params![
+            artifact_id,
+            task_id,
+            agent_id,
+            "document",
+            "report.md",
+            "/tmp/report.md",
+            ts
+        ],
     )
     .expect("insert artifact");
 

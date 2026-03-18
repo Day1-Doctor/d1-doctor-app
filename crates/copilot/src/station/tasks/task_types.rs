@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// A task managed by the Task Engine.
 ///
@@ -22,6 +23,27 @@ pub struct TaskSpec {
     pub started_at: Option<DateTime<Utc>>,
     pub completed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
+}
+
+impl TaskSpec {
+    /// Create a new sub-task with defaults, suitable for use with `TaskEngine::add_subtask`.
+    pub fn new_subtask(title: &str, parent_id: &str, step_index: u32) -> Self {
+        Self {
+            id: Uuid::new_v4().to_string(),
+            title: title.to_string(),
+            status: TaskStatus::Pending,
+            agent_id: None,
+            parent_id: Some(parent_id.to_string()),
+            step_index: Some(step_index),
+            priority: 0,
+            input: None,
+            output: None,
+            sub_tasks: Vec::new(),
+            started_at: None,
+            completed_at: None,
+            created_at: Utc::now(),
+        }
+    }
 }
 
 /// The lifecycle status of a task.

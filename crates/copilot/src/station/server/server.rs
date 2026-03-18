@@ -44,16 +44,10 @@ impl StationServer {
                 axum::routing::post(handlers::cancel_task),
             )
             // Artifacts
-            .route(
-                "/api/v1/tasks/:id/artifacts",
-                get(handlers::list_artifacts),
-            )
+            .route("/api/v1/tasks/:id/artifacts", get(handlers::list_artifacts))
             // Cost
             .route("/api/v1/costs", get(handlers::get_costs))
-            .route(
-                "/api/v1/costs/:agent_id",
-                get(handlers::get_agent_costs),
-            )
+            .route("/api/v1/costs/:agent_id", get(handlers::get_agent_costs))
             // WebSocket event stream
             .route("/ws/events", get(ws_handler::ws_upgrade))
             // CORS for localhost

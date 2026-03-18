@@ -91,8 +91,7 @@ mod tests {
 
     #[test]
     fn test_apply_trigger_success() {
-        let mut agent =
-            AgentDescriptor::new("coder-1", AgentRole::Coder, Framework::ClaudeSdk);
+        let mut agent = AgentDescriptor::new("coder-1", AgentRole::Coder, Framework::ClaudeSdk);
         assert_eq!(agent.status, AgentStatus::Idle);
 
         let new = agent.apply_trigger(&Trigger::TaskAssign).unwrap();
@@ -102,8 +101,7 @@ mod tests {
 
     #[test]
     fn test_apply_trigger_invalid() {
-        let mut agent =
-            AgentDescriptor::new("writer-1", AgentRole::Writer, Framework::Generic);
+        let mut agent = AgentDescriptor::new("writer-1", AgentRole::Writer, Framework::Generic);
         let result = agent.apply_trigger(&Trigger::LlmCallStart);
         assert!(result.is_err());
         // Status should remain unchanged on failure.
@@ -112,8 +110,7 @@ mod tests {
 
     #[test]
     fn test_full_lifecycle() {
-        let mut agent =
-            AgentDescriptor::new("analyst-1", AgentRole::Analyst, Framework::OpenClaw);
+        let mut agent = AgentDescriptor::new("analyst-1", AgentRole::Analyst, Framework::OpenClaw);
 
         // idle -> working
         agent.apply_trigger(&Trigger::TaskAssign).unwrap();
@@ -138,8 +135,7 @@ mod tests {
 
     #[test]
     fn test_serde_roundtrip() {
-        let agent =
-            AgentDescriptor::new("operator-1", AgentRole::Operator, Framework::IronClaw);
+        let agent = AgentDescriptor::new("operator-1", AgentRole::Operator, Framework::IronClaw);
         let json = serde_json::to_string(&agent).unwrap();
         let back: AgentDescriptor = serde_json::from_str(&json).unwrap();
         assert_eq!(back.id, agent.id);

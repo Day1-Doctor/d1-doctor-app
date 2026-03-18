@@ -57,9 +57,7 @@ impl AgentStatus {
                 (TriggerKind::Resume, AgentStatus::Idle),
                 (TriggerKind::ErrorOccurred, AgentStatus::Error),
             ],
-            AgentStatus::Error => vec![
-                (TriggerKind::Resume, AgentStatus::Idle),
-            ],
+            AgentStatus::Error => vec![(TriggerKind::Resume, AgentStatus::Idle)],
         }
     }
 
