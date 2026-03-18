@@ -4,6 +4,8 @@ export type ViewType =
   | "valley"
   | "office"
   | "task"
+  | "workspace"
+  | "metrics"
   | "debug"
   | "chat"
   | "settings";

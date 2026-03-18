@@ -14,7 +14,6 @@ import { AuthWall } from "./components/shared/AuthWall";
 import { ValleyView } from "./views/ValleyView";
 import { OfficeView } from "./views/OfficeView";
 import { TaskView } from "./views/TaskView";
-import { ChatView } from "./views/ChatView";
 import {
   OnboardingWizard,
   useOnboarding,
@@ -27,6 +26,12 @@ const DebugView = lazy(() =>
 );
 const SettingsView = lazy(() =>
   import("./views/SettingsView").then((m) => ({ default: m.SettingsView })),
+);
+const WorkspaceView = lazy(() =>
+  import("./views/WorkspaceView").then((m) => ({ default: m.WorkspaceView })),
+);
+const MetricsView = lazy(() =>
+  import("./views/MetricsView").then((m) => ({ default: m.MetricsView })),
 );
 
 function LazyFallback() {
@@ -42,8 +47,10 @@ const viewComponents = {
   valley: ValleyView,
   office: OfficeView,
   task: TaskView,
+  workspace: WorkspaceView,
+  metrics: MetricsView,
   debug: DebugView,
-  chat: ChatView,
+  chat: ValleyView, // Chat is now in Command Center; fallback to valley
   settings: SettingsView,
 } as const;
 
