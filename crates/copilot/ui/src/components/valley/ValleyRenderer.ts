@@ -176,16 +176,17 @@ function drawRunningParcel(
   ctx.stroke();
   ctx.restore();
 
-  // ---- Office name (title at top) ----
+  // ---- Office name (title at top, centered) ----
   ctx.fillStyle = TEXT_WHITE;
   ctx.font = `bold 11px ui-monospace, "SF Mono", Menlo, monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText(office.name, x + PARCEL_W / 2, y + 8, PARCEL_W - 12);
+  ctx.fillText(office.name, x + PARCEL_W / 2, y + 20, PARCEL_W - 12);
 
   // ---- Interior: mini desks (3x2 grid) centered in middle area ----
-  // Area for agents: starts at y+36 (after title), ends at y+h-50 (before progress bar)
-  const agentAreaTop = y + 36;
+  // Area for agents: starts at y+40 (below name), ends at y+h-50 (above progress bar)
+  // This is the middle 50% of the card vertically
+  const agentAreaTop = y + 40;
   const agentAreaBottom = y + PARCEL_H - 50;
   const agentAreaH = agentAreaBottom - agentAreaTop;
 
@@ -437,7 +438,8 @@ export function hitTestParcel(
 // ---------------------------------------------------------------------------
 
 /**
- * Draw the atmospheric campus background: gradient sky, star dots, subtle grid lines.
+ * Draw the atmospheric campus background: radial gradient, grid lines, stars,
+ * scan lines, and a warm spotlight centered on the canvas.
  */
 function drawCampusBackground(
   ctx: CanvasRenderingContext2D,
@@ -445,15 +447,18 @@ function drawCampusBackground(
   h: number,
   frame: number,
 ): void {
-  // Gradient background: dark navy top → slightly warmer dark bottom
-  const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, "#080812");
-  grad.addColorStop(1, "#0A0A18");
-  ctx.fillStyle = grad;
+  const cx = w / 2;
+  const cy = h / 2;
+
+  // Radial gradient base: warm center → very dark edges
+  const radGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(w, h) * 0.7);
+  radGrad.addColorStop(0, "#101828");
+  radGrad.addColorStop(1, "#060810");
+  ctx.fillStyle = radGrad;
   ctx.fillRect(0, 0, w, h);
 
-  // Subtle tech grid lines (very low opacity)
-  ctx.strokeStyle = "rgba(100, 100, 180, 0.04)";
+  // Subtle tech grid lines — thin lines every ~40px at very low opacity
+  ctx.strokeStyle = "rgba(26, 32, 64, 0.08)";
   ctx.lineWidth = 1;
   const gridSpacing = 40;
   for (let gx = 0; gx < w; gx += gridSpacing) {
@@ -469,18 +474,36 @@ function drawCampusBackground(
     ctx.stroke();
   }
 
-  // Scattered tiny star dots (seeded positions, animated twinkle)
-  // Use a deterministic pattern based on position
+  // Faint horizontal scan lines (tech CRT feel)
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.015)";
+  ctx.lineWidth = 1;
+  for (let gy = 0; gy < h; gy += 3) {
+    ctx.beginPath();
+    ctx.moveTo(0, gy);
+    ctx.lineTo(w, gy);
+    ctx.stroke();
+  }
+
+  // Scattered tiny star/particle dots (deterministic, animated twinkle)
   const starCount = Math.floor((w * h) / 4000);
   for (let si = 0; si < starCount; si++) {
-    // Pseudo-random positions using a simple LCG
-    const sx = ((si * 7919 + 1337) % w);
-    const sy = ((si * 6271 + 2749) % h);
-    const twinkle = 0.1 + 0.1 * Math.abs(Math.sin(frame * 0.03 + si * 0.7));
+    const sx = (si * 7919 + 1337) % w;
+    const sy = (si * 6271 + 2749) % h;
+    const twinkle = 0.08 + 0.1 * Math.abs(Math.sin(frame * 0.03 + si * 0.7));
     ctx.fillStyle = `rgba(255, 255, 255, ${twinkle})`;
-    const size = si % 5 === 0 ? 1.5 : 1;
-    ctx.fillRect(sx, sy, size, size);
+    const dotSize = si % 5 === 0 ? 1.5 : 1;
+    ctx.fillRect(sx, sy, dotSize, dotSize);
   }
+
+  // Warm orange spotlight centered on canvas — draws the eye to active offices
+  const radius = Math.max(w, h) * 0.65;
+  const spotlight = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+  spotlight.addColorStop(0, "rgba(249, 115, 22, 0.06)");
+  spotlight.addColorStop(0.3, "rgba(249, 115, 22, 0.03)");
+  spotlight.addColorStop(0.7, "rgba(0, 0, 0, 0)");
+  spotlight.addColorStop(1, "rgba(0, 0, 0, 0.3)");
+  ctx.fillStyle = spotlight;
+  ctx.fillRect(0, 0, w, h);
 }
 
 /**
