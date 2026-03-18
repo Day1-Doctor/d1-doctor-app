@@ -1,9 +1,10 @@
+import { useTranslation } from "react-i18next";
 import { useViewStore, type ViewType } from "../../stores/viewStore";
 import { useLayoutStore } from "../../stores/layoutStore";
 
 interface NavItem {
   id: string;
-  label: string;
+  labelKey: string;
   icon: React.ReactNode;
   view?: ViewType;
 }
@@ -11,7 +12,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   {
     id: "office",
-    label: "Office",
+    labelKey: "nav.office",
     view: "office",
     icon: (
       <svg
@@ -32,7 +33,7 @@ const navItems: NavItem[] = [
   },
   {
     id: "task",
-    label: "Tasks",
+    labelKey: "nav.tasks",
     view: "task",
     icon: (
       <svg
@@ -53,7 +54,7 @@ const navItems: NavItem[] = [
   },
   {
     id: "debug",
-    label: "Debug",
+    labelKey: "nav.debug",
     view: "debug",
     icon: (
       <svg
@@ -74,7 +75,7 @@ const navItems: NavItem[] = [
   },
   {
     id: "chat",
-    label: "Chat",
+    labelKey: "nav.chat",
     view: "chat",
     icon: (
       <svg
@@ -97,7 +98,7 @@ const navItems: NavItem[] = [
 const secondaryItems: NavItem[] = [
   {
     id: "agents",
-    label: "Agents",
+    labelKey: "nav.agents",
     icon: (
       <svg
         width="18"
@@ -119,7 +120,7 @@ const secondaryItems: NavItem[] = [
   },
   {
     id: "memory",
-    label: "Memory",
+    labelKey: "nav.memory",
     icon: (
       <svg
         width="18"
@@ -139,7 +140,7 @@ const secondaryItems: NavItem[] = [
   },
   {
     id: "settings",
-    label: "Settings",
+    labelKey: "nav.settings",
     view: "settings",
     icon: (
       <svg
@@ -171,6 +172,9 @@ function NavButton({
   collapsed: boolean;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
+  const label = t(item.labelKey);
+
   return (
     <button
       onClick={onClick}
@@ -185,9 +189,9 @@ function NavButton({
         }
         ${collapsed ? "justify-center px-0" : ""}
       `}
-      aria-label={item.label}
+      aria-label={label}
       aria-current={isActive ? "page" : undefined}
-      title={collapsed ? item.label : undefined}
+      title={collapsed ? label : undefined}
       tabIndex={0}
     >
       {isActive && (
@@ -199,12 +203,13 @@ function NavButton({
       <span className={`shrink-0 ${isActive ? "text-accent" : ""}`}>
         {item.icon}
       </span>
-      {!collapsed && <span>{item.label}</span>}
+      {!collapsed && <span>{label}</span>}
     </button>
   );
 }
 
 export function Sidebar() {
+  const { t } = useTranslation();
   const activeView = useViewStore((s) => s.activeView);
   const setActiveView = useViewStore((s) => s.setActiveView);
   const collapsed = useLayoutStore((s) => s.sidebarCollapsed);
@@ -219,7 +224,7 @@ export function Sidebar() {
         ${collapsed ? "w-14" : "w-[220px]"}
       `}
       role="navigation"
-      aria-label="Main navigation"
+      aria-label={t("nav.office")}
     >
       {/* Collapse toggle */}
       <div

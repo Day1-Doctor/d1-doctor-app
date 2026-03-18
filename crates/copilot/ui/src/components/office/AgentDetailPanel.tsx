@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useAgentStore, type AgentStatus } from "../../stores/agentStore";
 import { useCostStore } from "../../stores/costStore";
 import { AGENT_COLORS, STATUS_COLORS } from "./OfficeRenderer";
@@ -71,6 +72,7 @@ function trustScoreColor(score: number): string {
  * about the selected agent. Uses glassmorphic styling with backdrop-blur.
  */
 export function AgentDetailPanel() {
+  const { t } = useTranslation();
   const selectedAgentId = useAgentStore((s) => s.selectedAgentId);
   const agents = useAgentStore((s) => s.agents);
   const selectAgent = useAgentStore((s) => s.selectAgent);
@@ -84,7 +86,7 @@ export function AgentDetailPanel() {
   const statusColor = STATUS_COLORS[agent.status] ?? STATUS_COLORS.idle;
   const tokenCount = MOCK_TOKENS[agent.role] ?? 0;
   const cost = agentCosts[agent.name] ?? 0;
-  const taskName = MOCK_TASKS[agent.role] ?? "No active task";
+  const taskName = MOCK_TASKS[agent.role] ?? t("agentDetail.noActiveTask");
   const trustScore = MOCK_TRUST_SCORES[agent.role] ?? 50;
   const tsColor = trustScoreColor(trustScore);
 
@@ -99,7 +101,7 @@ export function AgentDetailPanel() {
         animation: "slideInRight 0.2s ease-out",
       }}
       role="dialog"
-      aria-label={`Agent details: ${agent.name}`}
+      aria-label={`${t("agentDetail.fsmState")}: ${agent.name}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -109,7 +111,7 @@ export function AgentDetailPanel() {
           className="p-1 rounded hover:bg-muted text-text-muted hover:text-text-primary
             transition-colors duration-100 focus:outline-none focus-visible:ring-2
             focus-visible:ring-accent/50"
-          aria-label="Close agent detail panel"
+          aria-label={t("agentDetail.close")}
         >
           <svg
             width="16"
@@ -148,7 +150,7 @@ export function AgentDetailPanel() {
         {/* FSM Status */}
         <div>
           <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-            FSM State
+            {t("agentDetail.fsmState")}
           </p>
           <div className="flex items-center gap-2">
             <span
@@ -165,7 +167,7 @@ export function AgentDetailPanel() {
         <div>
           <div className="flex items-center justify-between mb-1">
             <p className="text-[10px] text-text-muted uppercase tracking-wider">
-              Trust Score
+              {t("agentDetail.trustScore")}
             </p>
             <span
               className="text-xs font-medium tabular-nums"
@@ -188,7 +190,7 @@ export function AgentDetailPanel() {
         {/* Current Task */}
         <div>
           <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-            Current Task
+            {t("agentDetail.currentTask")}
           </p>
           <p className="text-xs text-text-secondary">{taskName}</p>
         </div>
@@ -200,7 +202,7 @@ export function AgentDetailPanel() {
             style={{ backgroundColor: "rgba(15, 15, 15, 0.6)" }}
           >
             <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">
-              Tokens
+              {t("agentDetail.tokens")}
             </p>
             <p className="text-sm text-text-primary font-medium tabular-nums">
               {tokenCount.toLocaleString()}
@@ -211,7 +213,7 @@ export function AgentDetailPanel() {
             style={{ backgroundColor: "rgba(15, 15, 15, 0.6)" }}
           >
             <p className="text-[10px] text-text-muted uppercase tracking-wider mb-0.5">
-              Cost (DD)
+              {t("agentDetail.costDD")}
             </p>
             <p className="text-sm text-accent font-medium tabular-nums">
               {cost}
@@ -222,7 +224,7 @@ export function AgentDetailPanel() {
         {/* Activity Log */}
         <div>
           <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
-            Activity Log
+            {t("agentDetail.activityLog")}
           </p>
           <div className="space-y-1.5 max-h-[240px] overflow-y-auto">
             {MOCK_ACTIVITY.map((event, i) => (

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useSettingsStore, type RiskLevel } from "../stores/settingsStore";
 
 const MODEL_OPTIONS = [
@@ -9,14 +10,29 @@ const MODEL_OPTIONS = [
   "llama-3.3-70b",
 ];
 
-const RISK_LABELS: Record<RiskLevel, { label: string; description: string; color: string }> = {
-  low: { label: "Low", description: "Read-only operations, memory access", color: "#22C55E" },
-  medium: { label: "Medium", description: "File writes, web requests", color: "#F59E0B" },
-  high: { label: "High", description: "Shell commands, system access", color: "#F97316" },
-  critical: { label: "Critical", description: "Destructive ops, external APIs", color: "#EF4444" },
+const RISK_LEVELS: RiskLevel[] = ["low", "medium", "high", "critical"];
+
+const RISK_COLORS: Record<RiskLevel, string> = {
+  low: "#22C55E",
+  medium: "#F59E0B",
+  high: "#F97316",
+  critical: "#EF4444",
 };
 
+const RISK_DESC_KEYS: Record<RiskLevel, string> = {
+  low: "Read-only operations, memory access",
+  medium: "File writes, web requests",
+  high: "Shell commands, system access",
+  critical: "Destructive ops, external APIs",
+};
+
+const LANGUAGES = [
+  { code: "en", label: "English" },
+  { code: "zh", label: "中文" },
+];
+
 export function SettingsView() {
+  const { t, i18n } = useTranslation();
   const providers = useSettingsStore((s) => s.providers);
   const agents = useSettingsStore((s) => s.agents);
   const autoApprove = useSettingsStore((s) => s.autoApprove);
@@ -24,14 +40,40 @@ export function SettingsView() {
   const updateAgent = useSettingsStore((s) => s.updateAgent);
   const setAutoApprove = useSettingsStore((s) => s.setAutoApprove);
 
+  const currentLang = i18n.language.startsWith("zh") ? "zh" : "en";
+
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
-      <h2 className="text-lg font-semibold text-text-primary mb-6">Settings</h2>
+      <h2 className="text-lg font-semibold text-text-primary mb-6">{t("settings.title")}</h2>
+
+      {/* Language section */}
+      <section className="mb-8">
+        <h3 className="text-xs text-text-muted uppercase tracking-wider font-medium mb-3">
+          {t("settings.language")}
+        </h3>
+        <div className="flex items-center gap-2">
+          {LANGUAGES.map((lang) => (
+            <button
+              key={lang.code}
+              onClick={() => i18n.changeLanguage(lang.code)}
+              className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors duration-100
+                focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50
+                ${
+                  currentLang === lang.code
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-border text-text-secondary hover:text-text-primary hover:bg-muted/30"
+                }`}
+            >
+              {lang.label}
+            </button>
+          ))}
+        </div>
+      </section>
 
       {/* Provider section */}
       <section className="mb-8">
         <h3 className="text-xs text-text-muted uppercase tracking-wider font-medium mb-3">
-          Providers
+          {t("settings.providers")}
         </h3>
         <div className="space-y-3">
           {providers.map((provider) => (
@@ -65,7 +107,7 @@ export function SettingsView() {
               <div className="space-y-2">
                 <div>
                   <label className="text-[10px] text-text-muted uppercase tracking-wider">
-                    API Key
+                    {t("settings.apiKey")}
                   </label>
                   <input
                     type="password"
@@ -79,7 +121,7 @@ export function SettingsView() {
                 </div>
                 <div>
                   <label className="text-[10px] text-text-muted uppercase tracking-wider">
-                    Endpoint
+                    {t("settings.endpoint")}
                   </label>
                   <input
                     type="text"
@@ -100,7 +142,7 @@ export function SettingsView() {
       {/* Agent section */}
       <section className="mb-8">
         <h3 className="text-xs text-text-muted uppercase tracking-wider font-medium mb-3">
-          Agents
+          {t("settings.agents")}
         </h3>
         <div className="space-y-2">
           {agents.map((agent) => (
@@ -154,11 +196,12 @@ export function SettingsView() {
       {/* Approval section */}
       <section className="mb-8">
         <h3 className="text-xs text-text-muted uppercase tracking-wider font-medium mb-3">
-          Auto-Approve by Risk Level
+          {t("settings.approvals")}
         </h3>
         <div className="space-y-2">
-          {(Object.keys(RISK_LABELS) as RiskLevel[]).map((level) => {
-            const info = RISK_LABELS[level];
+          {RISK_LEVELS.map((level) => {
+            const color = RISK_COLORS[level];
+            const description = RISK_DESC_KEYS[level];
             return (
               <label
                 key={level}
@@ -175,11 +218,11 @@ export function SettingsView() {
                   <div className="flex items-center gap-2">
                     <span
                       className="inline-block w-2 h-2 rounded-full"
-                      style={{ backgroundColor: info.color }}
+                      style={{ backgroundColor: color }}
                     />
-                    <span className="text-sm text-text-primary font-medium">{info.label}</span>
+                    <span className="text-sm text-text-primary font-medium capitalize">{level}</span>
                   </div>
-                  <p className="text-[11px] text-text-muted mt-0.5">{info.description}</p>
+                  <p className="text-[11px] text-text-muted mt-0.5">{description}</p>
                 </div>
               </label>
             );

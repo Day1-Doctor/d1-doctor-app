@@ -1,4 +1,5 @@
 import { useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useAgentStore } from "../stores/agentStore";
 import { useTaskStore } from "../stores/taskStore";
 import { useCanvasSize } from "../hooks/useCanvasSize";
@@ -18,6 +19,7 @@ import { OFFICE_LAYOUT, hitTestAgent } from "../components/office/OfficeRenderer
  * Clicking on an agent in the canvas opens the AgentDetailPanel.
  */
 export function OfficeView() {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const { width, height } = useCanvasSize(containerRef);
   const agents = useAgentStore((s) => s.agents);
@@ -77,7 +79,7 @@ export function OfficeView() {
         >
           <div className="flex items-center gap-3 px-4 py-1">
             <span className="text-text-secondary text-[10px] font-medium shrink-0 uppercase tracking-wider">
-              Task
+              {t("nav.tasks")}
             </span>
             <span className="text-text-primary text-xs truncate max-w-[160px]">
               {activeTask.title}

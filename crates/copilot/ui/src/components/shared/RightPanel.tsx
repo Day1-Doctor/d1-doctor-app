@@ -1,8 +1,10 @@
+import { useTranslation } from "react-i18next";
 import { useLayoutStore } from "../../stores/layoutStore";
 import { useArtifactStore } from "../../stores/artifactStore";
 import { ArtifactCard } from "../task/ArtifactCard";
 
 export function RightPanel() {
+  const { t } = useTranslation();
   const collapsed = useLayoutStore((s) => s.rightPanelCollapsed);
   const toggleRightPanel = useLayoutStore((s) => s.toggleRightPanel);
   const artifacts = useArtifactStore((s) => s.artifacts);
@@ -15,21 +17,21 @@ export function RightPanel() {
         ${collapsed ? "w-0 border-l-0" : "w-[280px]"}
       `}
       role="complementary"
-      aria-label="Artifacts panel"
+      aria-label={t("artifacts.title")}
     >
       {!collapsed && (
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between h-10 px-3 border-b border-border">
             <span className="text-xs text-text-secondary font-medium">
-              Artifacts
+              {t("artifacts.title")}
             </span>
             <button
               onClick={toggleRightPanel}
               className="p-1 rounded hover:bg-muted text-text-muted hover:text-text-secondary
                 transition-colors duration-100 focus:outline-none focus-visible:ring-2
                 focus-visible:ring-accent/50"
-              aria-label="Close artifacts panel"
+              aria-label={t("artifacts.close")}
               tabIndex={0}
             >
               <svg
@@ -53,7 +55,7 @@ export function RightPanel() {
           {artifacts.length === 0 ? (
             <div className="flex-1 flex items-center justify-center p-4">
               <p className="text-text-disabled text-xs text-center">
-                No artifacts yet
+                {t("artifacts.noArtifacts")}
               </p>
             </div>
           ) : (

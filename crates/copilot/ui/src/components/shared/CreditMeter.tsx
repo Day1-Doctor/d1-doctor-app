@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useCostStore } from "../../stores/costStore";
 
 /**
@@ -7,6 +8,7 @@ import { useCostStore } from "../../stores/costStore";
  * On hover/click: popover with per-agent cost breakdown.
  */
 export function CreditMeter() {
+  const { t } = useTranslation();
   const balance = useCostStore((s) => s.balance);
   const limit = useCostStore((s) => s.limit);
   const sessionCost = useCostStore((s) => s.sessionCost);
@@ -90,19 +92,19 @@ export function CreditMeter() {
             WebkitBackdropFilter: "blur(16px)",
           }}
           role="dialog"
-          aria-label="Credit breakdown"
+          aria-label={t("credits.sessionCostBreakdown")}
         >
           <p className="text-[10px] text-text-muted uppercase tracking-wider mb-2">
-            Session Cost Breakdown
+            {t("credits.sessionCostBreakdown")}
           </p>
 
           {/* Summary */}
           <div className="flex justify-between text-xs mb-1">
-            <span className="text-text-secondary">Session total</span>
+            <span className="text-text-secondary">{t("credits.sessionTotal")}</span>
             <span className="text-text-primary">{sessionCost} DD</span>
           </div>
           <div className="flex justify-between text-xs mb-2">
-            <span className="text-text-secondary">Balance</span>
+            <span className="text-text-secondary">{t("credits.balance")}</span>
             <span style={{ color: barColor }}>
               {balance} / {limit} DD
             </span>
@@ -113,7 +115,7 @@ export function CreditMeter() {
             <>
               <div className="h-px bg-border my-2" />
               <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1.5">
-                Per-Agent
+                {t("credits.perAgent")}
               </p>
               {agentEntries.map(([name, cost]) => (
                 <div

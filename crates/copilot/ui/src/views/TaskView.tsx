@@ -1,15 +1,7 @@
+import { useTranslation } from "react-i18next";
 import { useTaskStore } from "../stores/taskStore";
 import { TaskTimeline } from "../components/task/TaskTimeline";
 import { StepCard } from "../components/task/StepCard";
-
-const statusLabel: Record<string, string> = {
-  pending: "Pending",
-  running: "Running",
-  paused: "Paused",
-  completed: "Completed",
-  failed: "Failed",
-  cancelled: "Cancelled",
-};
 
 const statusColor: Record<string, string> = {
   pending: "text-text-muted",
@@ -29,6 +21,7 @@ function formatDuration(ms: number): string {
 }
 
 export function TaskView() {
+  const { t } = useTranslation();
   const activeTask = useTaskStore((s) =>
     s.tasks.find((t) => t.id === s.activeTaskId),
   );
@@ -53,10 +46,10 @@ export function TaskView() {
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
           </svg>
           <h2 className="text-xl font-semibold text-text-primary">
-            Task View
+            {t("tasks.title")}
           </h2>
         </div>
-        <p className="text-text-muted text-sm">No active task</p>
+        <p className="text-text-muted text-sm">{t("office.noTask")}</p>
         <div className="w-12 h-0.5 bg-border rounded-full" />
       </div>
     );
@@ -93,13 +86,13 @@ export function TaskView() {
           <span
             className={`text-xs font-medium px-2 py-0.5 rounded-full border border-border ${statusColor[activeTask.status] ?? "text-text-muted"}`}
           >
-            {statusLabel[activeTask.status] ?? activeTask.status}
+            {t(`tasks.status.${activeTask.status}`, activeTask.status)}
           </span>
         </div>
 
         <div className="flex items-center gap-4 text-xs text-text-secondary shrink-0">
           <span>
-            {completedSteps}/{totalSteps} steps
+            {completedSteps}/{totalSteps} {t("tasks.steps")}
           </span>
           {activeTask.totalDuration != null && (
             <span>{formatDuration(activeTask.totalDuration)}</span>
@@ -115,7 +108,7 @@ export function TaskView() {
       {/* Step details */}
       <section className="flex-1 flex flex-col min-h-0 overflow-y-auto gap-2">
         <h3 className="text-xs text-text-secondary font-medium shrink-0">
-          Step Details
+          {t("tasks.stepDetails")}
         </h3>
         {activeTask.steps.map((step) => (
           <StepCard key={step.id} step={step} />
