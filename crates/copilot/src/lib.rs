@@ -2,13 +2,12 @@ pub mod station;
 
 use std::sync::Arc;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use station::events::EventBus;
-use station::kernel::{AgentKernel, AgentStatus};
+use station::kernel::{AgentKernel, AgentRole, AgentStatus};
 use station::runtime::BuiltinRuntime;
 use station::server::StationServer;
 use station::tasks::task_engine::TaskEngine;
-use station::tasks::task_types::CreateTaskRequest;
 use station::tasks::decomposer::TaskDecomposer;
 use station::tasks::router::TaskRouter;
 use tauri::Manager;
@@ -83,9 +82,24 @@ async fn get_agent(
 async fn create_task(
     state: tauri::State<'_, Arc<AppState>>,
     description: String,
+    #[allow(unused_variables)] max_agents: Option<usize>,
 ) -> Result<TaskInfo, String> {
     // Decompose the task
-    let plan = state.decomposer.decompose(&description);
+    let mut plan = state.decomposer.decompose(&description);
+
+    // Office Spot enforcement: if the plan requires more agent roles than
+    // the user's tier allows, collapse all steps to the orchestrator role
+    // (single-agent fallback via Dr. Bob).
+    if let Some(limit) = max_agents {
+        let mut roles: Vec<&str> = plan.steps.iter().map(|s| s.suggested_role.as_str()).collect();
+        roles.sort();
+        roles.dedup();
+        if roles.len() > limit {
+            for step in &mut plan.steps {
+                step.suggested_role = "orchestrator".to_string();
+            }
+        }
+    }
 
     // Route the plan (creates parent + subtasks)
     let parent_id = state.router.route_plan(plan).await?;
@@ -158,6 +172,50 @@ async fn cancel_task(
 ) -> Result<String, String> {
     state.task_engine.cancel(&task_id).await?;
     Ok("cancelled".to_string())
+}
+
+/// Result of a tier-limit check before activating agents.
+#[derive(Serialize, Clone)]
+struct TierCheckResult {
+    allowed: bool,
+    required_agents: usize,
+    max_agents: usize,
+    /// The distinct agent roles the plan requires.
+    required_roles: Vec<String>,
+}
+
+/// Check whether the user's subscription tier allows activating the required
+/// number of agents for a given task description.
+///
+/// Returns `TierCheckResult` so the UI can decide whether to show an upgrade
+/// prompt or fall back to single-agent mode (Dr. Bob only).
+#[tauri::command]
+async fn check_tier_limit(
+    state: tauri::State<'_, Arc<AppState>>,
+    description: String,
+    max_agents: usize,
+) -> Result<TierCheckResult, String> {
+    // Decompose the task to discover the required roles.
+    let plan = state.decomposer.decompose(&description);
+
+    let mut roles: Vec<String> = plan
+        .steps
+        .iter()
+        .map(|s| s.suggested_role.clone())
+        .collect();
+    roles.sort();
+    roles.dedup();
+
+    let required = roles.len();
+    // Default to 1 (Free Man tier) if 0 is passed.
+    let limit = if max_agents == 0 { 1 } else { max_agents };
+
+    Ok(TierCheckResult {
+        allowed: required <= limit,
+        required_agents: required,
+        max_agents: limit,
+        required_roles: roles,
+    })
 }
 
 #[tauri::command]
@@ -319,6 +377,7 @@ pub fn run() {
             get_stored_api_key,
             fetch_balance,
             clear_auth,
+            check_tier_limit,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Day1 Copilot");
