@@ -5,3 +5,4 @@ pub mod events;
 pub mod kernel;
 pub mod runtime;
 pub mod server;
+pub mod tasks;
