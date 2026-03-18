@@ -726,11 +726,16 @@ dependencies = [
 name = "d1-copilot"
 version = "0.1.0"
 dependencies = [
+ "chrono",
+ "dirs 5.0.1",
+ "rusqlite",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
  "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
