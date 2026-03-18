@@ -3,11 +3,12 @@ pub mod station;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
+use station::costs::CostTracker;
 use station::events::EventBus;
 use station::kernel::{AgentKernel, AgentRole, AgentStatus};
 use station::llm::{LlmClient, LlmDecomposer};
 use station::runtime::BuiltinRuntime;
-use station::server::StationServer;
+use station::server::{ServerState, StationServer};
 use station::tasks::decomposer::TaskDecomposer;
 use station::tasks::router::TaskRouter;
 use station::tasks::task_engine::TaskEngine;
@@ -19,6 +20,7 @@ pub struct AppState {
     pub kernel: Arc<AgentKernel>,
     pub event_bus: Arc<EventBus>,
     pub task_engine: Arc<TaskEngine>,
+    pub cost_tracker: Arc<CostTracker>,
     pub runtime: Arc<BuiltinRuntime>,
     pub decomposer: Arc<TaskDecomposer>,
     pub router: Arc<TaskRouter>,
@@ -334,6 +336,7 @@ pub fn run() {
             let event_bus = Arc::new(EventBus::new(1024));
             let kernel = Arc::new(AgentKernel::new());
             let task_engine = Arc::new(TaskEngine::new());
+            let cost_tracker = Arc::new(CostTracker::with_event_bus(event_bus.clone()));
             let runtime = Arc::new(BuiltinRuntime::new(
                 kernel.clone(),
                 event_bus.clone(),
@@ -356,7 +359,8 @@ pub fn run() {
             let app_state = Arc::new(AppState {
                 kernel: kernel.clone(),
                 event_bus: event_bus.clone(),
-                task_engine,
+                task_engine: task_engine.clone(),
+                cost_tracker: cost_tracker.clone(),
                 runtime: runtime.clone(),
                 decomposer,
                 router,
@@ -365,6 +369,14 @@ pub fn run() {
 
             // Store state for Tauri commands
             app.manage(app_state);
+
+            // Build server state from shared components
+            let server_state = ServerState {
+                kernel: kernel.clone(),
+                task_engine,
+                event_bus,
+                cost_tracker,
+            };
 
             // Spawn runtime initialization + IPC server in background
             let rt = runtime.clone();
@@ -376,8 +388,9 @@ pub fn run() {
                 }
 
                 // Start the HTTP + WebSocket IPC server for external adapters
-                let server = StationServer::new(StationServer::default_port());
-                if let Err(e) = server.start().await {
+                if let Err(e) =
+                    StationServer::start(StationServer::default_port(), server_state).await
+                {
                     tracing::error!("IPC server error: {}", e);
                 }
             });
