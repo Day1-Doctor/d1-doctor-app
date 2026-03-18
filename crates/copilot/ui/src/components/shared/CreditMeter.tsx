@@ -1,21 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useCostStore } from "../../stores/costStore";
-import { useAuthStore } from "../../stores/authStore";
 
 /**
  * CreditMeter — Progress bar showing DD credit balance with color transitions.
  * Green (>50%) -> Yellow (25-50%) -> Red (<25%).
  * On hover/click: popover with per-agent cost breakdown.
- * When authenticated, uses real balance from authStore (synced via costStore).
  */
 export function CreditMeter() {
   const { t } = useTranslation();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const rawBalance = useCostStore((s) => s.balance);
-  const rawLimit = useCostStore((s) => s.limit);
-  const balance = isAuthenticated ? rawBalance : 0;
-  const limit = isAuthenticated ? rawLimit : 0;
+  const balance = useCostStore((s) => s.balance);
+  const limit = useCostStore((s) => s.limit);
   const sessionCost = useCostStore((s) => s.sessionCost);
   const agentCosts = useCostStore((s) => s.agentCosts);
   const [showPopover, setShowPopover] = useState(false);
