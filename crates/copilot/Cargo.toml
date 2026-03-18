@@ -23,3 +23,7 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 dirs = "5"
 tracing = { workspace = true }
+axum = { version = "0.7", features = ["ws"] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.5", features = ["cors"] }
+futures = "0.3"
