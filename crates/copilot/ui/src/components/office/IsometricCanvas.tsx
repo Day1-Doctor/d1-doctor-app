@@ -99,7 +99,7 @@ export function IsometricCanvas({
         agentMap.set(agent.id, { agent, frame: frameRef.current });
       }
 
-      drawOffice(ctx, w, h, desks, agentMap);
+      drawOffice(ctx, w, h, desks, agentMap, frameRef.current);
     }
 
     rafRef.current = requestAnimationFrame(tick);
