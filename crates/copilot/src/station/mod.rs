@@ -10,5 +10,6 @@ pub mod permissions;
 pub mod runtime;
 pub mod server;
 pub mod billing;
+pub mod skills;
 pub mod tasks;
 pub mod tools;
