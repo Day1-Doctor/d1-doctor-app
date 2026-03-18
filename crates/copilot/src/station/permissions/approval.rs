@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
@@ -66,6 +66,9 @@ pub struct PermissionEngine {
     trust_overrides: Arc<RwLock<HashMap<(String, RiskLevel), bool>>>,
     /// Agent trust scores (0.0 – 1.0). Higher → more autonomous.
     trust_scores: Arc<RwLock<HashMap<String, f64>>>,
+    /// Ordered queue of approval requests (FIFO). When multiple agents request
+    /// approval simultaneously the queue determines presentation order in the UI.
+    approval_queue: Arc<RwLock<VecDeque<ApprovalRequest>>>,
 }
 
 impl PermissionEngine {
@@ -75,6 +78,7 @@ impl PermissionEngine {
             pending: Arc::new(RwLock::new(HashMap::new())),
             trust_overrides: Arc::new(RwLock::new(HashMap::new())),
             trust_scores: Arc::new(RwLock::new(HashMap::new())),
+            approval_queue: Arc::new(RwLock::new(VecDeque::new())),
         }
     }
 
@@ -182,6 +186,45 @@ impl PermissionEngine {
             .values()
             .map(|p| p.request.clone())
             .collect()
+    }
+
+    /// Enqueue an approval request into the ordered FIFO queue.
+    ///
+    /// This is designed for concurrent scenarios where multiple agents request
+    /// approval simultaneously. The queue preserves insertion order so the UI
+    /// can display stacked notifications in FIFO order.
+    pub async fn enqueue_approval(&self, request: ApprovalRequest) {
+        self.approval_queue.write().await.push_back(request);
+    }
+
+    /// Return all queued approval requests in FIFO order.
+    ///
+    /// The UI uses this to render stacked notification cards.
+    pub async fn get_pending_ordered(&self) -> Vec<ApprovalRequest> {
+        self.approval_queue
+            .read()
+            .await
+            .iter()
+            .cloned()
+            .collect()
+    }
+
+    /// Respond to a queued approval request by its ID and remove it from the queue.
+    ///
+    /// Returns `Ok(ApprovalResponse)` if the request was found, or `Err` if not.
+    pub async fn respond_queued(&self, response: ApprovalResponse) -> Result<ApprovalResponse, String> {
+        let mut queue = self.approval_queue.write().await;
+        let idx = queue
+            .iter()
+            .position(|r| r.id == response.request_id)
+            .ok_or_else(|| format!("queued approval not found: {}", response.request_id))?;
+        queue.remove(idx);
+        Ok(response)
+    }
+
+    /// Return the current length of the approval queue.
+    pub async fn queue_len(&self) -> usize {
+        self.approval_queue.read().await.len()
     }
 
     /// Adjust the trust score for an agent by `delta` (clamped to 0.0..=1.0).
@@ -421,5 +464,104 @@ mod tests {
         // Subtract 2.0 → clamped to 0.0
         engine.update_trust_score("a1", -2.0).await;
         assert_eq!(engine.get_trust_score("a1").await, 0.0);
+    }
+
+    // -----------------------------------------------------------------------
+    // Concurrent approval queue tests (D1D-234)
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn test_three_concurrent_approvals_queued_fifo() {
+        let engine = PermissionEngine::new();
+
+        let req1 = engine
+            .check_permission("a1", "Agent A", "shell", &json!({}), "ctx1")
+            .await
+            .unwrap_err();
+        let req2 = engine
+            .check_permission("a2", "Agent B", "browser", &json!({}), "ctx2")
+            .await
+            .unwrap_err();
+        let req3 = engine
+            .check_permission("a3", "Agent C", "shell", &json!({}), "ctx3")
+            .await
+            .unwrap_err();
+
+        let id1 = req1.id.clone();
+        let id2 = req2.id.clone();
+        let id3 = req3.id.clone();
+
+        // Enqueue all three (simulating concurrent arrivals).
+        engine.enqueue_approval(req1).await;
+        engine.enqueue_approval(req2).await;
+        engine.enqueue_approval(req3).await;
+
+        assert_eq!(engine.queue_len().await, 3);
+
+        // Verify FIFO order.
+        let ordered = engine.get_pending_ordered().await;
+        assert_eq!(ordered.len(), 3);
+        assert_eq!(ordered[0].id, id1);
+        assert_eq!(ordered[1].id, id2);
+        assert_eq!(ordered[2].id, id3);
+    }
+
+    #[tokio::test]
+    async fn test_respond_to_middle_approval_others_remain() {
+        let engine = PermissionEngine::new();
+
+        let req1 = engine
+            .check_permission("a1", "Agent A", "shell", &json!({}), "ctx1")
+            .await
+            .unwrap_err();
+        let req2 = engine
+            .check_permission("a2", "Agent B", "browser", &json!({}), "ctx2")
+            .await
+            .unwrap_err();
+        let req3 = engine
+            .check_permission("a3", "Agent C", "shell", &json!({}), "ctx3")
+            .await
+            .unwrap_err();
+
+        let id1 = req1.id.clone();
+        let id2 = req2.id.clone();
+        let id3 = req3.id.clone();
+
+        engine.enqueue_approval(req1).await;
+        engine.enqueue_approval(req2).await;
+        engine.enqueue_approval(req3).await;
+
+        // Respond to the middle one (req2).
+        let resp = engine
+            .respond_queued(ApprovalResponse {
+                request_id: id2.clone(),
+                decision: ApprovalDecision::AllowOnce,
+            })
+            .await
+            .unwrap();
+        assert_eq!(resp.request_id, id2);
+
+        // Queue should now have 2 items.
+        assert_eq!(engine.queue_len().await, 2);
+
+        let remaining = engine.get_pending_ordered().await;
+        assert_eq!(remaining.len(), 2);
+        assert_eq!(remaining[0].id, id1);
+        assert_eq!(remaining[1].id, id3);
+    }
+
+    #[tokio::test]
+    async fn test_respond_queued_unknown_id() {
+        let engine = PermissionEngine::new();
+
+        let result = engine
+            .respond_queued(ApprovalResponse {
+                request_id: "nonexistent".to_string(),
+                decision: ApprovalDecision::Reject,
+            })
+            .await;
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("queued approval not found"));
     }
 }
