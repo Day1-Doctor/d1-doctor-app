@@ -1,13 +1,15 @@
-import React, { Suspense, lazy, memo } from "react";
+import React, { Suspense, lazy, memo, useState, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useViewStore } from "./stores/viewStore";
 import { useEventStream } from "./hooks/useEventStream";
 import { useAgentStore } from "./stores/agentStore";
+import { useAuthStore } from "./stores/authStore";
 import { TopBar } from "./components/shared/TopBar";
 import { Sidebar } from "./components/shared/Sidebar";
 import { StatusBar } from "./components/shared/StatusBar";
 import { RightPanel } from "./components/shared/RightPanel";
+import { AuthWall } from "./components/shared/AuthWall";
 import { OfficeView } from "./views/OfficeView";
 import { TaskView } from "./views/TaskView";
 import { ChatView } from "./views/ChatView";
@@ -90,12 +92,38 @@ function App() {
   const activeView = useViewStore((s) => s.activeView);
   const { hasOnboarded, completeOnboarding } = useOnboarding();
   const fetchAgents = useAgentStore((s) => s.fetchAgents);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const checkStoredAuth = useAuthStore((s) => s.checkStoredAuth);
+  const refreshBalance = useAuthStore((s) => s.refreshBalance);
+  const [showAuthWall, setShowAuthWall] = useState(false);
+
+  // Check for stored auth on mount
+  React.useEffect(() => {
+    checkStoredAuth();
+  }, [checkStoredAuth]);
 
   // Fetch real agent data from Tauri runtime on mount
   React.useEffect(() => {
-    // Small delay to let the runtime initialize
     const timer = setTimeout(() => fetchAgents(), 500);
     return () => clearTimeout(timer);
+  }, [fetchAgents]);
+
+  // Refresh balance periodically when authenticated
+  React.useEffect(() => {
+    if (!isAuthenticated) return;
+    const interval = setInterval(() => refreshBalance(), 60_000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, refreshBalance]);
+
+  const handleAuthRequired = useCallback(() => {
+    if (!isAuthenticated) {
+      setShowAuthWall(true);
+    }
+  }, [isAuthenticated]);
+
+  const handleAuthenticated = useCallback(() => {
+    setShowAuthWall(false);
+    fetchAgents();
   }, [fetchAgents]);
 
   return (
@@ -103,7 +131,10 @@ function App() {
       {/* D1D-255: Onboarding wizard on first launch */}
       {!hasOnboarded && <OnboardingWizard onComplete={completeOnboarding} />}
 
-      <TopBar />
+      {/* Auth wall modal */}
+      {showAuthWall && <AuthWall onAuthenticated={handleAuthenticated} />}
+
+      <TopBar onAuthRequired={handleAuthRequired} />
 
       <div className="flex flex-1 min-h-0">
         <Sidebar />

@@ -193,5 +193,17 @@
     "noData": "No data",
     "upgrade": "Upgrade",
     "all": "All"
+  },
+  "auth": {
+    "signIn": "Sign in to start working",
+    "apiKeyLabel": "Enter your Day1 API Key",
+    "apiKeyPlaceholder": "d1d_sk_...",
+    "connect": "Connect",
+    "or": "or",
+    "signInWithAccount": "Sign in with Day1 Account",
+    "createAccount": "New to Day1? Create a free account",
+    "invalidKey": "Invalid API key. Please check and try again.",
+    "connecting": "Connecting...",
+    "signOut": "Sign Out"
   }
 }

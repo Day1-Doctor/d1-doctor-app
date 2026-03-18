@@ -1,13 +1,21 @@
 import { useTranslation } from "react-i18next";
 import { useTaskStore } from "../../stores/taskStore";
+import { useAuthStore } from "../../stores/authStore";
 import { CreditMeter } from "./CreditMeter";
 import { LanguageToggle } from "./LanguageToggle";
 
-export function TopBar() {
+interface TopBarProps {
+  onAuthRequired?: () => void;
+}
+
+export function TopBar({ onAuthRequired }: TopBarProps) {
   const { t } = useTranslation();
   const tasks = useTaskStore((s) => s.tasks);
   const activeTaskId = useTaskStore((s) => s.activeTaskId);
   const activeTask = tasks.find((t) => t.id === activeTaskId);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const apiKeyPrefix = useAuthStore((s) => s.apiKeyPrefix);
+  const logout = useAuthStore((s) => s.logout);
 
   return (
     <header
@@ -40,8 +48,34 @@ export function TopBar() {
         )}
       </div>
 
-      {/* Right: Language + Credits + Settings */}
-      <div className="flex items-center gap-3 min-w-[180px] justify-end">
+      {/* Right: Auth + Language + Credits + Settings */}
+      <div className="flex items-center gap-3 min-w-[220px] justify-end">
+        {/* Auth indicator */}
+        {isAuthenticated ? (
+          <div className="flex items-center gap-2">
+            <span className="text-text-secondary text-xs font-mono">
+              {apiKeyPrefix}...
+            </span>
+            <button
+              onClick={logout}
+              className="text-text-muted text-[10px] hover:text-error
+                transition-colors duration-100 focus:outline-none
+                focus-visible:ring-2 focus-visible:ring-accent/50 rounded px-1"
+            >
+              {t("auth.signOut")}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onAuthRequired}
+            className="text-accent text-xs hover:text-accent-hover
+              transition-colors duration-100 focus:outline-none
+              focus-visible:ring-2 focus-visible:ring-accent/50 rounded px-1.5 py-0.5"
+          >
+            {t("auth.signIn")}
+          </button>
+        )}
+
         <LanguageToggle />
         <CreditMeter />
         <button
