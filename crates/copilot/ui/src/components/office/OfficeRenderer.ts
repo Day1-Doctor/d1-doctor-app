@@ -11,6 +11,7 @@
  */
 
 import type { Agent } from "../../stores/agentStore";
+import { drawPixelCharacter } from "./SpriteRenderer";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -80,7 +81,6 @@ const DESK_BORDER = "#242424";
 const MONITOR_FILL = "#111111";
 const MONITOR_BORDER = "#333333";
 const LABEL_COLOR = "#A0A0A0";
-const FALLBACK_AGENT_COLOR = "#6B7280";
 
 // ---------------------------------------------------------------------------
 // D1D-224: Room tileset definitions
@@ -508,7 +508,7 @@ function drawPausedIndicator(
   ctx.restore();
 }
 
-/** Draw an agent circle + status dot + label at a desk. */
+/** Draw a pixel-art agent character + status indicators + label at a desk. */
 function drawAgent(
   ctx: CanvasRenderingContext2D,
   desk: DeskPosition,
@@ -519,74 +519,31 @@ function drawAgent(
   const { x, y } = gridToScreen(desk.gridX, desk.gridY, w, h);
   const { agent, frame } = state;
 
-  // Determine agent body colour from role
-  const bodyColor = AGENT_COLORS[agent.role] ?? FALLBACK_AGENT_COLOR;
-
-  // Simple idle bobbing — +-2 px sinusoidal
-  let bobOffset = 0;
-  if (agent.status === "idle") {
-    bobOffset = Math.sin(frame * 0.05) * 2;
-  }
-
   // Pulsing alpha for "thinking"
   let alpha = 1;
   if (agent.status === "thinking") {
     alpha = 0.5 + 0.5 * Math.abs(Math.sin(frame * 0.08));
   }
 
-  // Agent body — circle above the desk
-  const circleY = y - TILE_H * 1.5 + bobOffset;
-  const radius = 10;
+  // Position the pixel character above the desk
+  const charY = y - TILE_H * 0.6;
 
   ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.beginPath();
-  ctx.arc(x, circleY, radius, 0, Math.PI * 2);
-  ctx.fillStyle = bodyColor;
-  ctx.fill();
-  ctx.strokeStyle = "#ffffff22";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
+
+  // Draw pixel-art character (replaces circle-based agent)
+  drawPixelCharacter(ctx, x, charY, 1.0, agent.role, agent.status, frame);
+
   ctx.restore();
 
-  // Executing glow ring
-  if (agent.status === "executing") {
-    const glowRadius = radius + 4 + Math.sin(frame * 0.1) * 2;
-    ctx.beginPath();
-    ctx.arc(x, circleY, glowRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = STATUS_COLORS.executing + "88";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-
-  // Working glow ring
-  if (agent.status === "working") {
-    const glowRadius = radius + 3 + Math.sin(frame * 0.12) * 2;
-    ctx.beginPath();
-    ctx.arc(x, circleY, glowRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = STATUS_COLORS.working + "88";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-
-  // D1D-221: Error indicator — red exclamation triangle
+  // D1D-221: Error indicator — red exclamation triangle (positioned above character)
   if (agent.status === "error") {
-    drawErrorIndicator(ctx, x, circleY, radius, frame);
+    drawErrorIndicator(ctx, x, charY - 28, 10, frame);
   }
 
   // D1D-221: Paused indicator — yellow speech bubble
   if (agent.status === "paused") {
-    drawPausedIndicator(ctx, x, circleY, radius, frame);
-  }
-
-  // Status indicator dot — above the agent circle (only for non-error/paused which have their own icons)
-  if (agent.status !== "error" && agent.status !== "paused") {
-    const dotY = circleY - radius - 8;
-    const statusColor = STATUS_COLORS[agent.status] ?? STATUS_COLORS.idle;
-    ctx.beginPath();
-    ctx.arc(x, dotY, 4, 0, Math.PI * 2);
-    ctx.fillStyle = statusColor;
-    ctx.fill();
+    drawPausedIndicator(ctx, x, charY - 28, 10, frame);
   }
 
   // Name label — below desk
