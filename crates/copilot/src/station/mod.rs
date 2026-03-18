@@ -3,3 +3,4 @@
 pub mod db;
 pub mod events;
 pub mod kernel;
+pub mod server;
