@@ -24,6 +24,7 @@ chrono = { workspace = true }
 dirs = "5"
 toml = { workspace = true }
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
 axum = { version = "0.7", features = ["ws"] }
 tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.5", features = ["cors"] }

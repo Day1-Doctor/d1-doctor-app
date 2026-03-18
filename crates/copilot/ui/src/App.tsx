@@ -1,7 +1,8 @@
-import { Suspense, lazy, memo } from "react";
+import React, { Suspense, lazy, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useViewStore } from "./stores/viewStore";
 import { useEventStream } from "./hooks/useEventStream";
+import { useAgentStore } from "./stores/agentStore";
 import { TopBar } from "./components/shared/TopBar";
 import { Sidebar } from "./components/shared/Sidebar";
 import { StatusBar } from "./components/shared/StatusBar";
@@ -86,6 +87,14 @@ function App() {
   useEventStream(); // Connect to Station Runtime Event Bus
   const activeView = useViewStore((s) => s.activeView);
   const { hasOnboarded, completeOnboarding } = useOnboarding();
+  const fetchAgents = useAgentStore((s) => s.fetchAgents);
+
+  // Fetch real agent data from Tauri runtime on mount
+  React.useEffect(() => {
+    // Small delay to let the runtime initialize
+    const timer = setTimeout(() => fetchAgents(), 500);
+    return () => clearTimeout(timer);
+  }, [fetchAgents]);
 
   return (
     <div className="h-screen flex flex-col bg-background font-mono overflow-hidden">

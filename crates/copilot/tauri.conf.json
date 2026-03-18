@@ -1,13 +1,13 @@
 {
   "$schema": "https://schema.tauri.app/config/v2",
   "productName": "Day1 Copilot",
-  "version": "0.1.0",
+  "version": "3.0.0-alpha",
   "identifier": "com.day1doctor.copilot",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
-    "frontendDist": "../ui/dist"
+    "beforeBuildCommand": "",
+    "frontendDist": "ui/dist"
   },
   "app": {
     "windows": [
@@ -25,7 +25,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://ipc.localhost"
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:14200 ws://127.0.0.1:14200 https://ipc.localhost"
     }
   },
   "bundle": {
