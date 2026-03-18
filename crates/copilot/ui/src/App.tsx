@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, memo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useViewStore } from "./stores/viewStore";
 import { useEventStream } from "./hooks/useEventStream";
 import { useAgentStore } from "./stores/agentStore";
@@ -24,9 +25,10 @@ const SettingsView = lazy(() =>
 );
 
 function LazyFallback() {
+  const { t } = useTranslation();
   return (
     <div className="flex-1 flex items-center justify-center">
-      <span className="text-text-muted text-xs">Loading...</span>
+      <span className="text-text-muted text-xs">{t("common.loading")}</span>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { EventLog } from "../components/debug/EventLog";
 import { ToolTrace } from "../components/debug/ToolTrace";
 import { FpsCounter } from "../utils/performance";
@@ -6,6 +7,7 @@ import { FpsCounter } from "../utils/performance";
 type DebugTab = "events" | "tools";
 
 export function DebugView() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<DebugTab>("events");
 
   return (
@@ -14,12 +16,12 @@ export function DebugView() {
       <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
         <div className="flex items-center gap-1">
           <TabButton
-            label="Event Log"
+            label={t("debug.eventLog")}
             active={activeTab === "events"}
             onClick={() => setActiveTab("events")}
           />
           <TabButton
-            label="Tool Trace"
+            label={t("debug.toolTrace")}
             active={activeTab === "tools"}
             onClick={() => setActiveTab("tools")}
           />

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEventLogStore, type ToolTraceEntry } from "../../stores/eventLogStore";
 
 function StatusBadge({ status }: { status: "success" | "fail" }) {
@@ -43,6 +44,7 @@ function TraceRow({ trace }: { trace: ToolTraceEntry }) {
 }
 
 export function ToolTrace() {
+  const { t } = useTranslation();
   const toolTraces = useEventLogStore((s) => s.toolTraces);
   const agentTokenUsage = useEventLogStore((s) => s.agentTokenUsage);
 
@@ -53,18 +55,18 @@ export function ToolTrace() {
         <table className="w-full text-left">
           <thead className="sticky top-0 bg-card border-b border-border">
             <tr className="text-[10px] text-text-muted uppercase tracking-wider">
-              <th className="px-3 py-2 font-medium">Tool</th>
-              <th className="px-3 py-2 font-medium">Agent</th>
-              <th className="px-3 py-2 font-medium">Params</th>
-              <th className="px-3 py-2 font-medium text-right">Duration</th>
-              <th className="px-3 py-2 font-medium">Status</th>
+              <th className="px-3 py-2 font-medium">{t("debug.tool")}</th>
+              <th className="px-3 py-2 font-medium">{t("debug.agent")}</th>
+              <th className="px-3 py-2 font-medium">{t("debug.params")}</th>
+              <th className="px-3 py-2 font-medium text-right">{t("debug.duration")}</th>
+              <th className="px-3 py-2 font-medium">{t("debug.status")}</th>
             </tr>
           </thead>
           <tbody>
             {toolTraces.length === 0 ? (
               <tr>
                 <td colSpan={5} className="text-center py-8 text-text-disabled text-xs">
-                  No tool traces recorded
+                  {t("debug.noToolTraces")}
                 </td>
               </tr>
             ) : (
@@ -77,7 +79,7 @@ export function ToolTrace() {
       {/* Per-agent token usage summary */}
       <div className="shrink-0 border-t border-border pt-3 px-3 pb-3">
         <h3 className="text-[10px] text-text-muted uppercase tracking-wider mb-2 font-medium">
-          Per-Agent Token Usage
+          {t("debug.perAgentTokenUsage")}
         </h3>
         <div className="grid grid-cols-3 gap-2">
           {agentTokenUsage.map((usage) => (

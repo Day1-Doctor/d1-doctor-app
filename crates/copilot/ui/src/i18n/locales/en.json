@@ -1,0 +1,197 @@
+{
+  "app": {
+    "name": "Day1 Copilot",
+    "subtitle": "Dr. Bob's Office",
+    "version": "v3.0-alpha"
+  },
+  "nav": {
+    "office": "Office",
+    "tasks": "Tasks",
+    "debug": "Debug",
+    "chat": "Chat",
+    "agents": "Agents",
+    "memory": "Memory",
+    "settings": "Settings"
+  },
+  "office": {
+    "title": "Dr. Bob's Office",
+    "noTask": "No active task",
+    "rooms": {
+      "main": "Manager",
+      "research": "Research Room",
+      "analysis": "Analysis Station",
+      "writing": "Writing Desk",
+      "coding": "Coding Room",
+      "operations": "Operations"
+    }
+  },
+  "agents": {
+    "drBob": "Dr. Bob",
+    "scout": "Scout",
+    "sage": "Sage",
+    "quill": "Quill",
+    "pixel": "Pixel",
+    "atlas": "Atlas",
+    "roles": {
+      "orchestrator": "Orchestrator",
+      "researcher": "Researcher",
+      "analyst": "Analyst",
+      "writer": "Writer",
+      "coder": "Coder",
+      "operator": "Operator"
+    },
+    "status": {
+      "idle": "Idle",
+      "working": "Working",
+      "thinking": "Thinking",
+      "executing": "Executing",
+      "paused": "Paused",
+      "error": "Error"
+    }
+  },
+  "tasks": {
+    "title": "Tasks",
+    "create": "Create Task",
+    "noTasks": "No tasks yet",
+    "inputPlaceholder": "Describe what you need...",
+    "status": {
+      "pending": "Pending",
+      "running": "Running",
+      "paused": "Paused",
+      "completed": "Completed",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "steps": "Steps",
+    "stepDetails": "Step Details",
+    "artifacts": "Artifacts"
+  },
+  "debug": {
+    "title": "Debug",
+    "eventLog": "Event Log",
+    "toolTrace": "Tool Trace",
+    "filterByType": "Type",
+    "filterByAgent": "Agent",
+    "search": "Search...",
+    "events": "events",
+    "noMatchingEvents": "No matching events",
+    "autoScrollPaused": "Auto-scroll paused (hover)",
+    "noToolTraces": "No tool traces recorded",
+    "tool": "Tool",
+    "agent": "Agent",
+    "params": "Params",
+    "duration": "Duration",
+    "status": "Status",
+    "perAgentTokenUsage": "Per-Agent Token Usage"
+  },
+  "chat": {
+    "title": "Chat",
+    "selectAgent": "Select agent",
+    "inputPlaceholder": "Message {{agent}}...",
+    "send": "Send",
+    "noMessages": "No messages yet. Start a conversation with {{agent}}.",
+    "inputHint": "Press Enter to send, Shift+Enter for new line. Messages are stored locally."
+  },
+  "settings": {
+    "title": "Settings",
+    "providers": "Providers",
+    "agentConfig": "Agent Configuration",
+    "agents": "Agents",
+    "approvals": "Auto-Approve by Risk Level",
+    "language": "Language",
+    "apiKey": "API Key",
+    "endpoint": "Endpoint"
+  },
+  "credits": {
+    "remaining": "{{count}} DD remaining",
+    "session": "This session",
+    "perAgent": "Per agent",
+    "sessionCostBreakdown": "Session Cost Breakdown",
+    "sessionTotal": "Session total",
+    "balance": "Balance"
+  },
+  "onboarding": {
+    "welcome": "Day1 Copilot",
+    "welcomeDesc": "Your AI-powered multi-agent workspace",
+    "welcomeBody": "Day1 Copilot is a desktop application that orchestrates a team of 6 specialized AI agents. Each agent has a unique role -- from research and analysis to coding and operations. Together they tackle complex tasks while you maintain full control through an approval system.",
+    "apiKeyStep": "Connect an LLM Provider",
+    "apiKeyDesc": "Enter your Anthropic API key, or use the Day1 Gateway.",
+    "apiKeyLabel": "Anthropic API Key",
+    "or": "OR",
+    "useGateway": "Use Day1 Gateway",
+    "useGatewayDesc": "Pay with DD Credits -- no API key needed",
+    "meetTeam": "Meet the Team",
+    "meetTeamDesc": "Six AI agents are ready to work for you.",
+    "tryTask": "Try a Task",
+    "tryTaskDesc": "You're all set! Try typing a task in the chat view to see the agents in action. Here are some ideas:",
+    "tryTaskSuggestions": [
+      "Research the latest AI frameworks and write a comparison report",
+      "Build a simple REST API with error handling",
+      "Analyze our codebase and suggest performance improvements"
+    ],
+    "next": "Next",
+    "back": "Back",
+    "skip": "Skip",
+    "done": "Get Started"
+  },
+  "pricing": {
+    "title": "Choose Your Plan",
+    "subtitle": "Pick the office size that fits your workflow.",
+    "freeMan": "Free Man",
+    "miniShop": "Mini Shop",
+    "rocketInc": "Rocket Inc.",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "perMonth": "/ month",
+    "billedAnnually": "${{amount}} billed annually",
+    "currentPlan": "Current Plan",
+    "selectPlan": "Select Plan",
+    "savePercent": "(save ~17%)",
+    "topUp": "Top Up Credits",
+    "topUpDesc": "Need more DD credits? Buy a one-time pack.",
+    "currentBalance": "Current balance:",
+    "boost": "Boost",
+    "powerPack": "Power Pack",
+    "custom": "Custom"
+  },
+  "upgrade": {
+    "title": "More Office Spots Needed",
+    "defaultMessage": "Your task needs Scout and Sage, but you only have 1 office spot.",
+    "upgradeToMiniShop": "Upgrade to Mini Shop",
+    "runWithDrBob": "Run with Dr. Bob only"
+  },
+  "agentDetail": {
+    "fsmState": "FSM State",
+    "trustScore": "Trust Score",
+    "currentTask": "Current Task",
+    "tokens": "Tokens",
+    "costDD": "Cost (DD)",
+    "activityLog": "Activity Log",
+    "noActiveTask": "No active task",
+    "close": "Close agent detail panel"
+  },
+  "artifacts": {
+    "title": "Artifacts",
+    "noArtifacts": "No artifacts yet",
+    "close": "Close artifacts panel"
+  },
+  "statusBar": {
+    "agent": "Agent:",
+    "noAgent": "No agent active",
+    "tokens": "Tokens:",
+    "latency": "Latency:"
+  },
+  "common": {
+    "close": "Close",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "loading": "Loading...",
+    "error": "Error",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "noData": "No data",
+    "upgrade": "Upgrade",
+    "all": "All"
+  }
+}

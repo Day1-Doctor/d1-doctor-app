@@ -1,7 +1,10 @@
+import { useTranslation } from "react-i18next";
 import { useTaskStore } from "../../stores/taskStore";
 import { CreditMeter } from "./CreditMeter";
+import { LanguageToggle } from "./LanguageToggle";
 
 export function TopBar() {
+  const { t } = useTranslation();
   const tasks = useTaskStore((s) => s.tasks);
   const activeTaskId = useTaskStore((s) => s.activeTaskId);
   const activeTask = tasks.find((t) => t.id === activeTaskId);
@@ -17,9 +20,9 @@ export function TopBar() {
       <div className="flex items-center gap-2 min-w-[180px]">
         <span
           className="text-accent font-semibold text-sm tracking-tight"
-          aria-label="Day1 Copilot"
+          aria-label={t("app.name")}
         >
-          Day1 Copilot
+          {t("app.name")}
         </span>
         <span className="text-text-muted text-xs">v0.1.0</span>
       </div>
@@ -32,19 +35,20 @@ export function TopBar() {
           </span>
         ) : (
           <span className="text-text-disabled text-xs">
-            No active task
+            {t("office.noTask")}
           </span>
         )}
       </div>
 
-      {/* Right: Credits + Settings */}
+      {/* Right: Language + Credits + Settings */}
       <div className="flex items-center gap-3 min-w-[180px] justify-end">
+        <LanguageToggle />
         <CreditMeter />
         <button
           className="p-1.5 rounded hover:bg-muted text-text-secondary hover:text-text-primary
             transition-colors duration-100 focus:outline-none focus-visible:ring-2
             focus-visible:ring-accent/50"
-          aria-label="Settings"
+          aria-label={t("nav.settings")}
           tabIndex={0}
         >
           <svg

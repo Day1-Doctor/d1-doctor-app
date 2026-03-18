@@ -1,0 +1,197 @@
+{
+  "app": {
+    "name": "Day1 Copilot",
+    "subtitle": "Dr. Bob 办公室",
+    "version": "v3.0-alpha"
+  },
+  "nav": {
+    "office": "办公室",
+    "tasks": "任务",
+    "debug": "调试",
+    "chat": "对话",
+    "agents": "智能体",
+    "memory": "记忆",
+    "settings": "设置"
+  },
+  "office": {
+    "title": "Dr. Bob 办公室",
+    "noTask": "暂无活跃任务",
+    "rooms": {
+      "main": "经理室",
+      "research": "调研室",
+      "analysis": "分析站",
+      "writing": "写作台",
+      "coding": "编程室",
+      "operations": "运维区"
+    }
+  },
+  "agents": {
+    "drBob": "Dr. Bob",
+    "scout": "Scout",
+    "sage": "Sage",
+    "quill": "Quill",
+    "pixel": "Pixel",
+    "atlas": "Atlas",
+    "roles": {
+      "orchestrator": "协调者",
+      "researcher": "研究员",
+      "analyst": "分析师",
+      "writer": "撰稿人",
+      "coder": "程序员",
+      "operator": "运维员"
+    },
+    "status": {
+      "idle": "空闲",
+      "working": "工作中",
+      "thinking": "思考中",
+      "executing": "执行中",
+      "paused": "已暂停",
+      "error": "错误"
+    }
+  },
+  "tasks": {
+    "title": "任务",
+    "create": "创建任务",
+    "noTasks": "暂无任务",
+    "inputPlaceholder": "描述你的需求...",
+    "status": {
+      "pending": "待处理",
+      "running": "运行中",
+      "paused": "已暂停",
+      "completed": "已完成",
+      "failed": "已失败",
+      "cancelled": "已取消"
+    },
+    "steps": "步骤",
+    "stepDetails": "步骤详情",
+    "artifacts": "产出物"
+  },
+  "debug": {
+    "title": "调试",
+    "eventLog": "事件日志",
+    "toolTrace": "工具追踪",
+    "filterByType": "类型",
+    "filterByAgent": "智能体",
+    "search": "搜索...",
+    "events": "条事件",
+    "noMatchingEvents": "无匹配事件",
+    "autoScrollPaused": "自动滚动已暂停（鼠标悬停）",
+    "noToolTraces": "暂无工具追踪记录",
+    "tool": "工具",
+    "agent": "智能体",
+    "params": "参数",
+    "duration": "耗时",
+    "status": "状态",
+    "perAgentTokenUsage": "智能体 Token 用量"
+  },
+  "chat": {
+    "title": "对话",
+    "selectAgent": "选择智能体",
+    "inputPlaceholder": "发送消息给 {{agent}}...",
+    "send": "发送",
+    "noMessages": "暂无消息。与 {{agent}} 开始对话。",
+    "inputHint": "按 Enter 发送，Shift+Enter 换行。消息存储在本地。"
+  },
+  "settings": {
+    "title": "设置",
+    "providers": "服务提供商",
+    "agentConfig": "智能体配置",
+    "agents": "智能体",
+    "approvals": "按风险等级自动审批",
+    "language": "语言",
+    "apiKey": "API 密钥",
+    "endpoint": "端点地址"
+  },
+  "credits": {
+    "remaining": "剩余 {{count}} DD",
+    "session": "本次会话",
+    "perAgent": "按智能体",
+    "sessionCostBreakdown": "会话费用明细",
+    "sessionTotal": "会话总计",
+    "balance": "余额"
+  },
+  "onboarding": {
+    "welcome": "Day1 Copilot",
+    "welcomeDesc": "你的 AI 多智能体工作空间",
+    "welcomeBody": "Day1 Copilot 是一款桌面应用，协调 6 位专业 AI 智能体协作。每位智能体各有专长——从调研分析到编程运维。它们协同处理复杂任务，同时你通过审批系统保持完全掌控。",
+    "apiKeyStep": "连接 LLM 提供商",
+    "apiKeyDesc": "输入你的 Anthropic API 密钥，或使用 Day1 网关。",
+    "apiKeyLabel": "Anthropic API 密钥",
+    "or": "或",
+    "useGateway": "使用 Day1 网关",
+    "useGatewayDesc": "使用 DD 积分支付——无需 API 密钥",
+    "meetTeam": "认识你的团队",
+    "meetTeamDesc": "六位 AI 智能体已准备好为你工作。",
+    "tryTask": "尝试一个任务",
+    "tryTaskDesc": "一切就绪！在对话视图中输入任务，观看智能体协作。以下是一些建议：",
+    "tryTaskSuggestions": [
+      "研究最新的 AI 框架并撰写对比报告",
+      "搭建一个带错误处理的简单 REST API",
+      "分析我们的代码库并提出性能优化建议"
+    ],
+    "next": "下一步",
+    "back": "上一步",
+    "skip": "跳过",
+    "done": "开始使用"
+  },
+  "pricing": {
+    "title": "选择你的方案",
+    "subtitle": "选择适合你工作流的办公室规模。",
+    "freeMan": "免费版",
+    "miniShop": "迷你店",
+    "rocketInc": "火箭公司",
+    "monthly": "月付",
+    "annual": "年付",
+    "perMonth": "/ 月",
+    "billedAnnually": "年付 ${{amount}}",
+    "currentPlan": "当前方案",
+    "selectPlan": "选择方案",
+    "savePercent": "（省 ~17%）",
+    "topUp": "充值积分",
+    "topUpDesc": "需要更多 DD 积分？购买一次性充值包。",
+    "currentBalance": "当前余额：",
+    "boost": "加速包",
+    "powerPack": "能量包",
+    "custom": "自定义"
+  },
+  "upgrade": {
+    "title": "需要更多办公位",
+    "defaultMessage": "你的任务需要 Scout 和 Sage，但你只有 1 个办公位。",
+    "upgradeToMiniShop": "升级到迷你店",
+    "runWithDrBob": "仅使用 Dr. Bob 运行"
+  },
+  "agentDetail": {
+    "fsmState": "状态机",
+    "trustScore": "信任分数",
+    "currentTask": "当前任务",
+    "tokens": "Tokens",
+    "costDD": "费用 (DD)",
+    "activityLog": "活动日志",
+    "noActiveTask": "暂无活跃任务",
+    "close": "关闭智能体详情面板"
+  },
+  "artifacts": {
+    "title": "产出物",
+    "noArtifacts": "暂无产出物",
+    "close": "关闭产出物面板"
+  },
+  "statusBar": {
+    "agent": "智能体：",
+    "noAgent": "无活跃智能体",
+    "tokens": "Tokens：",
+    "latency": "延迟："
+  },
+  "common": {
+    "close": "关闭",
+    "cancel": "取消",
+    "confirm": "确认",
+    "save": "保存",
+    "loading": "加载中...",
+    "error": "错误",
+    "connected": "已连接",
+    "disconnected": "未连接",
+    "noData": "暂无数据",
+    "upgrade": "升级",
+    "all": "全部"
+  }
+}

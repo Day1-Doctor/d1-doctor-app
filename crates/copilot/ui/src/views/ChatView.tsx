@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useAgentStore } from "../stores/agentStore";
 import { useChatStore, generateMsgId } from "../stores/chatStore";
 
@@ -20,6 +21,7 @@ function formatTimestamp(ts: string): string {
 }
 
 export function ChatView() {
+  const { t } = useTranslation();
   const agents = useAgentStore((s) => s.agents);
   const selectedAgentId = useChatStore((s) => s.selectedAgentId);
   const setSelectedAgent = useChatStore((s) => s.setSelectedAgent);
@@ -69,7 +71,7 @@ export function ChatView() {
           htmlFor="agent-select"
           className="text-[10px] text-text-secondary uppercase tracking-wider font-medium"
         >
-          Agent
+          {t("debug.agent")}
         </label>
         <select
           id="agent-select"
@@ -86,7 +88,7 @@ export function ChatView() {
         </select>
         {selectedAgent && (
           <span className="text-[10px] text-text-muted ml-auto">
-            {selectedAgent.status}
+            {t(`agents.status.${selectedAgent.status}`, selectedAgent.status)}
           </span>
         )}
       </div>
@@ -96,7 +98,7 @@ export function ChatView() {
         {agentMessages.length === 0 && (
           <div className="flex items-center justify-center h-full">
             <p className="text-text-disabled text-xs">
-              No messages yet. Start a conversation with {selectedAgent?.name ?? "an agent"}.
+              {t("chat.noMessages", { agent: selectedAgent?.name ?? "agent" })}
             </p>
           </div>
         )}
@@ -160,7 +162,7 @@ export function ChatView() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={`Message ${selectedAgent?.name ?? "agent"}...`}
+            placeholder={t("chat.inputPlaceholder", { agent: selectedAgent?.name ?? "agent" })}
             rows={1}
             className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-xs text-text-primary
               placeholder:text-text-disabled resize-none font-mono
@@ -176,7 +178,7 @@ export function ChatView() {
               bg-accent hover:bg-accent-hover disabled:bg-muted disabled:cursor-not-allowed
               transition-colors duration-100 focus:outline-none focus-visible:ring-2
               focus-visible:ring-accent/50"
-            aria-label="Send message"
+            aria-label={t("chat.send")}
           >
             <svg
               width="16"
@@ -196,7 +198,7 @@ export function ChatView() {
           </button>
         </div>
         <p className="text-text-disabled text-[9px] mt-1.5">
-          Press Enter to send, Shift+Enter for new line. Messages are stored locally.
+          {t("chat.inputHint")}
         </p>
       </div>
     </div>

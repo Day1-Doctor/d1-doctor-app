@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   useEventLogStore,
   type EventCategory,
@@ -57,6 +58,7 @@ function EventRow({ event }: { event: EventLogEntry }) {
 }
 
 export function EventLog() {
+  const { t } = useTranslation();
   const events = useEventLogStore((s) => s.events);
   const [categoryFilter, setCategoryFilter] = useState<EventCategory | "all">("all");
   const [agentFilter, setAgentFilter] = useState<string>("all");
@@ -102,27 +104,27 @@ export function EventLog() {
     <div className="flex flex-col h-full min-h-0">
       {/* Filter bar */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border shrink-0 flex-wrap">
-        <label className="text-[10px] text-text-muted uppercase tracking-wider">Type</label>
+        <label className="text-[10px] text-text-muted uppercase tracking-wider">{t("debug.filterByType")}</label>
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value as EventCategory | "all")}
           className="bg-card border border-border rounded px-2 py-0.5 text-[11px] text-text-primary
             focus:outline-none focus:ring-1 focus:ring-accent/50 font-mono cursor-pointer"
         >
-          <option value="all">All</option>
+          <option value="all">{t("common.all")}</option>
           {ALL_CATEGORIES.map((c) => (
             <option key={c} value={c}>{c}.*</option>
           ))}
         </select>
 
-        <label className="text-[10px] text-text-muted uppercase tracking-wider ml-2">Agent</label>
+        <label className="text-[10px] text-text-muted uppercase tracking-wider ml-2">{t("debug.filterByAgent")}</label>
         <select
           value={agentFilter}
           onChange={(e) => setAgentFilter(e.target.value)}
           className="bg-card border border-border rounded px-2 py-0.5 text-[11px] text-text-primary
             focus:outline-none focus:ring-1 focus:ring-accent/50 font-mono cursor-pointer"
         >
-          <option value="all">All</option>
+          <option value="all">{t("common.all")}</option>
           {agentNames.map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}
@@ -132,14 +134,14 @@ export function EventLog() {
           type="text"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          placeholder="Search..."
+          placeholder={t("debug.search")}
           className="bg-card border border-border rounded px-2 py-0.5 text-[11px] text-text-primary
             placeholder:text-text-disabled focus:outline-none focus:ring-1 focus:ring-accent/50
             font-mono ml-2 w-[140px]"
         />
 
         <span className="ml-auto text-[10px] text-text-muted tabular-nums">
-          {filtered.length} events
+          {filtered.length} {t("debug.events")}
         </span>
       </div>
 
@@ -152,7 +154,7 @@ export function EventLog() {
       >
         {filtered.length === 0 ? (
           <div className="flex items-center justify-center h-full">
-            <p className="text-text-disabled text-xs">No matching events</p>
+            <p className="text-text-disabled text-xs">{t("debug.noMatchingEvents")}</p>
           </div>
         ) : (
           filtered.map((event) => <EventRow key={event.id} event={event} />)
@@ -162,7 +164,7 @@ export function EventLog() {
       {/* Paused indicator */}
       {isPaused && (
         <div className="shrink-0 text-center py-1 bg-warning/10 text-warning text-[10px] border-t border-border">
-          Auto-scroll paused (hover)
+          {t("debug.autoScrollPaused")}
         </div>
       )}
     </div>

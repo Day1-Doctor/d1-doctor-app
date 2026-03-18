@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useBillingStore, SubscriptionTier } from "../../stores/billingStore";
 import { useCostStore } from "../../stores/costStore";
 
 interface TierCard {
   id: SubscriptionTier;
-  name: string;
+  nameKey: string;
   priceMonthly: number;
   priceAnnual: number;
   maxAgents: number;
@@ -15,7 +16,7 @@ interface TierCard {
 const TIERS: TierCard[] = [
   {
     id: "free_man",
-    name: "Free Man",
+    nameKey: "pricing.freeMan",
     priceMonthly: 0,
     priceAnnual: 0,
     maxAgents: 1,
@@ -29,7 +30,7 @@ const TIERS: TierCard[] = [
   },
   {
     id: "mini_shop",
-    name: "Mini Shop",
+    nameKey: "pricing.miniShop",
     priceMonthly: 19,
     priceAnnual: 190,
     maxAgents: 3,
@@ -44,7 +45,7 @@ const TIERS: TierCard[] = [
   },
   {
     id: "rocket_inc",
-    name: "Rocket Inc.",
+    nameKey: "pricing.rocketInc",
     priceMonthly: 49,
     priceAnnual: 490,
     maxAgents: 6,
@@ -61,14 +62,14 @@ const TIERS: TierCard[] = [
 ];
 
 interface TopUpOption {
-  name: string;
+  nameKey: string;
   dd: number;
   price: number;
 }
 
 const TOP_UP_OPTIONS: TopUpOption[] = [
-  { name: "Boost", dd: 1_000, price: 10 },
-  { name: "Power Pack", dd: 6_000, price: 50 },
+  { nameKey: "pricing.boost", dd: 1_000, price: 10 },
+  { nameKey: "pricing.powerPack", dd: 6_000, price: 50 },
 ];
 
 /**
@@ -76,6 +77,7 @@ const TOP_UP_OPTIONS: TopUpOption[] = [
  * and current balance display.
  */
 export function PricingPage() {
+  const { t } = useTranslation();
   const [annual, setAnnual] = useState(false);
   const [customSlider, setCustomSlider] = useState(10);
 
@@ -90,10 +92,10 @@ export function PricingPage() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       {/* Header */}
       <h1 className="mb-2 text-center text-2xl font-bold text-text-primary">
-        Choose Your Plan
+        {t("pricing.title")}
       </h1>
       <p className="mb-6 text-center text-sm text-text-secondary">
-        Pick the office size that fits your workflow.
+        {t("pricing.subtitle")}
       </p>
 
       {/* Annual toggle */}
@@ -101,7 +103,7 @@ export function PricingPage() {
         <span
           className={`text-sm ${!annual ? "text-text-primary font-medium" : "text-text-muted"}`}
         >
-          Monthly
+          {t("pricing.monthly")}
         </span>
         <button
           onClick={() => setAnnual((v) => !v)}
@@ -110,7 +112,7 @@ export function PricingPage() {
           }`}
           role="switch"
           aria-checked={annual}
-          aria-label="Toggle annual billing"
+          aria-label={t("pricing.annual")}
         >
           <span
             className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow
@@ -120,8 +122,8 @@ export function PricingPage() {
         <span
           className={`text-sm ${annual ? "text-text-primary font-medium" : "text-text-muted"}`}
         >
-          Annual{" "}
-          <span className="text-xs text-accent">(save ~17%)</span>
+          {t("pricing.annual")}{" "}
+          <span className="text-xs text-accent">{t("pricing.savePercent")}</span>
         </span>
       </div>
 
@@ -143,17 +145,17 @@ export function PricingPage() {
               }`}
             >
               <h3 className="mb-1 text-lg font-semibold text-text-primary">
-                {tier.name}
+                {t(tier.nameKey)}
               </h3>
 
               <div className="mb-4">
                 <span className="text-2xl font-bold text-text-primary">
                   ${price}
                 </span>
-                <span className="text-sm text-text-muted"> / month</span>
+                <span className="text-sm text-text-muted"> {t("pricing.perMonth")}</span>
                 {annual && tier.priceAnnual > 0 && (
                   <p className="text-xs text-text-muted">
-                    ${tier.priceAnnual} billed annually
+                    {t("pricing.billedAnnually", { amount: tier.priceAnnual })}
                   </p>
                 )}
               </div>
@@ -192,7 +194,7 @@ export function PricingPage() {
                       : "bg-accent text-white hover:bg-accent/90"
                   }`}
               >
-                {isCurrent ? "Current Plan" : "Select Plan"}
+                {isCurrent ? t("pricing.currentPlan") : t("pricing.selectPlan")}
               </button>
             </div>
           );
@@ -202,15 +204,15 @@ export function PricingPage() {
       {/* Top-up section */}
       <div className="rounded-xl border border-border p-5">
         <h2 className="mb-1 text-lg font-semibold text-text-primary">
-          Top Up Credits
+          {t("pricing.topUp")}
         </h2>
         <p className="mb-4 text-sm text-text-secondary">
-          Need more DD credits? Buy a one-time pack.
+          {t("pricing.topUpDesc")}
         </p>
 
         {/* Current balance */}
         <div className="mb-4 flex items-center gap-2 text-sm">
-          <span className="text-text-muted">Current balance:</span>
+          <span className="text-text-muted">{t("pricing.currentBalance")}</span>
           <span className="font-medium text-text-primary">
             {balance} / {limit} DD
           </span>
@@ -219,12 +221,12 @@ export function PricingPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {TOP_UP_OPTIONS.map((opt) => (
             <button
-              key={opt.name}
+              key={opt.nameKey}
               className="rounded-lg border border-border p-3 text-left transition-colors
                 hover:border-accent hover:bg-accent/5
                 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
             >
-              <p className="font-medium text-text-primary">{opt.name}</p>
+              <p className="font-medium text-text-primary">{t(opt.nameKey)}</p>
               <p className="text-sm text-text-secondary">
                 {opt.dd.toLocaleString()} DD &mdash; ${opt.price}
               </p>
@@ -233,7 +235,7 @@ export function PricingPage() {
 
           {/* Custom slider */}
           <div className="rounded-lg border border-border p-3">
-            <p className="mb-2 font-medium text-text-primary">Custom</p>
+            <p className="mb-2 font-medium text-text-primary">{t("pricing.custom")}</p>
             <input
               type="range"
               min={1}
@@ -241,7 +243,7 @@ export function PricingPage() {
               value={customSlider}
               onChange={(e) => setCustomSlider(Number(e.target.value))}
               className="w-full accent-accent"
-              aria-label="Custom top-up amount"
+              aria-label={t("pricing.custom")}
             />
             <p className="mt-1 text-sm text-text-secondary">
               {customDd.toLocaleString()} DD &mdash; ${customSlider}

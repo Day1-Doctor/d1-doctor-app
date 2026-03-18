@@ -1,16 +1,12 @@
+import { useTranslation } from "react-i18next";
 import { useBillingStore } from "../../stores/billingStore";
 
 /**
  * UpgradePrompt — Modal shown when a user's task requires more agents
  * than their current subscription tier allows.
- *
- * Example: "Your task needs Scout and Sage, but you only have 1 office spot."
- *
- * Two actions:
- * - "Run with Dr. Bob only" — dismiss and proceed with limited agents
- * - "Upgrade to Mini Shop" — navigate to pricing / trigger upgrade flow
  */
 export function UpgradePrompt() {
+  const { t } = useTranslation();
   const showUpgradePrompt = useBillingStore((s) => s.showUpgradePrompt);
   const upgradeMessage = useBillingStore((s) => s.upgradeMessage);
   const closeUpgradePrompt = useBillingStore((s) => s.closeUpgradePrompt);
@@ -23,7 +19,7 @@ export function UpgradePrompt() {
       className="fixed inset-0 z-50 flex items-center justify-center"
       role="dialog"
       aria-modal="true"
-      aria-label="Upgrade subscription"
+      aria-label={t("upgrade.title")}
     >
       {/* Backdrop */}
       <div
@@ -64,12 +60,11 @@ export function UpgradePrompt() {
         </div>
 
         <h2 className="mb-2 text-center text-lg font-semibold text-text-primary">
-          More Office Spots Needed
+          {t("upgrade.title")}
         </h2>
 
         <p className="mb-6 text-center text-sm text-text-secondary">
-          {upgradeMessage ||
-            "Your task needs Scout and Sage, but you only have 1 office spot."}
+          {upgradeMessage || t("upgrade.defaultMessage")}
         </p>
 
         {/* Actions */}
@@ -83,7 +78,7 @@ export function UpgradePrompt() {
               text-white transition-colors hover:bg-accent/90
               focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
-            Upgrade to Mini Shop
+            {t("upgrade.upgradeToMiniShop")}
           </button>
 
           <button
@@ -93,7 +88,7 @@ export function UpgradePrompt() {
               hover:bg-muted hover:text-text-primary
               focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
-            Run with Dr. Bob only
+            {t("upgrade.runWithDrBob")}
           </button>
         </div>
       </div>
