@@ -1,8 +1,11 @@
 import { useLayoutStore } from "../../stores/layoutStore";
+import { useArtifactStore } from "../../stores/artifactStore";
+import { ArtifactCard } from "../task/ArtifactCard";
 
 export function RightPanel() {
   const collapsed = useLayoutStore((s) => s.rightPanelCollapsed);
   const toggleRightPanel = useLayoutStore((s) => s.toggleRightPanel);
+  const artifacts = useArtifactStore((s) => s.artifacts);
 
   return (
     <aside
@@ -46,12 +49,20 @@ export function RightPanel() {
             </button>
           </div>
 
-          {/* Empty state */}
-          <div className="flex-1 flex items-center justify-center p-4">
-            <p className="text-text-disabled text-xs text-center">
-              No artifacts yet
-            </p>
-          </div>
+          {/* Artifact list or empty state */}
+          {artifacts.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center p-4">
+              <p className="text-text-disabled text-xs text-center">
+                No artifacts yet
+              </p>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto p-2 space-y-2">
+              {artifacts.map((artifact) => (
+                <ArtifactCard key={artifact.id} artifact={artifact} />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </aside>
