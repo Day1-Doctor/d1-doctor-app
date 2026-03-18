@@ -178,6 +178,76 @@ async fn get_runtime_status(
     }))
 }
 
+// --- Auth Commands ---
+
+#[tauri::command]
+async fn store_api_key(key: String) -> Result<String, String> {
+    if !key.starts_with("d1d_sk_") {
+        return Err("Invalid API key format. Must start with d1d_sk_".into());
+    }
+    let config_dir = dirs::home_dir()
+        .ok_or("Cannot determine home directory")?
+        .join(".day1copilot");
+    std::fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
+    let auth_file = config_dir.join("auth.json");
+    let prefix_len = std::cmp::min(12, key.len());
+    let auth_data = serde_json::json!({
+        "api_key": key,
+        "key_prefix": &key[..prefix_len],
+    });
+    std::fs::write(
+        &auth_file,
+        serde_json::to_string_pretty(&auth_data).unwrap(),
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(key[..prefix_len].to_string())
+}
+
+#[tauri::command]
+async fn get_stored_api_key() -> Result<Option<String>, String> {
+    let auth_file = dirs::home_dir()
+        .ok_or("Cannot determine home directory")?
+        .join(".day1copilot/auth.json");
+    if !auth_file.exists() {
+        return Ok(None);
+    }
+    let content = std::fs::read_to_string(&auth_file).map_err(|e| e.to_string())?;
+    let data: serde_json::Value = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+    Ok(data
+        .get("api_key")
+        .and_then(|v| v.as_str())
+        .map(String::from))
+}
+
+#[tauri::command]
+async fn fetch_balance(api_key: String) -> Result<serde_json::Value, String> {
+    let client = reqwest::Client::new();
+    let resp = client
+        .get("https://gateway.day1.doctor/dr-agent/v1/balance")
+        .header("Authorization", format!("Bearer {}", api_key))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if resp.status() == 401 {
+        return Err("Invalid API key".into());
+    }
+
+    let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(body)
+}
+
+#[tauri::command]
+async fn clear_auth() -> Result<(), String> {
+    let auth_file = dirs::home_dir()
+        .ok_or("Cannot determine home directory")?
+        .join(".day1copilot/auth.json");
+    if auth_file.exists() {
+        std::fs::remove_file(&auth_file).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 pub fn run() {
     // Initialize tracing for logging
     tracing_subscriber::fmt()
@@ -245,6 +315,10 @@ pub fn run() {
             pause_task,
             cancel_task,
             get_runtime_status,
+            store_api_key,
+            get_stored_api_key,
+            fetch_balance,
+            clear_auth,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Day1 Copilot");
