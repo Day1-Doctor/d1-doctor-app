@@ -324,14 +324,157 @@ function drawFloor(
  * wallHeight is now 0 — office is 100% floor + furniture + agents.
  * This function is kept as a no-op to preserve the call site in drawOffice.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+/**
+ * Draw 3D isometric room walls — back wall (top-right) and left wall (top-left)
+ * forming an L-shape that gives depth to the office view.
+ */
 function drawWallBackdrop(
-  _ctx: CanvasRenderingContext2D,
-  _w: number,
-  _h: number,
-  _frame: number,
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  frame: number,
 ): void {
-  // Wall removed entirely — no-op
+  // The isometric floor's top-left corner and top-right corner define where walls go.
+  // We draw two wall planes behind the floor to create a 3D room effect.
+
+  const offsetX = w / 2;
+  const offsetY = h * 0.12; // top area for walls
+  const floorTopY = offsetY + TILE_H; // where the floor grid starts
+
+  // Wall height in pixels
+  const wallH = h * 0.28;
+
+  // ── BACK WALL (runs along the top-right edge of the isometric floor) ──
+  // This wall faces the viewer from the top-right
+  const backWallColor = "#1A1E2E";
+  const backWallDark = "#141828";
+  const backWallLight = "#202640";
+
+  // Back wall polygon: spans the top edge of the floor grid
+  // From the top-left corner of grid to the top-right corner, then up by wallH
+  const gridTopLeftX = offsetX - (GRID_COLS / 2) * TILE_W;
+  const gridTopLeftY = floorTopY;
+  const gridTopRightX = offsetX + (GRID_COLS / 2) * TILE_W;
+  const gridTopRightY = floorTopY;
+  const gridTopCenterX = offsetX;
+  const gridTopCenterY = floorTopY - (GRID_COLS / 2) * TILE_H;
+
+  // Right back wall (isometric plane going top-right)
+  ctx.fillStyle = backWallColor;
+  ctx.beginPath();
+  ctx.moveTo(gridTopCenterX, gridTopCenterY);              // top of isometric grid
+  ctx.lineTo(gridTopCenterX, gridTopCenterY - wallH);      // up
+  ctx.lineTo(gridTopRightX, gridTopRightY - wallH);        // right along top
+  ctx.lineTo(gridTopRightX, gridTopRightY);                // down to floor edge
+  ctx.closePath();
+  ctx.fill();
+
+  // Left back wall (isometric plane going top-left) — slightly darker
+  ctx.fillStyle = backWallDark;
+  ctx.beginPath();
+  ctx.moveTo(gridTopCenterX, gridTopCenterY);
+  ctx.lineTo(gridTopCenterX, gridTopCenterY - wallH);
+  ctx.lineTo(gridTopLeftX, gridTopLeftY - wallH);
+  ctx.lineTo(gridTopLeftX, gridTopLeftY);
+  ctx.closePath();
+  ctx.fill();
+
+  // ── Wall details ──
+
+  // Baseboard strip on both walls (darker, 4px from floor edge)
+  ctx.fillStyle = "#0E1220";
+  // Right wall baseboard
+  ctx.beginPath();
+  ctx.moveTo(gridTopCenterX, gridTopCenterY);
+  ctx.lineTo(gridTopCenterX, gridTopCenterY - 6);
+  ctx.lineTo(gridTopRightX, gridTopRightY - 6);
+  ctx.lineTo(gridTopRightX, gridTopRightY);
+  ctx.closePath();
+  ctx.fill();
+  // Left wall baseboard
+  ctx.beginPath();
+  ctx.moveTo(gridTopCenterX, gridTopCenterY);
+  ctx.lineTo(gridTopCenterX, gridTopCenterY - 6);
+  ctx.lineTo(gridTopLeftX, gridTopLeftY - 6);
+  ctx.lineTo(gridTopLeftX, gridTopLeftY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Top trim on both walls (lighter strip at top)
+  ctx.fillStyle = backWallLight;
+  // Right wall top trim
+  ctx.beginPath();
+  ctx.moveTo(gridTopCenterX, gridTopCenterY - wallH);
+  ctx.lineTo(gridTopCenterX, gridTopCenterY - wallH - 4);
+  ctx.lineTo(gridTopRightX, gridTopRightY - wallH - 4);
+  ctx.lineTo(gridTopRightX, gridTopRightY - wallH);
+  ctx.closePath();
+  ctx.fill();
+  // Left wall top trim
+  ctx.beginPath();
+  ctx.moveTo(gridTopCenterX, gridTopCenterY - wallH);
+  ctx.lineTo(gridTopCenterX, gridTopCenterY - wallH - 4);
+  ctx.lineTo(gridTopLeftX, gridTopLeftY - wallH - 4);
+  ctx.lineTo(gridTopLeftX, gridTopLeftY - wallH);
+  ctx.closePath();
+  ctx.fill();
+
+  // Corner edge line (where two walls meet — vertical line)
+  ctx.strokeStyle = "#252A40";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(gridTopCenterX, gridTopCenterY);
+  ctx.lineTo(gridTopCenterX, gridTopCenterY - wallH - 4);
+  ctx.stroke();
+
+  // ── Windows on the right back wall (2 windows) ──
+  const winW = 30;
+  const winH = wallH * 0.45;
+  for (let i = 0; i < 2; i++) {
+    const t = (i + 1) / 3; // position along wall
+    const wx = gridTopCenterX + (gridTopRightX - gridTopCenterX) * t;
+    const wy = gridTopCenterY + (gridTopRightY - gridTopCenterY) * t;
+    const winTop = wy - wallH * 0.7;
+
+    // Window frame
+    ctx.fillStyle = "#0A1530";
+    ctx.fillRect(wx - winW / 2, winTop, winW, winH);
+    ctx.strokeStyle = "#2A3050";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(wx - winW / 2, winTop, winW, winH);
+
+    // Pane cross
+    ctx.strokeStyle = "#2A3050";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(wx, winTop);
+    ctx.lineTo(wx, winTop + winH);
+    ctx.moveTo(wx - winW / 2, winTop + winH / 2);
+    ctx.lineTo(wx + winW / 2, winTop + winH / 2);
+    ctx.stroke();
+
+    // Stars in window
+    const starSeed = i * 37;
+    for (let s = 0; s < 4; s++) {
+      const sx = wx - winW / 2 + 4 + ((starSeed + s * 17) % (winW - 8));
+      const sy = winTop + 3 + ((starSeed + s * 23) % (winH * 0.4));
+      const alpha = 0.3 + 0.4 * Math.sin(frame * 0.03 + s * 1.5);
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.fillRect(sx, sy, 1.5, 1.5);
+    }
+  }
+
+  // ── "DAY1" text on left wall ──
+  ctx.save();
+  ctx.font = "bold 14px monospace";
+  ctx.fillStyle = "#22C55E";
+  ctx.shadowColor = "#22C55E";
+  ctx.shadowBlur = 6 + Math.sin(frame * 0.04) * 3;
+  const textX = gridTopCenterX + (gridTopLeftX - gridTopCenterX) * 0.5;
+  const textY = gridTopCenterY + (gridTopLeftY - gridTopCenterY) * 0.5 - wallH * 0.5;
+  ctx.fillText("DAY1", textX - 18, textY);
+  ctx.shadowBlur = 0;
+  ctx.restore();
 }
 
 // ---------------------------------------------------------------------------
