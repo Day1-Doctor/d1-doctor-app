@@ -32,8 +32,47 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Prevent text selection on drag areas */
   [data-tauri-drag-region] {
     -webkit-user-select: none;
     user-select: none;
+  }
+
+  /* Ensure full height for app shell */
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  /* Scrollbar styling for dark theme */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
