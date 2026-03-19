@@ -28,6 +28,7 @@ fn migration_creates_all_tables() {
         "artifacts",
         "tool_executions",
         "session_costs",
+        "llm_calls",
     ];
 
     for table in &expected_tables {
@@ -51,7 +52,7 @@ fn migration_is_idempotent() {
     let first = migrations::run_migrations(&conn).expect("first migration failed");
     let second = migrations::run_migrations(&conn).expect("second migration failed");
 
-    assert_eq!(first, 1, "first run should apply 1 migration");
+    assert_eq!(first, 2, "first run should apply 2 migrations");
     assert_eq!(second, 0, "second run should apply 0 migrations");
 
     // Verify version was recorded.
@@ -60,7 +61,7 @@ fn migration_is_idempotent() {
             row.get(0)
         })
         .expect("failed to query schema_version");
-    assert_eq!(version, 1);
+    assert_eq!(version, 2);
 }
 
 // ---------------------------------------------------------------------------

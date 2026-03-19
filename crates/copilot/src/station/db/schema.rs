@@ -102,3 +102,30 @@ pub const V1_STATEMENTS: &[&str] = &[
     CREATE_SESSION_COSTS,
     CREATE_INDEXES,
 ];
+
+// ---------------------------------------------------------------------------
+// V2 — LLM call audit trail (D1D-265)
+// ---------------------------------------------------------------------------
+
+/// LLM call audit log for cost tracking and debugging.
+pub const CREATE_LLM_CALLS: &str = r#"
+CREATE TABLE IF NOT EXISTS llm_calls (
+    id              TEXT PRIMARY KEY,
+    agent_id        TEXT NOT NULL,
+    task_id         TEXT,
+    model           TEXT NOT NULL,
+    prompt_tokens   INTEGER,
+    completion_tokens INTEGER,
+    cost_dd         REAL,
+    created_at      TEXT NOT NULL
+);
+"#;
+
+/// Indexes for the llm_calls table.
+pub const CREATE_LLM_CALLS_INDEXES: &str = r#"
+CREATE INDEX IF NOT EXISTS idx_llm_calls_agent ON llm_calls(agent_id);
+CREATE INDEX IF NOT EXISTS idx_llm_calls_task ON llm_calls(task_id);
+"#;
+
+/// All V2 migration statements in order.
+pub const V2_STATEMENTS: &[&str] = &[CREATE_LLM_CALLS, CREATE_LLM_CALLS_INDEXES];

@@ -8,7 +8,7 @@ use station::events::EventBus;
 use station::executor::{AgentExecutor, StepRunner, TaskOrchestrator};
 use station::kernel::{AgentKernel, AgentRole, AgentStatus};
 use station::llm::{LlmClient, LlmDecomposer};
-use station::permissions::PermissionEngine;
+use station::permissions::{ApprovalDecision, ApprovalResponse, PermissionEngine};
 use station::runtime::BuiltinRuntime;
 use station::server::{ServerState, StationServer};
 use station::skills::SkillRegistry;
@@ -30,6 +30,7 @@ pub struct AppState {
     pub router: Arc<TaskRouter>,
     pub llm_client: Arc<RwLock<LlmClient>>,
     pub orchestrator: Arc<TaskOrchestrator>,
+    pub permission_engine: Arc<PermissionEngine>,
 }
 
 // --- Serializable response types for Tauri commands ---
@@ -354,6 +355,72 @@ async fn fetch_balance(api_key: String) -> Result<serde_json::Value, String> {
     Ok(body)
 }
 
+/// Respond to a pending approval request from the UI.
+///
+/// The frontend calls this when a user clicks "Approve" or "Deny" on an
+/// approval card. The decision is forwarded to the [`PermissionEngine`] which
+/// unblocks the waiting agent execution.
+#[tauri::command]
+async fn respond_approval(
+    state: tauri::State<'_, Arc<AppState>>,
+    request_id: String,
+    decision: String, // "approve", "approve_always", or "deny"
+) -> Result<(), String> {
+    let decision = match decision.as_str() {
+        "approve" => ApprovalDecision::AllowOnce,
+        "approve_always" => ApprovalDecision::AllowAlways,
+        "deny" => ApprovalDecision::Reject,
+        other => return Err(format!("invalid decision: {other}, expected approve|approve_always|deny")),
+    };
+
+    let response = ApprovalResponse {
+        request_id: request_id.clone(),
+        decision,
+    };
+
+    // Try the oneshot-channel pending map first (blocking executor flow).
+    let result = state.permission_engine.respond(response.clone()).await;
+    if result.is_ok() {
+        return Ok(());
+    }
+
+    // Fall back to the FIFO queue (non-blocking UI queue).
+    state
+        .permission_engine
+        .respond_queued(response)
+        .await
+        .map(|_| ())
+}
+
+/// List all pending approval requests for the UI to render.
+#[tauri::command]
+async fn list_pending_approvals(
+    state: tauri::State<'_, Arc<AppState>>,
+) -> Result<Vec<serde_json::Value>, String> {
+    // Collect from both the oneshot pending map and the FIFO queue.
+    let pending = state.permission_engine.get_pending().await;
+    let queued = state.permission_engine.get_pending_ordered().await;
+
+    let mut all: Vec<serde_json::Value> = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+
+    for req in pending.into_iter().chain(queued.into_iter()) {
+        if seen.insert(req.id.clone()) {
+            all.push(serde_json::json!({
+                "id": req.id,
+                "agent_id": req.agent_id,
+                "agent_name": req.agent_name,
+                "tool_name": req.tool_name,
+                "risk_level": format!("{:?}", req.risk_level),
+                "context": req.context,
+                "created_at": req.created_at.to_rfc3339(),
+            }));
+        }
+    }
+
+    Ok(all)
+}
+
 #[tauri::command]
 async fn clear_auth() -> Result<(), String> {
     let auth_file = dirs::home_dir()
@@ -409,7 +476,7 @@ pub fn run() {
                 kernel.clone(),
                 event_bus.clone(),
                 cost_tracker.clone(),
-                permission_engine,
+                permission_engine.clone(),
                 skill_registry,
             ));
 
@@ -440,6 +507,7 @@ pub fn run() {
                 router,
                 llm_client,
                 orchestrator,
+                permission_engine: permission_engine.clone(),
             });
 
             // Store state for Tauri commands
@@ -489,6 +557,8 @@ pub fn run() {
             fetch_balance,
             clear_auth,
             check_tier_limit,
+            respond_approval,
+            list_pending_approvals,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Day1 Copilot");

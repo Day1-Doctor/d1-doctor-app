@@ -21,6 +21,7 @@ use crate::station::skills::skill_registry::SkillRegistry;
 use crate::station::skills::skill_types::SkillDefinition;
 use crate::station::tasks::task_types::TaskSpec;
 
+use super::audit::{AuditWriter, LlmCallAudit, ToolExecAudit};
 use super::tool_dispatch::ToolDispatcher;
 
 /// Maximum number of tool-use rounds per step.
@@ -79,6 +80,7 @@ pub struct AgentExecutor {
     skill_registry: Arc<SkillRegistry>,
     skill_executor: SkillExecutor,
     tool_dispatcher: ToolDispatcher,
+    audit_writer: AuditWriter,
 }
 
 impl AgentExecutor {
@@ -102,6 +104,32 @@ impl AgentExecutor {
             skill_registry,
             skill_executor,
             tool_dispatcher,
+            audit_writer: AuditWriter::noop(),
+        }
+    }
+
+    /// Create a new executor with an [`AuditWriter`] for SQLite audit trails.
+    pub fn with_audit(
+        llm_client: Arc<RwLock<LlmClient>>,
+        kernel: Arc<AgentKernel>,
+        event_bus: Arc<EventBus>,
+        cost_tracker: Arc<CostTracker>,
+        permission_engine: Arc<PermissionEngine>,
+        skill_registry: Arc<SkillRegistry>,
+        audit_writer: AuditWriter,
+    ) -> Self {
+        let skill_executor = SkillExecutor::new(skill_registry.clone());
+        let tool_dispatcher = ToolDispatcher::with_cwd();
+        Self {
+            llm_client,
+            kernel,
+            event_bus,
+            cost_tracker,
+            permission_engine,
+            skill_registry,
+            skill_executor,
+            tool_dispatcher,
+            audit_writer,
         }
     }
 
@@ -202,6 +230,16 @@ impl AgentExecutor {
                         usage.completion_tokens as u64,
                     )
                     .await;
+
+                // Audit: record each LLM round.
+                self.audit_writer.record_llm_call(LlmCallAudit {
+                    agent_id: agent.id.clone(),
+                    task_id: Some(step.id.clone()),
+                    model: model.clone(),
+                    prompt_tokens: usage.prompt_tokens,
+                    completion_tokens: usage.completion_tokens,
+                    cost_dd: None, // Cost is tracked by CostTracker separately.
+                });
             }
 
             // Extract the first choice.
@@ -344,6 +382,17 @@ impl AgentExecutor {
                     input: tc.function.arguments.clone(),
                     output: output_str.clone(),
                     approved,
+                });
+
+                // Audit: record the tool execution to SQLite.
+                self.audit_writer.record_tool_execution(ToolExecAudit {
+                    agent_id: agent.id.clone(),
+                    task_id: Some(step.id.clone()),
+                    tool_name: tool_name.clone(),
+                    input: Some(tc.function.arguments.clone()),
+                    output: Some(output_str.clone()),
+                    approved,
+                    duration_ms: exec_result.duration_ms,
                 });
 
                 // Add the tool result to messages so the LLM can see it.

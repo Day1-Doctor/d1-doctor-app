@@ -23,11 +23,18 @@ struct Migration {
 }
 
 /// All registered migrations, in order.
-const MIGRATIONS: &[Migration] = &[Migration {
-    version: 1,
-    name: "v3_0_agent_tables",
-    statements: schema::V1_STATEMENTS,
-}];
+const MIGRATIONS: &[Migration] = &[
+    Migration {
+        version: 1,
+        name: "v3_0_agent_tables",
+        statements: schema::V1_STATEMENTS,
+    },
+    Migration {
+        version: 2,
+        name: "v3_0_llm_calls",
+        statements: schema::V2_STATEMENTS,
+    },
+];
 
 /// Ensure the schema_version table exists.
 fn ensure_version_table(conn: &Connection) -> rusqlite::Result<()> {
