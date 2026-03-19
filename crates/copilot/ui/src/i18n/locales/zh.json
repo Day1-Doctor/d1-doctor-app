@@ -12,7 +12,7 @@
     "agents": "智能体",
     "memory": "记忆",
     "settings": "设置",
-    "valley": "协作谷"
+    "valley": "Day1 谷"
   },
   "office": {
     "title": "Dr. Bob 办公室",
@@ -232,7 +232,7 @@
     "signOut": "退出登录"
   },
   "valley": {
-    "title": "协作谷",
+    "title": "Day1 谷",
     "yourOffice": "你的办公室",
     "locked": "未解锁",
     "clickToEnter": "点击进入",
@@ -247,7 +247,7 @@
     }
   },
   "campus": {
-    "title": "协作园区",
+    "title": "Day1 谷",
     "empty": "空办公室",
     "setup": "开始设置",
     "locked": "未解锁",
@@ -257,7 +257,7 @@
     "stats": "{{agents}} 个智能体 · {{skills}} 技能 · {{files}} 文件"
   },
   "sidebar": {
-    "coworkValley": "协作谷",
+    "coworkValley": "Day1 谷",
     "tasks": "任务",
     "taskList": "任务列表",
     "blocks": "{{count}} 个阻塞",

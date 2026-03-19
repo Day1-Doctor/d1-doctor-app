@@ -19,9 +19,9 @@ const TIER_LABELS: Record<string, string> = {
 };
 
 /**
- * ValleyView — Cowork Campus parcel grid showing 11 office slots.
+ * ValleyView — Day1 Valley parcel grid showing 11 office slots.
  *
- * Title: "COWORK CAMPUS" (large monospace)
+ * Title: "DAY1 VALLEY" (large monospace)
  * Tier badge beside title
  * Bottom: "N/M offices active" count
  */

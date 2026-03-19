@@ -70,7 +70,7 @@ function buildParcels(
 }
 
 /**
- * `ValleyCanvas` renders the Cowork Campus parcel grid using Canvas 2D.
+ * `ValleyCanvas` renders the Day1 Valley parcel grid using Canvas 2D.
  * Owns the requestAnimationFrame loop and delegates drawing to ValleyRenderer.
  */
 export function ValleyCanvas({
@@ -266,7 +266,7 @@ export function ValleyCanvas({
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onMouseLeave={handleMouseLeave}
-        aria-label="Cowork Campus parcel grid showing agent offices"
+        aria-label="Day1 Valley parcel grid showing agent offices"
       />
 
       {/* Inline rename overlay */}

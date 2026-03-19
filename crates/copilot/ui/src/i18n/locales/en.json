@@ -232,7 +232,7 @@
     "signOut": "Sign Out"
   },
   "valley": {
-    "title": "Cowork Valley",
+    "title": "Day1 Valley",
     "yourOffice": "Your Office",
     "locked": "Locked",
     "clickToEnter": "Click to enter",
@@ -247,7 +247,7 @@
     }
   },
   "campus": {
-    "title": "Cowork Campus",
+    "title": "Day1 Valley",
     "empty": "Empty Office",
     "setup": "Set up",
     "locked": "LOCKED",
@@ -257,7 +257,7 @@
     "stats": "{{agents}} agents · {{skills}} skills · {{files}} files"
   },
   "sidebar": {
-    "coworkValley": "Cowork Valley",
+    "coworkValley": "Day1 Valley",
     "tasks": "Tasks",
     "taskList": "Task List",
     "blocks": "{{count}} Blocks",
