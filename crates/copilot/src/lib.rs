@@ -5,11 +5,15 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 use station::costs::CostTracker;
 use station::events::EventBus;
+use station::executor::{AgentExecutor, StepRunner, TaskOrchestrator};
 use station::kernel::{AgentKernel, AgentRole, AgentStatus};
 use station::llm::{LlmClient, LlmDecomposer};
+use station::permissions::PermissionEngine;
 use station::runtime::BuiltinRuntime;
 use station::server::{ServerState, StationServer};
+use station::skills::SkillRegistry;
 use station::tasks::decomposer::TaskDecomposer;
+use station::tasks::handoff::TaskHandoffManager;
 use station::tasks::router::TaskRouter;
 use station::tasks::task_engine::TaskEngine;
 use tauri::Manager;
@@ -25,6 +29,7 @@ pub struct AppState {
     pub decomposer: Arc<TaskDecomposer>,
     pub router: Arc<TaskRouter>,
     pub llm_client: Arc<RwLock<LlmClient>>,
+    pub orchestrator: Arc<TaskOrchestrator>,
 }
 
 // --- Serializable response types for Tauri commands ---
@@ -114,6 +119,18 @@ async fn create_task(
 
     // Route the plan (creates parent + subtasks)
     let parent_id = state.router.route_plan(plan).await?;
+
+    // Spawn background execution via the orchestrator
+    let orchestrator = state.orchestrator.clone();
+    let parent_id_clone = parent_id.clone();
+    let task_engine_clone = state.task_engine.clone();
+    tauri::async_runtime::spawn(async move {
+        if let Err(e) = orchestrator.orchestrate(&parent_id_clone).await {
+            tracing::error!("Task execution failed for {}: {}", parent_id_clone, e);
+            // Mark parent task as failed (if not already)
+            let _ = task_engine_clone.cancel(&parent_id_clone).await;
+        }
+    });
 
     // Get the created task
     let task = state
@@ -354,6 +371,36 @@ pub fn run() {
             }
             let llm_client = Arc::new(RwLock::new(llm_client));
 
+            // Create the execution pipeline components
+            let permission_engine = Arc::new(PermissionEngine::new());
+            let skill_registry = Arc::new(SkillRegistry::new());
+
+            let agent_executor = Arc::new(AgentExecutor::new(
+                llm_client.clone(),
+                kernel.clone(),
+                event_bus.clone(),
+                cost_tracker.clone(),
+                permission_engine,
+                skill_registry,
+            ));
+
+            let step_runner = Arc::new(StepRunner::new(agent_executor.clone(), 3));
+
+            let handoff_manager = Arc::new(TaskHandoffManager::new(
+                task_engine.clone(),
+                kernel.clone(),
+                event_bus.clone(),
+            ));
+
+            let orchestrator = Arc::new(TaskOrchestrator::new(
+                agent_executor,
+                step_runner,
+                task_engine.clone(),
+                kernel.clone(),
+                event_bus.clone(),
+                handoff_manager,
+            ));
+
             let app_state = Arc::new(AppState {
                 kernel: kernel.clone(),
                 event_bus: event_bus.clone(),
@@ -363,6 +410,7 @@ pub fn run() {
                 decomposer,
                 router,
                 llm_client,
+                orchestrator,
             });
 
             // Store state for Tauri commands
