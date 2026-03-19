@@ -3,7 +3,6 @@ import { create } from "zustand";
 export interface ProviderConfig {
   id: string;
   name: string;
-  apiKey: string;
   endpoint: string;
   enabled: boolean;
 }
@@ -32,10 +31,10 @@ interface SettingsState {
 }
 
 const defaultProviders: ProviderConfig[] = [
-  { id: "anthropic", name: "Anthropic", apiKey: "", endpoint: "https://api.anthropic.com", enabled: true },
-  { id: "openai", name: "OpenAI", apiKey: "", endpoint: "https://api.openai.com/v1", enabled: false },
-  { id: "ollama", name: "Ollama", apiKey: "", endpoint: "http://localhost:11434", enabled: false },
-  { id: "custom", name: "Custom", apiKey: "", endpoint: "", enabled: false },
+  { id: "anthropic", name: "Anthropic", endpoint: "https://api.anthropic.com", enabled: true },
+  { id: "openai", name: "OpenAI", endpoint: "https://api.openai.com/v1", enabled: false },
+  { id: "ollama", name: "Ollama", endpoint: "http://localhost:11434", enabled: false },
+  { id: "custom", name: "Custom", endpoint: "", enabled: false },
 ];
 
 const defaultAgents: AgentConfig[] = [

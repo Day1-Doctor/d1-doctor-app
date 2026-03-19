@@ -3,9 +3,10 @@ import { useAuthStore } from "../../stores/authStore";
 
 interface AuthWallProps {
   onAuthenticated: () => void;
+  onClose?: () => void;
 }
 
-export function AuthWall({ onAuthenticated }: AuthWallProps) {
+export function AuthWall({ onAuthenticated, onClose }: AuthWallProps) {
   const { t } = useTranslation();
   const isLoading = useAuthStore((s) => s.isLoading);
 
@@ -21,12 +22,37 @@ export function AuthWall({ onAuthenticated }: AuthWallProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <div
-        className="w-full max-w-sm mx-4 rounded-2xl border border-border p-8 bg-card/95 shadow-2xl shadow-black/50"
+        className="w-full max-w-sm mx-4 rounded-2xl border border-border p-8 bg-card/95 shadow-2xl shadow-black/50 relative"
         style={{ backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)" }}
         role="dialog"
         aria-modal="true"
         aria-label={t("auth.signIn")}
       >
+        {/* Close / dismiss button — allows browsing in demo mode */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 p-1.5 rounded-lg text-text-muted hover:text-text-primary
+              hover:bg-muted/50 transition-colors duration-100
+              focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
+            aria-label={t("common.close")}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
         {/* Logo / Title */}
         <div className="text-center mb-8">
           <img src="/logo-64.png" alt="Day1" width={48} height={48} className="mx-auto mb-4" />

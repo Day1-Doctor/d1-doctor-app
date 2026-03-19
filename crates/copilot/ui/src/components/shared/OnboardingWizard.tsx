@@ -41,10 +41,8 @@ export function useOnboarding() {
 export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const { t } = useTranslation();
   const [step, setStep] = useState(0);
-  const [apiKey, setApiKey] = useState("");
-  const [useGateway, setUseGateway] = useState(false);
 
-  const totalSteps = 4;
+  const totalSteps = 3;
 
   function handleNext() {
     if (step < totalSteps - 1) {
@@ -83,16 +81,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         {/* Step content */}
         <div className="px-8 pb-6">
           {step === 0 && <StepWelcome />}
-          {step === 1 && (
-            <StepApiKey
-              apiKey={apiKey}
-              setApiKey={setApiKey}
-              useGateway={useGateway}
-              setUseGateway={setUseGateway}
-            />
-          )}
-          {step === 2 && <StepMeetTheTeam />}
-          {step === 3 && <StepTryATask />}
+          {step === 1 && <StepMeetTheTeam />}
+          {step === 2 && <StepTryATask />}
         </div>
 
         {/* Navigation buttons */}
@@ -142,69 +132,6 @@ function StepWelcome() {
       <p className="text-text-muted text-sm leading-relaxed">
         {t("onboarding.welcomeBody")}
       </p>
-    </div>
-  );
-}
-
-function StepApiKey({
-  apiKey,
-  setApiKey,
-  useGateway,
-  setUseGateway,
-}: {
-  apiKey: string;
-  setApiKey: (v: string) => void;
-  useGateway: boolean;
-  setUseGateway: (v: boolean) => void;
-}) {
-  const { t } = useTranslation();
-  return (
-    <div>
-      <h3 className="text-sm text-text-primary font-medium mb-3 text-center">
-        {t("onboarding.apiKeyStep")}
-      </h3>
-      <div className="space-y-3">
-        <div>
-          <label className="text-[12px] text-text-muted uppercase tracking-wider">
-            {t("onboarding.apiKeyLabel")}
-          </label>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => {
-              setApiKey(e.target.value);
-              if (e.target.value) setUseGateway(false);
-            }}
-            placeholder="sk-ant-..."
-            disabled={useGateway}
-            className="w-full bg-card border border-border rounded px-3 py-2 text-sm text-text-primary
-              placeholder:text-text-disabled focus:outline-none focus:ring-1 focus:ring-accent/50
-              font-mono mt-1 disabled:opacity-50"
-          />
-        </div>
-        <div className="flex items-center gap-2 py-2">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-text-disabled text-[12px]">{t("onboarding.or")}</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
-        <label className="flex items-center gap-3 rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/20">
-          <input
-            type="checkbox"
-            checked={useGateway}
-            onChange={(e) => {
-              setUseGateway(e.target.checked);
-              if (e.target.checked) setApiKey("");
-            }}
-            className="w-4 h-4 rounded border-border accent-accent"
-          />
-          <div>
-            <span className="text-sm text-text-primary font-medium">{t("onboarding.useGateway")}</span>
-            <p className="text-[13px] text-text-muted mt-0.5">
-              {t("onboarding.useGatewayDesc")}
-            </p>
-          </div>
-        </label>
-      </div>
     </div>
   );
 }

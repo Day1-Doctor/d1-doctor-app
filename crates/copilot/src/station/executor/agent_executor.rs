@@ -208,12 +208,22 @@ impl AgentExecutor {
                 tools: Some(tool_defs.clone()),
             };
 
-            let response = self
-                .llm_client
-                .read()
-                .await
-                .chat(request, &agent.name)
-                .await?;
+            let client = self.llm_client.read().await;
+            let response = match client.chat(request.clone(), &agent.name).await {
+                Ok(resp) => resp,
+                Err(e) if e.contains("401") || e.contains("402") || e.contains("No API key") => {
+                    // Fallback to free model endpoint when auth fails
+                    tracing::info!(
+                        agent_id = %agent.id,
+                        "Auth failed ({}), falling back to free model endpoint",
+                        e
+                    );
+                    client.chat_free(request, &agent.name).await?
+                }
+                Err(e) => return Err(e),
+            };
+            // Drop the read guard before proceeding
+            drop(client);
 
             // Accumulate token usage across all rounds.
             if let Some(ref usage) = response.usage {
