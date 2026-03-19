@@ -62,6 +62,10 @@ export async function test_agent_models_match_prd(client) {
     "reviewer",
     "writer",
     "analyst",
+    "operator",
+    "designer",
+    "monitor",
+    "planner",
   ]);
 
   for (const agent of data.agents) {
