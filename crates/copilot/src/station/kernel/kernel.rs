@@ -125,7 +125,7 @@ mod tests {
     #[tokio::test]
     async fn test_kernel_register_deregister() {
         let kernel = AgentKernel::new();
-        let agent = AgentDescriptor::new("test-agent", AgentRole::Coder, Framework::Builtin);
+        let agent = AgentDescriptor::new("test-agent", AgentRole::Coder, Framework::Builtin, "claude-sonnet-4");
         let id = agent.id.clone();
 
         let returned_id = kernel.register(agent).await;
@@ -154,7 +154,7 @@ mod tests {
     #[tokio::test]
     async fn test_kernel_apply_trigger() {
         let kernel = AgentKernel::new();
-        let agent = AgentDescriptor::new("worker", AgentRole::Writer, Framework::Generic);
+        let agent = AgentDescriptor::new("worker", AgentRole::Writer, Framework::Generic, "claude-sonnet-4");
         let id = kernel.register(agent).await;
 
         let (old, new) = kernel
@@ -179,7 +179,7 @@ mod tests {
     #[tokio::test]
     async fn test_kernel_apply_trigger_invalid_transition() {
         let kernel = AgentKernel::new();
-        let agent = AgentDescriptor::new("idle-agent", AgentRole::Analyst, Framework::Builtin);
+        let agent = AgentDescriptor::new("idle-agent", AgentRole::Analyst, Framework::Builtin, "claude-sonnet-4");
         let id = kernel.register(agent).await;
 
         let result = kernel.apply_trigger(&id, Trigger::LlmCallStart).await;
@@ -189,9 +189,9 @@ mod tests {
     #[tokio::test]
     async fn test_kernel_multiple_agents() {
         let kernel = AgentKernel::new();
-        let a1 = AgentDescriptor::new("agent-1", AgentRole::Coder, Framework::ClaudeSdk);
-        let a2 = AgentDescriptor::new("agent-2", AgentRole::Writer, Framework::Generic);
-        let a3 = AgentDescriptor::new("agent-3", AgentRole::Researcher, Framework::OpenClaw);
+        let a1 = AgentDescriptor::new("agent-1", AgentRole::Coder, Framework::ClaudeSdk, "claude-sonnet-4");
+        let a2 = AgentDescriptor::new("agent-2", AgentRole::Writer, Framework::Generic, "claude-sonnet-4");
+        let a3 = AgentDescriptor::new("agent-3", AgentRole::Researcher, Framework::OpenClaw, "claude-haiku-4-5");
 
         let id1 = kernel.register(a1).await;
         let id2 = kernel.register(a2).await;
@@ -233,6 +233,7 @@ mod tests {
                 "c1",
                 AgentRole::Coder,
                 Framework::Builtin,
+                "claude-sonnet-4",
             ))
             .await;
         kernel
@@ -240,6 +241,7 @@ mod tests {
                 "c2",
                 AgentRole::Coder,
                 Framework::Generic,
+                "claude-sonnet-4",
             ))
             .await;
         kernel
@@ -247,6 +249,7 @@ mod tests {
                 "w1",
                 AgentRole::Writer,
                 Framework::Builtin,
+                "claude-sonnet-4",
             ))
             .await;
 
@@ -263,8 +266,8 @@ mod tests {
     #[tokio::test]
     async fn test_kernel_agents_by_status() {
         let kernel = AgentKernel::new();
-        let a1 = AgentDescriptor::new("a1", AgentRole::Coder, Framework::Builtin);
-        let a2 = AgentDescriptor::new("a2", AgentRole::Writer, Framework::Generic);
+        let a1 = AgentDescriptor::new("a1", AgentRole::Coder, Framework::Builtin, "claude-sonnet-4");
+        let a2 = AgentDescriptor::new("a2", AgentRole::Writer, Framework::Generic, "claude-sonnet-4");
         let id1 = kernel.register(a1).await;
         kernel.register(a2).await;
 
@@ -285,7 +288,7 @@ mod tests {
     #[tokio::test]
     async fn test_kernel_assign_and_clear_task() {
         let kernel = AgentKernel::new();
-        let agent = AgentDescriptor::new("tasked", AgentRole::Operator, Framework::Builtin);
+        let agent = AgentDescriptor::new("tasked", AgentRole::Operator, Framework::Builtin, "claude-haiku-4-5");
         let id = kernel.register(agent).await;
 
         kernel.assign_task(&id, "task-42").await.unwrap();
@@ -314,6 +317,7 @@ mod tests {
                 "a",
                 AgentRole::Coder,
                 Framework::Builtin,
+                "claude-sonnet-4",
             ))
             .await;
         kernel
@@ -321,6 +325,7 @@ mod tests {
                 "b",
                 AgentRole::Writer,
                 Framework::Generic,
+                "claude-sonnet-4",
             ))
             .await;
 
@@ -331,8 +336,8 @@ mod tests {
     #[tokio::test]
     async fn test_kernel_concurrent_access() {
         let kernel = Arc::new(AgentKernel::new());
-        let a1 = AgentDescriptor::new("concurrent-1", AgentRole::Coder, Framework::Builtin);
-        let a2 = AgentDescriptor::new("concurrent-2", AgentRole::Writer, Framework::Generic);
+        let a1 = AgentDescriptor::new("concurrent-1", AgentRole::Coder, Framework::Builtin, "claude-sonnet-4");
+        let a2 = AgentDescriptor::new("concurrent-2", AgentRole::Writer, Framework::Generic, "claude-sonnet-4");
         let id1 = kernel.register(a1).await;
         let id2 = kernel.register(a2).await;
 

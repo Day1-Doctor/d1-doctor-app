@@ -32,7 +32,8 @@ impl BuiltinRuntime {
         let mut agent_ids = Vec::new();
 
         for preset in &self.presets {
-            let mut agent = AgentDescriptor::new(preset.name, preset.role, Framework::Builtin);
+            let mut agent =
+                AgentDescriptor::new(preset.name, preset.role, Framework::Builtin, preset.default_model);
             agent.room = preset.room.to_string();
 
             let id = self.kernel.register(agent).await;

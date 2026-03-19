@@ -227,7 +227,7 @@ mod tests {
         let state = test_state();
         // Register an agent
         use crate::station::kernel::{AgentDescriptor, AgentRole, Framework};
-        let agent = AgentDescriptor::new("test-bob", AgentRole::Orchestrator, Framework::Builtin);
+        let agent = AgentDescriptor::new("test-bob", AgentRole::Orchestrator, Framework::Builtin, "claude-sonnet-4");
         let _id = state.kernel.register(agent).await;
 
         let app = StationServer::router(state);

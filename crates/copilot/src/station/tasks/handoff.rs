@@ -184,7 +184,7 @@ mod tests {
         let bus = Arc::new(EventBus::new(64));
 
         // Register an idle agent.
-        let agent = AgentDescriptor::new("worker-1", AgentRole::Coder, Framework::Builtin);
+        let agent = AgentDescriptor::new("worker-1", AgentRole::Coder, Framework::Builtin, "claude-sonnet-4");
         kernel.register(agent).await;
 
         let (parent_id, step_ids) = setup_pipeline(&engine, 3).await;
@@ -338,7 +338,7 @@ mod tests {
         let kernel = Arc::new(AgentKernel::new());
         let bus = Arc::new(EventBus::new(64));
 
-        let agent = AgentDescriptor::new("worker-1", AgentRole::Coder, Framework::Builtin);
+        let agent = AgentDescriptor::new("worker-1", AgentRole::Coder, Framework::Builtin, "claude-sonnet-4");
         let agent_id = agent.id.clone();
         kernel.register(agent).await;
 
