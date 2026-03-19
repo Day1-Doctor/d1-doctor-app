@@ -38,10 +38,15 @@ export function ApprovalDialog() {
   const pendingApprovals = useApprovalStore((s) => s.pendingApprovals);
   const respond = useApprovalStore((s) => s.respond);
   const [trustChecked, setTrustChecked] = useState(false);
+  const [viewIndex, setViewIndex] = useState(0);
 
-  // Show the first pending approval (FIFO).
-  const request = pendingApprovals[0];
+  // Clamp viewIndex to valid range
+  const clampedIndex = Math.min(viewIndex, Math.max(0, pendingApprovals.length - 1));
+  const request = pendingApprovals[clampedIndex];
   if (!request) return null;
+
+  const canGoPrev = clampedIndex > 0;
+  const canGoNext = clampedIndex < pendingApprovals.length - 1;
 
   const handleDecision = async (decision: ApprovalDecision) => {
     // If trust checkbox is checked, upgrade "allow_once" to "allow_always".
@@ -51,6 +56,8 @@ export function ApprovalDialog() {
     // Update local approval store immediately for responsive UI
     respond(request.id, finalDecision);
     setTrustChecked(false);
+    // After resolving, move view back to stay in bounds
+    setViewIndex((i) => Math.max(0, Math.min(i, pendingApprovals.length - 2)));
 
     // Send decision to the backend via Tauri command
     // TODO: Add `respond_approval` Tauri command to lib.rs when backend
@@ -146,11 +153,37 @@ export function ApprovalDialog() {
           </div>
         </div>
 
-        {/* Queue indicator */}
+        {/* Queue navigation */}
         {pendingApprovals.length > 1 && (
-          <p className="mb-3 text-center text-[12px] text-text-muted">
-            +{pendingApprovals.length - 1} more pending
-          </p>
+          <div className="mb-3 flex items-center justify-center gap-3">
+            <button
+              onClick={() => setViewIndex((i) => Math.max(0, i - 1))}
+              disabled={!canGoPrev}
+              className="text-[12px] text-text-muted hover:text-text-primary disabled:opacity-30
+                disabled:cursor-not-allowed transition-colors focus:outline-none"
+              aria-label="Previous approval"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <span className="text-[12px] text-text-muted tabular-nums">
+              {clampedIndex + 1} / {pendingApprovals.length}
+            </span>
+            <button
+              onClick={() => setViewIndex((i) => Math.min(pendingApprovals.length - 1, i + 1))}
+              disabled={!canGoNext}
+              className="text-[12px] text-text-muted hover:text-text-primary disabled:opacity-30
+                disabled:cursor-not-allowed transition-colors focus:outline-none"
+              aria-label="Next approval"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
         )}
 
         {/* Action buttons */}

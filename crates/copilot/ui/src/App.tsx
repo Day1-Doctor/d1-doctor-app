@@ -159,7 +159,7 @@ function App() {
         <main className="flex-1 flex min-w-0 relative" role="main">
           <MainContent activeView={activeView} />
         </main>
-        <RightPanel />
+        <RightPanel onAuthRequired={handleAuthRequired} />
       </div>
 
       <StatusBar />
