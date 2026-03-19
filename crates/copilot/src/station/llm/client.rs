@@ -88,7 +88,8 @@ impl LlmClient {
         self
     }
 
-    /// Load API key from ~/.day1copilot/auth.json
+    /// Load auth token from ~/.day1copilot/auth.json.
+    /// Reads the new `{ "token": "...", "token_type": "jwt" }` format.
     pub fn load_api_key(&mut self) -> Result<(), String> {
         let auth_file = dirs::home_dir()
             .ok_or("No home dir")?
@@ -99,7 +100,7 @@ impl LlmClient {
         let content = std::fs::read_to_string(&auth_file).map_err(|e| e.to_string())?;
         let data: serde_json::Value = serde_json::from_str(&content).map_err(|e| e.to_string())?;
         self.api_key = data
-            .get("api_key")
+            .get("token")
             .and_then(|v| v.as_str())
             .map(String::from);
         Ok(())

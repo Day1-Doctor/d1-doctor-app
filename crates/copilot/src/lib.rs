@@ -245,23 +245,20 @@ async fn get_runtime_status(
 
 // --- Auth Commands ---
 
+/// Store a JWT token obtained from the OAuth callback.
 #[tauri::command]
-async fn store_api_key(
+async fn store_auth_token(
     state: tauri::State<'_, Arc<AppState>>,
-    key: String,
-) -> Result<String, String> {
-    if !key.starts_with("d1d_sk_") {
-        return Err("Invalid API key format. Must start with d1d_sk_".into());
-    }
+    token: String,
+) -> Result<(), String> {
     let config_dir = dirs::home_dir()
         .ok_or("Cannot determine home directory")?
         .join(".day1copilot");
     std::fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
     let auth_file = config_dir.join("auth.json");
-    let prefix_len = std::cmp::min(12, key.len());
     let auth_data = serde_json::json!({
-        "api_key": key,
-        "key_prefix": &key[..prefix_len],
+        "token": token,
+        "token_type": "jwt",
     });
     std::fs::write(
         &auth_file,
@@ -269,15 +266,16 @@ async fn store_api_key(
     )
     .map_err(|e| e.to_string())?;
 
-    // Update LLM client with new API key
+    // Update LLM client with the JWT as bearer token
     let mut client = state.llm_client.write().await;
-    *client = client.clone().with_api_key(&key);
+    *client = client.clone().with_api_key(&token);
 
-    Ok(key[..prefix_len].to_string())
+    Ok(())
 }
 
+/// Read the stored JWT token, if present.
 #[tauri::command]
-async fn get_stored_api_key() -> Result<Option<String>, String> {
+async fn get_auth_token() -> Result<Option<String>, String> {
     let auth_file = dirs::home_dir()
         .ok_or("Cannot determine home directory")?
         .join(".day1copilot/auth.json");
@@ -287,7 +285,7 @@ async fn get_stored_api_key() -> Result<Option<String>, String> {
     let content = std::fs::read_to_string(&auth_file).map_err(|e| e.to_string())?;
     let data: serde_json::Value = serde_json::from_str(&content).map_err(|e| e.to_string())?;
     Ok(data
-        .get("api_key")
+        .get("token")
         .and_then(|v| v.as_str())
         .map(String::from))
 }
@@ -407,8 +405,8 @@ pub fn run() {
             pause_task,
             cancel_task,
             get_runtime_status,
-            store_api_key,
-            get_stored_api_key,
+            store_auth_token,
+            get_auth_token,
             fetch_balance,
             clear_auth,
             check_tier_limit,

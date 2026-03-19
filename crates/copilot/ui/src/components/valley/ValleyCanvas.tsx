@@ -16,7 +16,7 @@ import {
 const TIER_MAX_OFFICES: Record<string, number> = {
   free_man: 1,
   mini_shop: 3,
-  rocket_inc: 8,
+  rocket_inc: 10,
 };
 
 interface ValleyCanvasProps {
