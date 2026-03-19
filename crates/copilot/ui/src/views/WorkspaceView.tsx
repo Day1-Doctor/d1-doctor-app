@@ -2,20 +2,41 @@ import { useTranslation } from "react-i18next";
 import { useArtifactStore } from "../stores/artifactStore";
 import { useTaskStore } from "../stores/taskStore";
 import { useCostStore } from "../stores/costStore";
+import { useEventLogStore } from "../stores/eventLogStore";
 import { ArtifactCard } from "../components/task/ArtifactCard";
 
-/** Mock memory entries for placeholder display. */
-const mockMemoryEntries = [
-  { id: "mem-1", content: "User prefers concise summaries over verbose explanations.", ts: "2026-03-18T09:00:00Z" },
-  { id: "mem-2", content: "Project uses TypeScript strict mode throughout.", ts: "2026-03-18T09:15:00Z" },
-  { id: "mem-3", content: "API base URL: https://api.day1.doctor/v1", ts: "2026-03-18T09:30:00Z" },
-];
+/**
+ * Extract memory-like entries from event log.
+ * Memory events come from the backend as tool invocations with toolName "memory".
+ * If none exist, we return an empty array (no mock data).
+ */
+function useMemoryEntries() {
+  const toolTraces = useEventLogStore((s) => s.toolTraces);
+  return toolTraces
+    .filter((t) => t.toolName === "memory" && t.status === "success")
+    .map((t) => {
+      let content = "";
+      try {
+        const params = JSON.parse(t.params);
+        content = params.value ?? params.content ?? params.key ?? t.params;
+      } catch {
+        content = t.params;
+      }
+      return {
+        id: t.id,
+        content,
+        agentName: t.agentName,
+        ts: t.timestamp,
+      };
+    });
+}
 
 export function WorkspaceView() {
   const { t } = useTranslation();
   const artifacts = useArtifactStore((s) => s.artifacts);
   const tasks = useTaskStore((s) => s.tasks);
   const sessionCost = useCostStore((s) => s.sessionCost);
+  const memoryEntries = useMemoryEntries();
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -52,23 +73,28 @@ export function WorkspaceView() {
         <section>
           <h2 className="text-[12px] uppercase tracking-wider text-text-muted font-semibold mb-2">
             {t("workspace.memory")}
-            <span className="ml-1.5 text-text-disabled normal-case font-normal">
-              ({mockMemoryEntries.length})
-            </span>
+            {memoryEntries.length > 0 && (
+              <span className="ml-1.5 text-text-disabled normal-case font-normal">
+                ({memoryEntries.length})
+              </span>
+            )}
           </h2>
-          {mockMemoryEntries.length === 0 ? (
+          {memoryEntries.length === 0 ? (
             <p className="text-text-disabled text-sm">{t("workspace.noMemory")}</p>
           ) : (
             <div className="space-y-1.5">
-              {mockMemoryEntries.map((entry) => (
+              {memoryEntries.map((entry) => (
                 <div
                   key={entry.id}
                   className="border border-border rounded-lg px-3 py-2 bg-card/60"
                 >
                   <p className="text-[13px] text-text-primary leading-relaxed">{entry.content}</p>
-                  <p className="text-[13px] text-text-muted mt-1">
-                    {new Date(entry.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </p>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-[12px] text-text-muted">{entry.agentName}</span>
+                    <span className="text-[12px] text-text-muted">
+                      {new Date(entry.ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>

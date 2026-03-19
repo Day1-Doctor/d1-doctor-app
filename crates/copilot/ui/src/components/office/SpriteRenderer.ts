@@ -554,6 +554,34 @@ function drawExclamationBubble(
 }
 
 // ---------------------------------------------------------------------------
+// Error bubble (red pulsing "!" for error state)
+// ---------------------------------------------------------------------------
+
+function drawErrorBubble(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  frame: number,
+): void {
+  const bobY = Math.sin(frame * 0.12) * 1.5;
+  const pulseAlpha = 0.7 + 0.3 * Math.abs(Math.sin(frame * 0.1));
+
+  // Red bubble background
+  ctx.fillStyle = `rgba(239, 68, 68, ${pulseAlpha * 0.8})`;
+  ctx.strokeStyle = `rgba(185, 28, 28, ${pulseAlpha})`;
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.ellipse(x + 4, y - 4 + bobY, 5, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // "!" mark in white
+  ctx.fillStyle = `rgba(255, 255, 255, ${pulseAlpha})`;
+  ctx.fillRect(x + 3.5, y - 8 + bobY, 1.5, 4);
+  ctx.fillRect(x + 3.5, y - 3 + bobY, 1.5, 1.5);
+}
+
+// ---------------------------------------------------------------------------
 // Confetti for "done" state
 // ---------------------------------------------------------------------------
 
@@ -846,12 +874,21 @@ export function drawPixelCharacter(
   const bobOffset = Math.sin(frame * 0.05) * 2 * size;
   const breathe = Math.sin(frame * 0.03) * 0.5 * size;
 
-  // Error jitter
-  const jitter = state === "error" ? ((frame % 3) - 1) * 1 : 0;
+  // Error jitter (shake animation)
+  const jitter = state === "error" ? ((frame % 3) - 1) * 1.5 : 0;
 
   ctx.save();
   ctx.translate(x + jitter, y);
   ctx.scale(size, size);
+
+  // Error state: pulsing red glow underneath the character
+  if (state === "error") {
+    const flashAlpha = 0.15 + 0.1 * Math.abs(Math.sin(frame * 0.15));
+    ctx.fillStyle = `rgba(239, 68, 68, ${flashAlpha})`;
+    ctx.beginPath();
+    ctx.ellipse(0, -10, 14, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   // Shadow under character
   ctx.fillStyle = "#00000030";
@@ -859,12 +896,13 @@ export function drawPixelCharacter(
   ctx.ellipse(0, 0, 8, 3, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Idle at desk: lean back (+1px), stretch every 300 frames
+  // Idle at desk: gentle Y oscillation (distinct slow bobbing), stretch every 300 frames
   let charY = bobOffset;
   const isStretching = state === "idle" && frame % 300 > 290;
 
   if (state === "idle") {
-    charY = bobOffset + 1; // lean back
+    // Gentle breathing-like bobbing with slower frequency than working states
+    charY = Math.sin(frame * 0.025) * 2.5 * size + 1;
   } else if (state === "browsing") {
     charY = bobOffset - 2; // lean forward
   }
@@ -1050,6 +1088,8 @@ export function drawPixelCharacter(
     drawExecutingGears(ctx, 0, -4 + charY, frame);
   } else if (state === "paused") {
     drawExclamationBubble(ctx, 4, -26 + charY, frame);
+  } else if (state === "error") {
+    drawErrorBubble(ctx, 4, -26 + charY, frame);
   } else if (state === "done") {
     drawConfetti(ctx, agentHash, charY, frame);
   }
