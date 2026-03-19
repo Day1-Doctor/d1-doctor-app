@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod station;
 
 use std::sync::Arc;
@@ -293,31 +294,110 @@ async fn get_runtime_status(
 // --- Auth Commands ---
 
 /// Store a JWT token obtained from the OAuth callback.
+///
+/// Optionally accepts a refresh token to enable automatic token renewal.
 #[tauri::command]
 async fn store_auth_token(
     state: tauri::State<'_, Arc<AppState>>,
     token: String,
+    refresh_token: Option<String>,
 ) -> Result<(), String> {
-    let config_dir = dirs::home_dir()
-        .ok_or("Cannot determine home directory")?
-        .join(".day1copilot");
-    std::fs::create_dir_all(&config_dir).map_err(|e| e.to_string())?;
-    let auth_file = config_dir.join("auth.json");
-    let auth_data = serde_json::json!({
-        "token": token,
-        "token_type": "jwt",
-    });
-    std::fs::write(
-        &auth_file,
-        serde_json::to_string_pretty(&auth_data).unwrap(),
-    )
-    .map_err(|e| e.to_string())?;
+    auth::write_auth_file(&token, refresh_token.as_deref())?;
 
     // Update LLM client with the JWT as bearer token
     let mut client = state.llm_client.write().await;
     *client = client.clone().with_api_key(&token);
 
     Ok(())
+}
+
+/// Process an OAuth deep link callback URL.
+///
+/// Parses `day1copilot://auth/callback?token=...&refresh_token=...`, stores the
+/// credentials, and updates the LLM client. Returns the access token on success.
+#[tauri::command]
+async fn handle_auth_callback(
+    state: tauri::State<'_, Arc<AppState>>,
+    url: String,
+) -> Result<String, String> {
+    let callback = auth::parse_callback_url(&url)?;
+
+    auth::write_auth_file(&callback.token, callback.refresh_token.as_deref())?;
+
+    // Update LLM client with the new JWT
+    let mut client = state.llm_client.write().await;
+    *client = client.clone().with_api_key(&callback.token);
+
+    tracing::info!("OAuth callback processed successfully");
+    Ok(callback.token)
+}
+
+/// Refresh the stored JWT using the refresh token.
+///
+/// Reads the refresh token from `~/.day1copilot/auth.json`, calls the Supabase
+/// auth token refresh endpoint via the gateway, stores the new credentials,
+/// and returns the new access token.
+///
+/// Returns `None` if no refresh token is stored (non-fatal).
+#[tauri::command]
+async fn refresh_auth_token(
+    state: tauri::State<'_, Arc<AppState>>,
+) -> Result<Option<String>, String> {
+    let auth_data = match auth::read_auth_file() {
+        Ok(data) => data,
+        Err(_) => return Ok(None),
+    };
+
+    let refresh_token = match auth_data.get("refresh_token").and_then(|v| v.as_str()) {
+        Some(rt) => rt.to_string(),
+        None => {
+            tracing::debug!("No refresh token stored, skipping refresh");
+            return Ok(None);
+        }
+    };
+
+    // Call Supabase-compatible token refresh via gateway
+    let http = reqwest::Client::new();
+    let resp = http
+        .post("https://gateway.day1.doctor/dr-agent/v1/auth/refresh")
+        .json(&serde_json::json!({ "refresh_token": refresh_token }))
+        .send()
+        .await
+        .map_err(|e| format!("Token refresh request failed: {}", e))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        tracing::warn!("Token refresh failed ({}): {}", status, body);
+        return Err(format!("Token refresh failed ({}): {}", status, body));
+    }
+
+    let body: serde_json::Value = resp
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse refresh response: {}", e))?;
+
+    let new_token = body
+        .get("access_token")
+        .or_else(|| body.get("token"))
+        .and_then(|v| v.as_str())
+        .ok_or("Refresh response missing access_token")?
+        .to_string();
+
+    let new_refresh = body
+        .get("refresh_token")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&refresh_token);
+
+    // Persist updated credentials
+    auth::write_auth_file(&new_token, Some(new_refresh))?;
+
+    // Update the LLM client
+    let mut client = state.llm_client.write().await;
+    *client = client.clone().with_api_key(&new_token);
+
+    tracing::info!("JWT token refreshed successfully");
+    Ok(Some(new_token))
 }
 
 /// Read the stored JWT token, if present.
@@ -541,6 +621,7 @@ pub fn run() {
             tracing::info!("Day1 Copilot setup complete");
             Ok(())
         })
+        .plugin(tauri_plugin_deep_link::init())
         .invoke_handler(tauri::generate_handler![
             list_agents,
             get_agent,
@@ -559,6 +640,8 @@ pub fn run() {
             check_tier_limit,
             respond_approval,
             list_pending_approvals,
+            handle_auth_callback,
+            refresh_auth_token,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Day1 Copilot");

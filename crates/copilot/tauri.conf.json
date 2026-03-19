@@ -25,7 +25,14 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:14200 ws://127.0.0.1:14200 https://ipc.localhost"
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:14200 ws://127.0.0.1:14200 https://ipc.localhost https://gateway.day1.doctor"
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": ["day1copilot"]
+      }
     }
   },
   "bundle": {
