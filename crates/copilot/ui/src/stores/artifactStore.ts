@@ -17,6 +17,7 @@ interface ArtifactState {
   artifacts: Artifact[];
   selectedArtifactId: string | null;
   setArtifacts: (artifacts: Artifact[]) => void;
+  addArtifact: (artifact: Artifact) => void;
   selectArtifact: (id: string | null) => void;
   getSelectedArtifact: () => Artifact | undefined;
 }
@@ -56,6 +57,10 @@ export const useArtifactStore = create<ArtifactState>((set, get) => ({
   artifacts: mockArtifacts,
   selectedArtifactId: null,
   setArtifacts: (artifacts) => set({ artifacts }),
+  addArtifact: (artifact) =>
+    set((state) => ({
+      artifacts: [...state.artifacts, artifact],
+    })),
   selectArtifact: (id) => set({ selectedArtifactId: id }),
   getSelectedArtifact: () => {
     const state = get();
