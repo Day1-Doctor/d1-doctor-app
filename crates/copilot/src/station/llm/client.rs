@@ -18,6 +18,10 @@ pub struct ChatRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f32>,
     pub stream: bool,
+    /// Tool definitions advertised to the model (OpenAI function-calling format).
+    /// When present the model may return `tool_calls` in its response.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<serde_json::Value>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -35,8 +39,41 @@ pub struct ChatResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct ChatChoice {
-    pub message: ChatMessage,
+    pub message: ChoiceMessage,
     pub finish_reason: Option<String>,
+}
+
+/// The message payload inside a ChatChoice.
+///
+/// Unlike the simple `ChatMessage` (used for request messages), this variant
+/// carries optional `tool_calls` returned by the LLM when it wants to invoke
+/// tools via the OpenAI function-calling protocol.
+#[derive(Debug, Deserialize, Clone)]
+pub struct ChoiceMessage {
+    pub role: String,
+    #[serde(default)]
+    pub content: String,
+    /// Tool calls requested by the model.  `None` when the model replies with
+    /// plain text; `Some(vec![...])` when it wants to invoke tools.
+    #[serde(default)]
+    pub tool_calls: Option<Vec<ToolCall>>,
+}
+
+/// A single tool invocation requested by the LLM (OpenAI function-calling format).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolCall {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub call_type: Option<String>,
+    pub function: ToolCallFunction,
+}
+
+/// The function name + serialised JSON arguments inside a [`ToolCall`].
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ToolCallFunction {
+    pub name: String,
+    /// JSON-encoded arguments string, as returned by the LLM.
+    pub arguments: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -264,6 +301,7 @@ mod tests {
             max_tokens: None,
             temperature: None,
             stream: false,
+            tools: None,
         };
         let result = client.chat(request, "dr-bob").await;
         assert!(result.is_err());

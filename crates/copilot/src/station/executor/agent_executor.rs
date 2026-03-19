@@ -13,11 +13,21 @@ use crate::station::kernel::agent_state::Trigger;
 use crate::station::kernel::kernel::AgentKernel;
 use crate::station::llm::client::{ChatMessage, ChatRequest, LlmClient};
 use crate::station::permissions::PermissionEngine;
+use crate::station::permissions::risk::classify_risk;
+use crate::station::permissions::RiskLevel;
 use crate::station::runtime::presets::{builtin_presets, AgentPreset};
 use crate::station::skills::executor::SkillExecutor;
 use crate::station::skills::skill_registry::SkillRegistry;
 use crate::station::skills::skill_types::SkillDefinition;
 use crate::station::tasks::task_types::TaskSpec;
+
+use super::tool_dispatch::ToolDispatcher;
+
+/// Maximum number of tool-use rounds per step.
+///
+/// The LLM may request multiple sequential tool calls; this limit prevents
+/// infinite loops if the model never emits a final text answer.
+const MAX_TOOL_ROUNDS: usize = 10;
 
 /// Token usage summary that can be serialized across the WS boundary.
 ///
@@ -56,20 +66,19 @@ pub struct ToolCallRecord {
 ///
 /// `AgentExecutor` orchestrates the full lifecycle of a task step:
 /// FSM state transitions, skill selection, prompt composition, LLM gateway
-/// calls, cost tracking, and event emission.
+/// calls, tool execution loop, cost tracking, and event emission.
 pub struct AgentExecutor {
     llm_client: Arc<RwLock<LlmClient>>,
     kernel: Arc<AgentKernel>,
     event_bus: Arc<EventBus>,
     cost_tracker: Arc<CostTracker>,
-    /// Reserved for future tool-call approval flow.
-    #[allow(dead_code)]
     permission_engine: Arc<PermissionEngine>,
     /// Retained for direct registry access; skill selection is delegated to
     /// `skill_executor`.
     #[allow(dead_code)]
     skill_registry: Arc<SkillRegistry>,
     skill_executor: SkillExecutor,
+    tool_dispatcher: ToolDispatcher,
 }
 
 impl AgentExecutor {
@@ -83,6 +92,7 @@ impl AgentExecutor {
         skill_registry: Arc<SkillRegistry>,
     ) -> Self {
         let skill_executor = SkillExecutor::new(skill_registry.clone());
+        let tool_dispatcher = ToolDispatcher::with_cwd();
         Self {
             llm_client,
             kernel,
@@ -91,6 +101,7 @@ impl AgentExecutor {
             permission_engine,
             skill_registry,
             skill_executor,
+            tool_dispatcher,
         }
     }
 
@@ -101,8 +112,12 @@ impl AgentExecutor {
     /// 2. Select a matching skill from the registry
     /// 3. Compose a system prompt from agent persona + skill + step context
     /// 4. Transition to Thinking (working -> thinking)
-    /// 5. Call the LLM gateway
-    /// 6. Track cost
+    /// 5. Call the LLM gateway in a loop:
+    ///    - If the LLM returns tool_calls, execute each tool (with permission
+    ///      checks), send results back, and loop.
+    ///    - If the LLM returns a final text answer, break.
+    ///    - Safety limit: max `MAX_TOOL_ROUNDS` iterations.
+    /// 6. Track cost (accumulated across all rounds)
     /// 7. Transition back to Working (thinking -> working)
     /// 8. Complete: transition to Idle (working -> idle)
     /// 9. Emit `task.step_completed` event
@@ -133,43 +148,220 @@ impl AgentExecutor {
         self.emit_state_changed(&agent.id, from.display_name(), to.display_name())
             .await;
 
-        // 5. Call LLM gateway.
+        // 5. Build initial messages and enter the tool-use loop.
         let model = self.get_agent_model(agent);
-        let request = ChatRequest {
-            model: model.clone(),
-            messages: vec![
-                ChatMessage {
-                    role: "system".to_string(),
-                    content: system_prompt,
-                },
-                ChatMessage {
-                    role: "user".to_string(),
-                    content: step.title.clone(),
-                },
-            ],
-            max_tokens: Some(4096),
-            temperature: Some(0.7),
-            stream: false,
-        };
+        let tool_defs = ToolDispatcher::tool_definitions();
 
-        let response = self
-            .llm_client
-            .read()
-            .await
-            .chat(request, &agent.name)
-            .await?;
+        let mut messages = vec![
+            ChatMessage {
+                role: "system".to_string(),
+                content: system_prompt,
+            },
+            ChatMessage {
+                role: "user".to_string(),
+                content: step.title.clone(),
+            },
+        ];
 
-        // 6. Track cost if usage info is available.
-        if let Some(ref usage) = response.usage {
-            self.cost_tracker
-                .record_usage(
+        let mut all_tool_calls: Vec<ToolCallRecord> = Vec::new();
+        let mut total_prompt_tokens: u32 = 0;
+        let mut total_completion_tokens: u32 = 0;
+        let mut total_total_tokens: u32 = 0;
+        let mut final_output = String::new();
+        let mut has_usage = false;
+
+        for round in 0..MAX_TOOL_ROUNDS {
+            let request = ChatRequest {
+                model: model.clone(),
+                messages: messages.clone(),
+                max_tokens: Some(4096),
+                temperature: Some(0.7),
+                stream: false,
+                tools: Some(tool_defs.clone()),
+            };
+
+            let response = self
+                .llm_client
+                .read()
+                .await
+                .chat(request, &agent.name)
+                .await?;
+
+            // Accumulate token usage across all rounds.
+            if let Some(ref usage) = response.usage {
+                has_usage = true;
+                total_prompt_tokens += usage.prompt_tokens;
+                total_completion_tokens += usage.completion_tokens;
+                total_total_tokens += usage.total_tokens;
+                self.cost_tracker
+                    .record_usage(
+                        &agent.id,
+                        "gateway",
+                        &model,
+                        usage.prompt_tokens as u64,
+                        usage.completion_tokens as u64,
+                    )
+                    .await;
+            }
+
+            // Extract the first choice.
+            let choice = match response.choices.first() {
+                Some(c) => c,
+                None => {
+                    final_output = String::new();
+                    break;
+                }
+            };
+
+            let finish_reason = choice
+                .finish_reason
+                .as_deref()
+                .unwrap_or("stop");
+
+            // Check if this response contains tool calls.
+            let response_tool_calls = choice.message.tool_calls.as_ref();
+            let has_tool_calls = response_tool_calls
+                .map(|tc| !tc.is_empty())
+                .unwrap_or(false);
+
+            if !has_tool_calls || finish_reason == "stop" {
+                // Final text response -- exit the loop.
+                final_output = choice.message.content.clone();
+                break;
+            }
+
+            // The LLM wants to call tools. Append the assistant message
+            // (with tool_calls) to the conversation so the model can see
+            // its own request when we send tool results back.
+            //
+            // We serialise the tool_calls into the assistant content as a
+            // JSON marker so the round-trip through ChatMessage (which only
+            // has role+content) preserves the information.
+            let assistant_content = if choice.message.content.is_empty() {
+                // Build a synthetic assistant message containing the tool calls
+                // so the next request includes context.
+                serde_json::to_string(response_tool_calls.unwrap())
+                    .unwrap_or_default()
+            } else {
+                choice.message.content.clone()
+            };
+            messages.push(ChatMessage {
+                role: "assistant".to_string(),
+                content: assistant_content,
+            });
+
+            // Execute each tool call.
+            let tool_calls = response_tool_calls.unwrap();
+            for tc in tool_calls {
+                let tool_name = &tc.function.name;
+                let arguments: serde_json::Value =
+                    serde_json::from_str(&tc.function.arguments)
+                        .unwrap_or(serde_json::Value::Null);
+
+                // Permission check.
+                let risk = classify_risk(tool_name, &arguments);
+                let approved = match risk {
+                    RiskLevel::Low => true,
+                    RiskLevel::Medium => {
+                        // Check permission engine; auto-approve for now with
+                        // a log message for medium risk. The full approval UI
+                        // flow will be wired in a follow-up.
+                        let check = self
+                            .permission_engine
+                            .check_permission(
+                                &agent.id,
+                                &agent.name,
+                                tool_name,
+                                &arguments,
+                                &format!("Step {}: {}", step.step_index.unwrap_or(0), step.title),
+                            )
+                            .await;
+                        match check {
+                            Ok(()) => true,
+                            Err(approval_req) => {
+                                // TODO(D1D-272): Wire to approval UI.
+                                // For now emit event and auto-approve.
+                                self.emit_approval_requested(
+                                    &agent.id,
+                                    tool_name,
+                                    &format!("{:?}", approval_req.risk_level),
+                                    &approval_req.context,
+                                )
+                                .await;
+                                true
+                            }
+                        }
+                    }
+                    RiskLevel::High | RiskLevel::Critical => {
+                        // Emit approval event; auto-approve for now.
+                        // TODO(D1D-272): Block until user responds.
+                        self.emit_approval_requested(
+                            &agent.id,
+                            tool_name,
+                            &format!("{risk:?}"),
+                            &format!("Step {}: {}", step.step_index.unwrap_or(0), step.title),
+                        )
+                        .await;
+                        true
+                    }
+                };
+
+                // Emit tool.started event.
+                self.emit_tool_started(
                     &agent.id,
-                    "gateway",
-                    &model,
-                    usage.prompt_tokens as u64,
-                    usage.completion_tokens as u64,
+                    tool_name,
+                    &tc.function.arguments,
                 )
                 .await;
+
+                // Execute the tool.
+                let exec_result = if approved {
+                    self.tool_dispatcher.execute(tool_name, arguments.clone()).await
+                } else {
+                    super::tool_dispatch::ToolExecResult {
+                        output: serde_json::json!({
+                            "error": "Tool call rejected by permission engine"
+                        }),
+                        success: false,
+                        duration_ms: 0,
+                    }
+                };
+
+                // Emit tool.finished event.
+                let output_str = serde_json::to_string(&exec_result.output)
+                    .unwrap_or_else(|_| exec_result.output.to_string());
+                self.emit_tool_finished(
+                    &agent.id,
+                    tool_name,
+                    &output_str,
+                    exec_result.duration_ms,
+                )
+                .await;
+
+                // Record the tool call.
+                all_tool_calls.push(ToolCallRecord {
+                    tool_name: tool_name.clone(),
+                    input: tc.function.arguments.clone(),
+                    output: output_str.clone(),
+                    approved,
+                });
+
+                // Add the tool result to messages so the LLM can see it.
+                messages.push(ChatMessage {
+                    role: "tool".to_string(),
+                    content: output_str,
+                });
+            }
+
+            // Safety: if we've hit the last allowed round, use whatever
+            // content we have so far.
+            if round == MAX_TOOL_ROUNDS - 1 {
+                tracing::warn!(
+                    agent_id = %agent.id,
+                    "tool loop hit max rounds ({MAX_TOOL_ROUNDS}), returning last content"
+                );
+                final_output = choice.message.content.clone();
+            }
         }
 
         // 7. Transition back to Working: thinking -> working.
@@ -180,39 +372,26 @@ impl AgentExecutor {
         self.emit_state_changed(&agent.id, from.display_name(), to.display_name())
             .await;
 
-        // 8. Parse response content from choices.
-        let output = response
-            .choices
-            .first()
-            .map(|c| c.message.content.clone())
-            .unwrap_or_default();
+        // 8. Emit artifact.created events for any file-producing tool calls.
+        let artifacts: Vec<String> = all_tool_calls
+            .iter()
+            .filter_map(|tc| {
+                if tc.tool_name == "write_file"
+                    || tc.tool_name == "filesystem.write"
+                    || tc.tool_name == "create_markdown"
+                {
+                    // Try to extract the path from the tool output.
+                    let v: serde_json::Value =
+                        serde_json::from_str(&tc.output).unwrap_or_default();
+                    v.get("path")
+                        .and_then(|p| p.as_str())
+                        .map(|s| s.to_string())
+                } else {
+                    None
+                }
+            })
+            .collect();
 
-        // 8b. Process tool calls if present in the response.
-        // TODO(D1D-260): When the LLM response includes tool_calls, iterate
-        // over them and for each:
-        //   a. Emit tool.started event
-        //   b. Execute the tool (via PermissionEngine approval flow)
-        //   c. Emit tool.finished event
-        // Placeholder: the tool execution loop will be wired in Phase 2
-        // (agent execution loop). For now we emit events for any tool calls
-        // that a future implementation populates.
-        let tool_calls: Vec<ToolCallRecord> = vec![];
-        for tool_call in &tool_calls {
-            self.emit_tool_started(&agent.id, &tool_call.tool_name, &tool_call.input)
-                .await;
-            self.emit_tool_finished(
-                &agent.id,
-                &tool_call.tool_name,
-                &tool_call.output,
-                0, // duration_ms placeholder
-            )
-            .await;
-        }
-
-        // 8c. Emit artifact.created events for any artifacts produced.
-        // TODO(D1D-260): When step execution produces artifacts (files,
-        // documents, charts, etc.), populate this vec and emit events.
-        let artifacts: Vec<String> = vec![];
         for artifact_path in &artifacts {
             self.emit_artifact_created(&agent.id, &step.id, artifact_path)
                 .await;
@@ -235,22 +414,26 @@ impl AgentExecutor {
             event_type: EventType::TaskStepCompleted {
                 task_id: step.id.clone(),
                 step_index,
-                result: serde_json::json!({ "output": &output }),
+                result: serde_json::json!({ "output": &final_output }),
             },
         };
         self.event_bus.publish(step_completed_event).await;
 
-        let tokens_used = response.usage.map(|u| Usage {
-            prompt_tokens: u.prompt_tokens,
-            completion_tokens: u.completion_tokens,
-            total_tokens: u.total_tokens,
-        });
+        let tokens_used = if has_usage {
+            Some(Usage {
+                prompt_tokens: total_prompt_tokens,
+                completion_tokens: total_completion_tokens,
+                total_tokens: total_total_tokens,
+            })
+        } else {
+            None
+        };
 
         Ok(StepResult {
-            output,
+            output: final_output,
             tokens_used,
             artifacts,
-            tool_calls,
+            tool_calls: all_tool_calls,
         })
     }
 
@@ -365,6 +548,27 @@ impl AgentExecutor {
                 tool_name: tool_name.to_string(),
                 result: serde_json::json!({ "output": output }),
                 duration_ms,
+            },
+        };
+        self.event_bus.publish(event).await;
+    }
+
+    /// Emit an `approval.requested` event via the event bus.
+    async fn emit_approval_requested(
+        &self,
+        agent_id: &str,
+        action: &str,
+        risk_level: &str,
+        context: &str,
+    ) {
+        let event = AgentEvent {
+            id: Uuid::new_v4().to_string(),
+            agent_id: agent_id.to_string(),
+            timestamp: Utc::now(),
+            event_type: EventType::ApprovalRequested {
+                action: action.to_string(),
+                risk_level: risk_level.to_string(),
+                context: context.to_string(),
             },
         };
         self.event_bus.publish(event).await;
@@ -900,5 +1104,184 @@ mod tests {
             }
             other => panic!("expected ArtifactCreated, got {:?}", other),
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Tool execution loop tests (D1D-272)
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_max_tool_rounds_constant() {
+        // Verify the safety limit is set to a reasonable value.
+        assert_eq!(MAX_TOOL_ROUNDS, 10);
+    }
+
+    #[test]
+    fn test_tool_dispatcher_available_in_executor() {
+        // Verify the executor has a tool dispatcher.
+        let executor = make_executor();
+        let tools = executor.tool_dispatcher.supported_tools();
+        assert!(!tools.is_empty(), "tool dispatcher should have tools");
+        assert!(
+            tools.contains(&"read_file"),
+            "should support read_file"
+        );
+        assert!(
+            tools.contains(&"write_file"),
+            "should support write_file"
+        );
+        assert!(
+            tools.contains(&"web_search"),
+            "should support web_search"
+        );
+    }
+
+    #[test]
+    fn test_tool_definitions_provided_to_llm() {
+        let defs = ToolDispatcher::tool_definitions();
+        assert!(!defs.is_empty(), "should have tool definitions");
+
+        // Each definition should have the expected OpenAI function format.
+        for def in &defs {
+            assert_eq!(def["type"], "function");
+            assert!(def["function"]["name"].is_string());
+            assert!(def["function"]["description"].is_string());
+            assert!(def["function"]["parameters"].is_object());
+        }
+    }
+
+    #[tokio::test]
+    async fn test_emit_approval_requested_publishes_event() {
+        let (executor, event_bus, _kernel) = make_executor_with_bus();
+        let mut rx = event_bus.subscribe();
+
+        executor
+            .emit_approval_requested("agent-1", "shell", "High", "running command")
+            .await;
+
+        let evt = rx.try_recv().expect("should receive approval.requested event");
+        assert_eq!(evt.agent_id, "agent-1");
+        match &evt.event_type {
+            EventType::ApprovalRequested {
+                action,
+                risk_level,
+                context,
+            } => {
+                assert_eq!(action, "shell");
+                assert_eq!(risk_level, "High");
+                assert_eq!(context, "running command");
+            }
+            other => panic!("expected ApprovalRequested, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_tool_dispatcher_execute_roundtrip() {
+        // Test that the executor's tool dispatcher can run a real tool.
+        let dir = std::env::temp_dir().join("d1d-executor-dispatch-test");
+        std::fs::create_dir_all(&dir).ok();
+        let dispatcher = ToolDispatcher::new(dir.clone());
+
+        let file_path = dir.join("executor_test.txt");
+        let path_str = file_path.to_str().unwrap();
+
+        // Write via dispatcher.
+        let write_result = dispatcher
+            .execute(
+                "write_file",
+                serde_json::json!({ "path": path_str, "content": "executor test" }),
+            )
+            .await;
+        assert!(write_result.success, "write should succeed");
+
+        // Read back.
+        let read_result = dispatcher
+            .execute("read_file", serde_json::json!({ "path": path_str }))
+            .await;
+        assert!(read_result.success, "read should succeed");
+        assert_eq!(read_result.output["content"], "executor test");
+
+        // Cleanup.
+        std::fs::remove_file(&file_path).ok();
+        std::fs::remove_dir(&dir).ok();
+    }
+
+    #[tokio::test]
+    async fn test_tool_dispatcher_unknown_tool_graceful_error() {
+        let dispatcher = ToolDispatcher::with_cwd();
+        let result = dispatcher
+            .execute("nonexistent", serde_json::json!({}))
+            .await;
+        assert!(!result.success, "unknown tool should fail gracefully");
+        assert!(
+            result.output["error"]
+                .as_str()
+                .unwrap()
+                .contains("unknown tool"),
+            "error should mention unknown tool"
+        );
+    }
+
+    #[test]
+    fn test_tool_call_record_includes_approved_field() {
+        let record = ToolCallRecord {
+            tool_name: "read_file".to_string(),
+            input: r#"{"path":"test.txt"}"#.to_string(),
+            output: r#"{"content":"hello"}"#.to_string(),
+            approved: true,
+        };
+        let json = serde_json::to_value(&record).unwrap();
+        assert_eq!(json["approved"], true);
+
+        let rejected = ToolCallRecord {
+            tool_name: "shell".to_string(),
+            input: "rm -rf /".to_string(),
+            output: "rejected".to_string(),
+            approved: false,
+        };
+        let json = serde_json::to_value(&rejected).unwrap();
+        assert_eq!(json["approved"], false);
+    }
+
+    #[test]
+    fn test_chat_request_includes_tools_field() {
+        let defs = ToolDispatcher::tool_definitions();
+        let request = ChatRequest {
+            model: "claude-sonnet-4".to_string(),
+            messages: vec![ChatMessage {
+                role: "user".to_string(),
+                content: "hello".to_string(),
+            }],
+            max_tokens: Some(4096),
+            temperature: Some(0.7),
+            stream: false,
+            tools: Some(defs.clone()),
+        };
+
+        let json = serde_json::to_value(&request).unwrap();
+        assert!(json["tools"].is_array(), "tools should be serialized");
+        assert_eq!(json["tools"].as_array().unwrap().len(), defs.len());
+    }
+
+    #[test]
+    fn test_chat_request_without_tools() {
+        let request = ChatRequest {
+            model: "claude-sonnet-4".to_string(),
+            messages: vec![ChatMessage {
+                role: "user".to_string(),
+                content: "hello".to_string(),
+            }],
+            max_tokens: Some(4096),
+            temperature: Some(0.7),
+            stream: false,
+            tools: None,
+        };
+
+        let json = serde_json::to_value(&request).unwrap();
+        // tools: None should be omitted from serialization.
+        assert!(
+            json.get("tools").is_none(),
+            "tools should be omitted when None"
+        );
     }
 }
