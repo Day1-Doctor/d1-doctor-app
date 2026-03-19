@@ -10,10 +10,12 @@ export function AuthWall({ onAuthenticated }: AuthWallProps) {
   const isLoading = useAuthStore((s) => s.isLoading);
 
   function openExternal(url: string) {
-    window.open(url, "_blank", "noopener,noreferrer");
-    // In production, OAuth callback via custom URL scheme will trigger onAuthenticated
-    // For now, auto-dismiss after redirect (user can close manually)
-    void onAuthenticated; // acknowledge prop usage
+    // Append the deep link redirect so the web auth page sends the token
+    // back to the desktop app via day1copilot:// URL scheme
+    const separator = url.includes("?") ? "&" : "?";
+    const redirectUrl = `${url}${separator}redirect_uri=${encodeURIComponent("day1copilot://auth/callback")}`;
+    window.open(redirectUrl, "_blank", "noopener,noreferrer");
+    void onAuthenticated; // acknowledged — dismiss is handled by deep link callback
   }
 
   return (

@@ -20,6 +20,7 @@ import {
 } from "./components/shared/OnboardingWizard";
 import { ApprovalDialog } from "./components/shared/ApprovalDialog";
 import { UpgradePrompt } from "./components/shared/UpgradePrompt";
+import { useDeepLink } from "./hooks/useDeepLink";
 
 const DebugView = lazy(() =>
   import("./views/DebugView").then((m) => ({ default: m.DebugView })),
@@ -98,6 +99,7 @@ const MainContent = memo(function MainContent({
 
 function App() {
   useEventStream();
+  useDeepLink();
   const activeView = useViewStore((s) => s.activeView);
   const { hasOnboarded, completeOnboarding } = useOnboarding();
   const fetchAgents = useAgentStore((s) => s.fetchAgents);
@@ -121,6 +123,14 @@ function App() {
     const timer = setTimeout(() => fetchAgents(), 500);
     return () => clearTimeout(timer);
   }, [fetchAgents]);
+
+  // Auto-dismiss auth wall when authenticated (e.g. via deep link callback)
+  React.useEffect(() => {
+    if (isAuthenticated && showAuthWall) {
+      setShowAuthWall(false);
+      fetchAgents();
+    }
+  }, [isAuthenticated, showAuthWall, fetchAgents]);
 
   // Refresh balance periodically when authenticated
   React.useEffect(() => {
