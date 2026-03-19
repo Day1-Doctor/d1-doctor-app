@@ -1,0 +1,8 @@
+[
+  { "id": "1", "name": "Dr. Bob", "role": "orchestrator", "status": "idle" },
+  { "id": "2", "name": "Scout", "role": "researcher", "status": "idle" },
+  { "id": "3", "name": "Sage", "role": "analyst", "status": "idle" },
+  { "id": "4", "name": "Quill", "role": "writer", "status": "idle" },
+  { "id": "5", "name": "Pixel", "role": "coder", "status": "idle" },
+  { "id": "6", "name": "Atlas", "role": "operator", "status": "idle" }
+]

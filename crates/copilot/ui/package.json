@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "e2e:tier1": "npx playwright test",
+    "e2e:tier1:ui": "npx playwright test --ui",
     "e2e:tier2": "cd ../e2e-ws && node runner.mjs",
     "e2e:tier3": "cd ../e2e-visual && bash run.sh",
     "e2e:all": "npm run e2e:tier1 && npm run e2e:tier2 && npm run e2e:tier3"
@@ -22,6 +24,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",

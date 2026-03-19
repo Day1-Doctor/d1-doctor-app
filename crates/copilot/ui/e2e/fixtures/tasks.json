@@ -1,0 +1,26 @@
+[
+  {
+    "id": "task-1",
+    "title": "Compare AI Frameworks",
+    "status": "running",
+    "steps": [
+      { "id": "1", "title": "Research AI frameworks", "status": "completed", "agentName": "Scout", "agentRole": "researcher", "duration": 45000 },
+      { "id": "2", "title": "Analyze findings", "status": "running", "agentName": "Sage", "agentRole": "analyst" },
+      { "id": "3", "title": "Write comparison report", "status": "pending", "agentName": "Quill", "agentRole": "writer" },
+      { "id": "4", "title": "Save to workspace", "status": "pending", "agentName": "Atlas", "agentRole": "operator" }
+    ],
+    "totalDuration": 45000
+  },
+  {
+    "id": "task-2",
+    "title": "Research Report with Parallel Analysis",
+    "status": "running",
+    "steps": [
+      { "id": "p-0", "title": "Research", "status": "completed", "agentName": "Scout", "agentRole": "researcher", "duration": 32000 },
+      { "id": "p-1a", "title": "Analyze data", "status": "running", "agentName": "Sage", "agentRole": "analyst", "isParallel": true, "parallelGroup": "group-1" },
+      { "id": "p-1b", "title": "Review sources", "status": "running", "agentName": "Quill", "agentRole": "writer", "isParallel": true, "parallelGroup": "group-1" },
+      { "id": "p-2", "title": "Write report", "status": "pending", "agentName": "Quill", "agentRole": "writer" }
+    ],
+    "totalDuration": 32000
+  }
+]
