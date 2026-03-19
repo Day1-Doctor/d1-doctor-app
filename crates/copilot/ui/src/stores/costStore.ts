@@ -12,14 +12,18 @@ export interface CostState {
   setBalance: (balance: number) => void;
   setLimit: (limit: number) => void;
   addCost: (agentName: string, amount: number) => void;
+  /** Update session totals from a WebSocket cost.updated event. */
+  updateFromEvent: (sessionTokens: number, sessionCostDd: number, agentName: string) => void;
+  /** Set the initial balance and limit (e.g., from a /balance API call). */
+  setInitialBalance: (balance: number, limit: number) => void;
   reset: () => void;
 }
 
 export const useCostStore = create<CostState>((set) => ({
-  balance: 42,
-  limit: 100,
-  sessionCost: 12,
-  agentCosts: { Scout: 8, Quill: 4 },
+  balance: 0,
+  limit: 0,
+  sessionCost: 0,
+  agentCosts: {},
   setBalance: (balance) => set({ balance }),
   setLimit: (limit) => set({ limit }),
   addCost: (agentName, amount) =>
@@ -31,6 +35,20 @@ export const useCostStore = create<CostState>((set) => ({
         [agentName]: (state.agentCosts[agentName] ?? 0) + amount,
       },
     })),
+  updateFromEvent: (_sessionTokens, sessionCostDd, agentName) =>
+    set((state) => {
+      const delta = sessionCostDd - state.sessionCost;
+      return {
+        sessionCost: sessionCostDd,
+        balance: Math.max(0, state.balance - delta),
+        agentCosts: {
+          ...state.agentCosts,
+          [agentName]: (state.agentCosts[agentName] ?? 0) + delta,
+        },
+      };
+    }),
+  setInitialBalance: (balance, limit) =>
+    set({ balance, limit }),
   reset: () =>
     set({ sessionCost: 0, agentCosts: {} }),
 }));
