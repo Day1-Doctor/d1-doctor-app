@@ -1,0 +1,56 @@
+{
+  "agentStateChanged": {
+    "id": "evt-test-1",
+    "agent_id": "2",
+    "type": "agent.state_changed",
+    "payload": { "from": "idle", "to": "working" }
+  },
+  "taskStepCompleted": {
+    "id": "evt-test-2",
+    "agent_id": "2",
+    "type": "task.step_completed",
+    "payload": { "task_id": "task-1", "step_id": "2", "status": "running", "duration_ms": 12000 }
+  },
+  "costUpdated": {
+    "id": "evt-test-3",
+    "agent_id": "2",
+    "type": "cost.updated",
+    "payload": { "session_tokens": 5000, "session_cost_dd": 10 }
+  },
+  "approvalRequested": {
+    "id": "evt-test-4",
+    "agent_id": "5",
+    "type": "approval.requested",
+    "payload": {
+      "action": "shell",
+      "risk_level": "high",
+      "context": "Pixel wants to run npm test",
+      "tool_name": "shell",
+      "params": { "cmd": "npm test" }
+    }
+  },
+  "taskStatusChanged": {
+    "id": "evt-test-5",
+    "agent_id": "1",
+    "type": "task.status_changed",
+    "payload": { "task_id": "task-1", "from": "running", "to": "completed" }
+  },
+  "artifactCreated": {
+    "id": "evt-test-6",
+    "agent_id": "4",
+    "type": "artifact.created",
+    "payload": { "task_id": "task-1", "artifact_type": "document", "name": "report.md", "size": 4200 }
+  },
+  "toolStarted": {
+    "id": "evt-test-7",
+    "agent_id": "2",
+    "type": "tool.started",
+    "payload": { "tool": "web-search", "params": { "query": "AI benchmarks" } }
+  },
+  "toolFinished": {
+    "id": "evt-test-8",
+    "agent_id": "2",
+    "type": "tool.finished",
+    "payload": { "tool": "web-search", "duration_ms": 2000, "status": "success" }
+  }
+}
