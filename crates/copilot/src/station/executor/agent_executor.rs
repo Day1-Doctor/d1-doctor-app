@@ -375,7 +375,7 @@ mod tests {
     }
 
     fn make_agent(name: &str, role: AgentRole) -> AgentDescriptor {
-        AgentDescriptor::new(name, role, Framework::Builtin)
+        AgentDescriptor::new(name, role, Framework::Builtin, "claude-sonnet-4")
     }
 
     fn make_step(title: &str) -> TaskSpec {
