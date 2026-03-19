@@ -1,13 +1,14 @@
-// MCP Tool Servers — stub implementations defining tool interfaces.
+// MCP Tool Servers — real implementations of tool interfaces.
 //
-// Each tool struct implements the `McpTool` trait and provides stub methods
-// that return mock data. Real implementations will connect to MCP tool server
-// processes in a future release.
+// Each tool struct implements the `McpTool` trait.  Filesystem, web-fetch,
+// web-search, and document tools have full working implementations.
+// Browser, clipboard, and data tools retain stub/in-memory behaviour.
 
 pub mod browser;
 pub mod clipboard;
 pub mod data;
 pub mod document;
+pub mod filesystem;
 pub mod web_fetch;
 pub mod web_search;
 
