@@ -180,6 +180,37 @@ impl AgentExecutor {
             .map(|c| c.message.content.clone())
             .unwrap_or_default();
 
+        // 8b. Process tool calls if present in the response.
+        // TODO(D1D-260): When the LLM response includes tool_calls, iterate
+        // over them and for each:
+        //   a. Emit tool.started event
+        //   b. Execute the tool (via PermissionEngine approval flow)
+        //   c. Emit tool.finished event
+        // Placeholder: the tool execution loop will be wired in Phase 2
+        // (agent execution loop). For now we emit events for any tool calls
+        // that a future implementation populates.
+        let tool_calls: Vec<ToolCallRecord> = vec![];
+        for tool_call in &tool_calls {
+            self.emit_tool_started(&agent.id, &tool_call.tool_name, &tool_call.input)
+                .await;
+            self.emit_tool_finished(
+                &agent.id,
+                &tool_call.tool_name,
+                &tool_call.output,
+                0, // duration_ms placeholder
+            )
+            .await;
+        }
+
+        // 8c. Emit artifact.created events for any artifacts produced.
+        // TODO(D1D-260): When step execution produces artifacts (files,
+        // documents, charts, etc.), populate this vec and emit events.
+        let artifacts: Vec<String> = vec![];
+        for artifact_path in &artifacts {
+            self.emit_artifact_created(&agent.id, &step.id, artifact_path)
+                .await;
+        }
+
         // 9. Complete: transition to Idle (working -> idle).
         let (from, to) = self
             .kernel
@@ -211,8 +242,8 @@ impl AgentExecutor {
         Ok(StepResult {
             output,
             tokens_used,
-            artifacts: vec![],
-            tool_calls: vec![],
+            artifacts,
+            tool_calls,
         })
     }
 
@@ -334,6 +365,69 @@ impl AgentExecutor {
         };
         self.event_bus.publish(event).await;
     }
+
+    /// Emit a `tool.started` event via the event bus.
+    async fn emit_tool_started(&self, agent_id: &str, tool_name: &str, input: &str) {
+        let event = AgentEvent {
+            id: Uuid::new_v4().to_string(),
+            agent_id: agent_id.to_string(),
+            timestamp: Utc::now(),
+            event_type: EventType::ToolStarted {
+                tool_name: tool_name.to_string(),
+                params: serde_json::json!({ "input": input }),
+            },
+        };
+        self.event_bus.publish(event).await;
+    }
+
+    /// Emit a `tool.finished` event via the event bus.
+    async fn emit_tool_finished(
+        &self,
+        agent_id: &str,
+        tool_name: &str,
+        output: &str,
+        duration_ms: u64,
+    ) {
+        let event = AgentEvent {
+            id: Uuid::new_v4().to_string(),
+            agent_id: agent_id.to_string(),
+            timestamp: Utc::now(),
+            event_type: EventType::ToolFinished {
+                tool_name: tool_name.to_string(),
+                result: serde_json::json!({ "output": output }),
+                duration_ms,
+            },
+        };
+        self.event_bus.publish(event).await;
+    }
+
+    /// Emit an `artifact.created` event via the event bus.
+    async fn emit_artifact_created(&self, agent_id: &str, task_id: &str, path: &str) {
+        // Infer artifact type from file extension.
+        let artifact_type = if path.ends_with(".rs") || path.ends_with(".ts") || path.ends_with(".py") {
+            "code"
+        } else if path.ends_with(".md") || path.ends_with(".txt") {
+            "document"
+        } else if path.ends_with(".png") || path.ends_with(".jpg") || path.ends_with(".svg") {
+            "image"
+        } else if path.ends_with(".json") || path.ends_with(".csv") {
+            "data"
+        } else {
+            "file"
+        };
+
+        let event = AgentEvent {
+            id: Uuid::new_v4().to_string(),
+            agent_id: agent_id.to_string(),
+            timestamp: Utc::now(),
+            event_type: EventType::ArtifactCreated {
+                task_id: task_id.to_string(),
+                artifact_type: artifact_type.to_string(),
+                path: path.to_string(),
+            },
+        };
+        self.event_bus.publish(event).await;
+    }
 }
 
 /// Map an `AgentRole` to the corresponding preset `code_name` string.
@@ -375,7 +469,7 @@ mod tests {
     }
 
     fn make_agent(name: &str, role: AgentRole) -> AgentDescriptor {
-        AgentDescriptor::new(name, role, Framework::Builtin)
+        AgentDescriptor::new(name, role, Framework::Builtin, "claude-sonnet-4")
     }
 
     fn make_step(title: &str) -> TaskSpec {
@@ -630,5 +724,212 @@ mod tests {
         assert!(skill.is_some(), "should match comparative analysis skill");
         let skill = skill.unwrap();
         assert_eq!(skill.id, "comparative-analysis");
+    }
+
+    /// Helper that creates an executor with a shared event bus for integration testing.
+    fn make_executor_with_bus() -> (AgentExecutor, Arc<EventBus>, Arc<AgentKernel>) {
+        let llm_client = Arc::new(RwLock::new(
+            LlmClient::new("https://gateway.day1.doctor"),
+        ));
+        let kernel = Arc::new(AgentKernel::new());
+        let event_bus = Arc::new(EventBus::new(64));
+        let cost_tracker = Arc::new(CostTracker::with_event_bus(event_bus.clone()));
+        let permission_engine = Arc::new(PermissionEngine::new());
+        let skill_registry = Arc::new(SkillRegistry::new());
+
+        let executor = AgentExecutor::new(
+            llm_client,
+            kernel.clone(),
+            event_bus.clone(),
+            cost_tracker,
+            permission_engine,
+            skill_registry,
+        );
+
+        (executor, event_bus, kernel)
+    }
+
+    #[tokio::test]
+    async fn test_execute_step_emits_state_changed_events() {
+        // This test verifies that execute_step emits the correct sequence
+        // of agent.state_changed events. The LLM call will fail (no real
+        // gateway), but the first two state transitions should fire before
+        // the error.
+        let (executor, event_bus, kernel) = make_executor_with_bus();
+        let agent = make_agent("Dr. Bob", AgentRole::Orchestrator);
+        let step = make_step("Plan the project");
+
+        // Register the agent in the kernel so FSM transitions work.
+        kernel.register(agent.clone()).await;
+
+        let mut rx = event_bus.subscribe();
+
+        // execute_step will fail at the LLM call, but state transitions
+        // (idle->working, working->thinking) should have emitted first.
+        let _result = executor.execute_step(&step, &agent).await;
+
+        // Collect all events that were emitted.
+        let mut events = Vec::new();
+        while let Ok(evt) = rx.try_recv() {
+            events.push(evt);
+        }
+
+        // We expect at least 2 state_changed events before the LLM call fails:
+        // 1. idle -> working (TaskAssign)
+        // 2. working -> thinking (LlmCallStart)
+        assert!(
+            events.len() >= 2,
+            "expected at least 2 events, got {}",
+            events.len()
+        );
+
+        // All events should have the correct agent_id.
+        for evt in &events {
+            assert_eq!(evt.agent_id, agent.id, "event agent_id mismatch");
+        }
+
+        // First event: idle -> working.
+        match &events[0].event_type {
+            EventType::AgentStateChanged { from, to } => {
+                assert_eq!(from, "idle", "first transition 'from' should be idle");
+                assert_eq!(to, "working", "first transition 'to' should be working");
+            }
+            other => panic!("expected AgentStateChanged, got {:?}", other),
+        }
+
+        // Second event: working -> thinking.
+        match &events[1].event_type {
+            EventType::AgentStateChanged { from, to } => {
+                assert_eq!(from, "working", "second transition 'from' should be working");
+                assert_eq!(to, "thinking", "second transition 'to' should be thinking");
+            }
+            other => panic!("expected AgentStateChanged, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_emit_tool_started_publishes_event() {
+        let (executor, event_bus, _kernel) = make_executor_with_bus();
+        let mut rx = event_bus.subscribe();
+
+        executor
+            .emit_tool_started("agent-1", "shell", "ls -la")
+            .await;
+
+        let evt = rx.try_recv().expect("should receive tool.started event");
+        assert_eq!(evt.agent_id, "agent-1");
+        match &evt.event_type {
+            EventType::ToolStarted { tool_name, params } => {
+                assert_eq!(tool_name, "shell");
+                assert_eq!(params["input"], "ls -la");
+            }
+            other => panic!("expected ToolStarted, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_emit_tool_finished_publishes_event() {
+        let (executor, event_bus, _kernel) = make_executor_with_bus();
+        let mut rx = event_bus.subscribe();
+
+        executor
+            .emit_tool_finished("agent-1", "shell", "file1 file2", 42)
+            .await;
+
+        let evt = rx.try_recv().expect("should receive tool.finished event");
+        assert_eq!(evt.agent_id, "agent-1");
+        match &evt.event_type {
+            EventType::ToolFinished {
+                tool_name,
+                result,
+                duration_ms,
+            } => {
+                assert_eq!(tool_name, "shell");
+                assert_eq!(result["output"], "file1 file2");
+                assert_eq!(*duration_ms, 42);
+            }
+            other => panic!("expected ToolFinished, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_emit_artifact_created_publishes_event() {
+        let (executor, event_bus, _kernel) = make_executor_with_bus();
+        let mut rx = event_bus.subscribe();
+
+        executor
+            .emit_artifact_created("agent-1", "task-123", "output/report.md")
+            .await;
+
+        let evt = rx
+            .try_recv()
+            .expect("should receive artifact.created event");
+        assert_eq!(evt.agent_id, "agent-1");
+        match &evt.event_type {
+            EventType::ArtifactCreated {
+                task_id,
+                artifact_type,
+                path,
+            } => {
+                assert_eq!(task_id, "task-123");
+                assert_eq!(artifact_type, "document");
+                assert_eq!(path, "output/report.md");
+            }
+            other => panic!("expected ArtifactCreated, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_emit_artifact_created_infers_code_type() {
+        let (executor, event_bus, _kernel) = make_executor_with_bus();
+        let mut rx = event_bus.subscribe();
+
+        executor
+            .emit_artifact_created("agent-1", "task-123", "src/main.rs")
+            .await;
+
+        let evt = rx.try_recv().expect("should receive event");
+        match &evt.event_type {
+            EventType::ArtifactCreated { artifact_type, .. } => {
+                assert_eq!(artifact_type, "code");
+            }
+            other => panic!("expected ArtifactCreated, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_emit_artifact_created_infers_image_type() {
+        let (executor, event_bus, _kernel) = make_executor_with_bus();
+        let mut rx = event_bus.subscribe();
+
+        executor
+            .emit_artifact_created("agent-1", "task-123", "assets/chart.png")
+            .await;
+
+        let evt = rx.try_recv().expect("should receive event");
+        match &evt.event_type {
+            EventType::ArtifactCreated { artifact_type, .. } => {
+                assert_eq!(artifact_type, "image");
+            }
+            other => panic!("expected ArtifactCreated, got {:?}", other),
+        }
+    }
+
+    #[tokio::test]
+    async fn test_emit_artifact_created_infers_data_type() {
+        let (executor, event_bus, _kernel) = make_executor_with_bus();
+        let mut rx = event_bus.subscribe();
+
+        executor
+            .emit_artifact_created("agent-1", "task-123", "output/results.json")
+            .await;
+
+        let evt = rx.try_recv().expect("should receive event");
+        match &evt.event_type {
+            EventType::ArtifactCreated { artifact_type, .. } => {
+                assert_eq!(artifact_type, "data");
+            }
+            other => panic!("expected ArtifactCreated, got {:?}", other),
+        }
     }
 }
