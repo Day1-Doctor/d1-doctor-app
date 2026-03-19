@@ -14,6 +14,7 @@ use crate::station::kernel::kernel::AgentKernel;
 use crate::station::llm::client::{ChatMessage, ChatRequest, LlmClient};
 use crate::station::permissions::PermissionEngine;
 use crate::station::runtime::presets::{builtin_presets, AgentPreset};
+use crate::station::skills::executor::SkillExecutor;
 use crate::station::skills::skill_registry::SkillRegistry;
 use crate::station::skills::skill_types::SkillDefinition;
 use crate::station::tasks::task_types::TaskSpec;
@@ -64,7 +65,11 @@ pub struct AgentExecutor {
     /// Reserved for future tool-call approval flow.
     #[allow(dead_code)]
     permission_engine: Arc<PermissionEngine>,
+    /// Retained for direct registry access; skill selection is delegated to
+    /// `skill_executor`.
+    #[allow(dead_code)]
     skill_registry: Arc<SkillRegistry>,
+    skill_executor: SkillExecutor,
 }
 
 impl AgentExecutor {
@@ -77,6 +82,7 @@ impl AgentExecutor {
         permission_engine: Arc<PermissionEngine>,
         skill_registry: Arc<SkillRegistry>,
     ) -> Self {
+        let skill_executor = SkillExecutor::new(skill_registry.clone());
         Self {
             llm_client,
             kernel,
@@ -84,6 +90,7 @@ impl AgentExecutor {
             cost_tracker,
             permission_engine,
             skill_registry,
+            skill_executor,
         }
     }
 
@@ -288,49 +295,11 @@ impl AgentExecutor {
 
     /// Select the best matching skill from the registry based on step title
     /// keywords and the agent's role.
+    ///
+    /// Delegates to [`SkillExecutor`] as the canonical skill selection source.
     fn select_skill(&self, step: &TaskSpec, agent: &AgentDescriptor) -> Option<SkillDefinition> {
         let role_str = role_to_code_name(agent.role);
-        let agent_skills = self.skill_registry.skills_for_agent(role_str);
-
-        if agent_skills.is_empty() {
-            return None;
-        }
-
-        let title_lower = step.title.to_lowercase();
-
-        // Score each skill by counting keyword matches in the step title.
-        let mut best_skill: Option<&SkillDefinition> = None;
-        let mut best_score: usize = 0;
-
-        for skill in &agent_skills {
-            let mut score: usize = 0;
-
-            // Check skill name words against step title.
-            for word in skill.name.to_lowercase().split_whitespace() {
-                if word.len() >= 3 && title_lower.contains(&word) {
-                    score += 2;
-                }
-            }
-
-            // Check skill description words (less weight).
-            for word in skill.description.to_lowercase().split_whitespace() {
-                if word.len() >= 4 && title_lower.contains(&word) {
-                    score += 1;
-                }
-            }
-
-            if score > best_score {
-                best_score = score;
-                best_skill = Some(skill);
-            }
-        }
-
-        // Only return a skill if we got at least one keyword match.
-        if best_score > 0 {
-            best_skill.cloned()
-        } else {
-            None
-        }
+        self.skill_executor.select_skill(&step.title, role_str)
     }
 
     /// Determine the LLM model to use for the given agent.

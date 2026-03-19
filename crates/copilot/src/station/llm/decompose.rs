@@ -31,6 +31,7 @@ impl LlmDecomposer {
                         step_index: s.step_index,
                         depends_on: s.depends_on,
                         is_parallel: false,
+                        skill_name: None,
                     })
                     .collect();
 

@@ -21,6 +21,8 @@ pub struct PlannedStep {
     pub depends_on: Vec<u32>,
     /// Whether this step can run in parallel with the previous step.
     pub is_parallel: bool,
+    /// Name of the matched skill, set by `SkillExecutor::annotate_plan`.
+    pub skill_name: Option<String>,
 }
 
 /// Rule-based task decomposer.
@@ -52,6 +54,7 @@ impl TaskDecomposer {
                 step_index: idx,
                 depends_on: vec![],
                 is_parallel: false,
+                skill_name: None,
             });
             idx += 1;
         }
@@ -64,6 +67,7 @@ impl TaskDecomposer {
                 step_index: idx,
                 depends_on: if idx > 0 { vec![idx - 1] } else { vec![] },
                 is_parallel: false,
+                skill_name: None,
             });
             idx += 1;
         }
@@ -80,6 +84,7 @@ impl TaskDecomposer {
                 step_index: idx,
                 depends_on: if idx > 0 { vec![idx - 1] } else { vec![] },
                 is_parallel: false,
+                skill_name: None,
             });
             idx += 1;
         }
@@ -96,6 +101,7 @@ impl TaskDecomposer {
                 step_index: idx,
                 depends_on: if idx > 0 { vec![idx - 1] } else { vec![] },
                 is_parallel: false,
+                skill_name: None,
             });
             idx += 1;
         }
@@ -108,6 +114,7 @@ impl TaskDecomposer {
                 step_index: idx,
                 depends_on: if idx > 0 { vec![idx - 1] } else { vec![] },
                 is_parallel: false,
+                skill_name: None,
             });
         }
 
@@ -120,6 +127,7 @@ impl TaskDecomposer {
                 step_index: 0,
                 depends_on: vec![],
                 is_parallel: false,
+                skill_name: None,
             });
         }
 
@@ -254,6 +262,7 @@ mod tests {
             step_index: 0,
             depends_on: vec![],
             is_parallel: false,
+            skill_name: None,
         };
 
         let subtask = step.to_subtask("parent-123");
