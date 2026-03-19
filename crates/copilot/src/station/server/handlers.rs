@@ -164,6 +164,20 @@ pub async fn get_costs(Extension(state): Extension<ServerState>) -> Json<Value> 
     }))
 }
 
+pub async fn start_task(
+    Extension(state): Extension<ServerState>,
+    Path(id): Path<String>,
+) -> Json<Value> {
+    match state.task_engine.start(&id).await {
+        Ok(t) => Json(json!({
+            "id": t.id,
+            "title": t.title,
+            "status": format!("{:?}", t.status).to_lowercase(),
+        })),
+        Err(e) => Json(json!({ "error": e, "task_id": id })),
+    }
+}
+
 pub async fn get_agent_costs(
     Extension(state): Extension<ServerState>,
     Path(agent_id): Path<String>,

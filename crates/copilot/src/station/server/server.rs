@@ -38,6 +38,10 @@ impl StationServer {
                 "/api/v1/tasks/:id/cancel",
                 axum::routing::post(handlers::cancel_task),
             )
+            .route(
+                "/api/v1/tasks/:id/start",
+                axum::routing::post(handlers::start_task),
+            )
             // Artifacts
             .route("/api/v1/tasks/:id/artifacts", get(handlers::list_artifacts))
             // Cost
@@ -205,6 +209,63 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_start_task_endpoint() {
+        let state = test_state();
+
+        // First create a task so there's something to start.
+        use crate::station::tasks::task_types::CreateTaskRequest;
+        let task = state
+            .task_engine
+            .create(CreateTaskRequest {
+                description: "Task to start".to_string(),
+                priority: None,
+            })
+            .await;
+
+        let app = StationServer::router(state);
+        let response = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("POST")
+                    .uri(&format!("/api/v1/tasks/{}/start", task.id))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(json["status"], "running");
+        assert_eq!(json["id"], task.id);
+    }
+
+    #[tokio::test]
+    async fn test_start_task_not_found() {
+        let app = StationServer::router(test_state());
+        let response = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("POST")
+                    .uri("/api/v1/tasks/nonexistent/start")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert!(json["error"].as_str().unwrap().contains("not found"));
     }
 
     #[tokio::test]

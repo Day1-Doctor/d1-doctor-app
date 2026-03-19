@@ -246,6 +246,35 @@ async fn check_tier_limit(
     })
 }
 
+/// List available LLM providers/models from the gateway.
+///
+/// Returns an empty list if the user is not authenticated or the gateway is
+/// unreachable, allowing the UI to degrade gracefully.
+#[tauri::command]
+async fn list_providers(
+    state: tauri::State<'_, Arc<AppState>>,
+) -> Result<Vec<serde_json::Value>, String> {
+    let client = state.llm_client.read().await;
+    let models = client.list_models().await;
+    Ok(models)
+}
+
+#[tauri::command]
+async fn start_task(
+    state: tauri::State<'_, Arc<AppState>>,
+    task_id: String,
+) -> Result<TaskInfo, String> {
+    let task = state.task_engine.start(&task_id).await?;
+    Ok(TaskInfo {
+        id: task.id,
+        title: task.title,
+        status: format!("{:?}", task.status).to_lowercase(),
+        agent_id: task.agent_id,
+        parent_id: task.parent_id,
+        step_index: task.step_index,
+    })
+}
+
 #[tauri::command]
 async fn get_runtime_status(
     state: tauri::State<'_, Arc<AppState>>,
@@ -452,6 +481,8 @@ pub fn run() {
             get_task_steps,
             pause_task,
             cancel_task,
+            start_task,
+            list_providers,
             get_runtime_status,
             store_auth_token,
             get_auth_token,

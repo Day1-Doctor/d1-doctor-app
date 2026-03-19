@@ -88,6 +88,55 @@ impl LlmClient {
         self
     }
 
+    /// Return the configured gateway URL.
+    pub fn gateway_url(&self) -> &str {
+        &self.gateway_url
+    }
+
+    /// Return the configured API key, if any.
+    pub fn api_key(&self) -> Option<&str> {
+        self.api_key.as_deref()
+    }
+
+    /// List available models from the gateway.
+    ///
+    /// Calls GET /dr-agent/v1/models and returns the parsed JSON response.
+    /// Returns an empty list on auth or network errors so the UI can degrade
+    /// gracefully.
+    pub async fn list_models(&self) -> Vec<serde_json::Value> {
+        let api_key = match &self.api_key {
+            Some(k) => k.clone(),
+            None => return Vec::new(),
+        };
+
+        let resp = self
+            .http
+            .get(format!("{}/dr-agent/v1/models", self.gateway_url))
+            .header("Authorization", format!("Bearer {}", api_key))
+            .send()
+            .await;
+
+        let resp = match resp {
+            Ok(r) => r,
+            Err(_) => return Vec::new(),
+        };
+
+        if !resp.status().is_success() {
+            return Vec::new();
+        }
+
+        let body: serde_json::Value = match resp.json().await {
+            Ok(b) => b,
+            Err(_) => return Vec::new(),
+        };
+
+        // The gateway returns { "data": [...] } following OpenAI convention.
+        body.get("data")
+            .and_then(|d| d.as_array())
+            .cloned()
+            .unwrap_or_default()
+    }
+
     /// Load auth token from ~/.day1copilot/auth.json.
     /// Reads the new `{ "token": "...", "token_type": "jwt" }` format.
     pub fn load_api_key(&mut self) -> Result<(), String> {
@@ -235,5 +284,35 @@ mod tests {
         let result = client.get_balance().await;
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("No API key configured"));
+    }
+
+    #[test]
+    fn test_gateway_url_accessor() {
+        let client = LlmClient::new("https://gateway.day1.doctor");
+        assert_eq!(client.gateway_url(), "https://gateway.day1.doctor");
+    }
+
+    #[test]
+    fn test_api_key_accessor() {
+        let client = LlmClient::new("https://gateway.day1.doctor");
+        assert!(client.api_key().is_none());
+
+        let client2 = client.with_api_key("test_key");
+        assert_eq!(client2.api_key(), Some("test_key"));
+    }
+
+    #[tokio::test]
+    async fn test_list_models_no_key_returns_empty() {
+        let client = LlmClient::new("https://gateway.day1.doctor");
+        let models = client.list_models().await;
+        assert!(models.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_list_models_bad_url_returns_empty() {
+        let client =
+            LlmClient::new("http://127.0.0.1:1").with_api_key("test");
+        let models = client.list_models().await;
+        assert!(models.is_empty());
     }
 }
