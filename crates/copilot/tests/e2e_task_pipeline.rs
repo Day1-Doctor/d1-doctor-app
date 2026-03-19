@@ -23,7 +23,11 @@ async fn setup_kernel() -> Arc<AgentKernel> {
         ("Atlas", AgentRole::Operator),
     ];
     for (name, role) in roles {
-        let agent = AgentDescriptor::new(name, role, Framework::Builtin);
+        let model = match role {
+            AgentRole::Researcher | AgentRole::Operator => "claude-haiku-4-5",
+            _ => "claude-sonnet-4",
+        };
+        let agent = AgentDescriptor::new(name, role, Framework::Builtin, model);
         kernel.register(agent).await;
     }
     kernel

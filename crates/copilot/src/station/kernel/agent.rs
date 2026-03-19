@@ -11,6 +11,7 @@ pub struct AgentDescriptor {
     pub name: String,
     pub role: AgentRole,
     pub framework: Framework,
+    pub default_model: String,
     pub status: AgentStatus,
     pub trust_score: f64,
     pub sprite_id: Option<String>,
@@ -45,13 +46,14 @@ pub enum Framework {
 
 impl AgentDescriptor {
     /// Create a new agent with sensible defaults.
-    pub fn new(name: &str, role: AgentRole, framework: Framework) -> Self {
+    pub fn new(name: &str, role: AgentRole, framework: Framework, default_model: &str) -> Self {
         let now = Utc::now();
         Self {
             id: Uuid::new_v4().to_string(),
             name: name.to_string(),
             role,
             framework,
+            default_model: default_model.to_string(),
             status: AgentStatus::Idle,
             trust_score: 0.5,
             sprite_id: None,
@@ -77,10 +79,16 @@ mod tests {
 
     #[test]
     fn test_new_agent_defaults() {
-        let agent = AgentDescriptor::new("researcher-1", AgentRole::Researcher, Framework::Builtin);
+        let agent = AgentDescriptor::new(
+            "researcher-1",
+            AgentRole::Researcher,
+            Framework::Builtin,
+            "claude-haiku-4-5",
+        );
         assert_eq!(agent.name, "researcher-1");
         assert_eq!(agent.role, AgentRole::Researcher);
         assert_eq!(agent.framework, Framework::Builtin);
+        assert_eq!(agent.default_model, "claude-haiku-4-5");
         assert_eq!(agent.status, AgentStatus::Idle);
         assert!((agent.trust_score - 0.5).abs() < f64::EPSILON);
         assert_eq!(agent.room, "main");
@@ -91,7 +99,7 @@ mod tests {
 
     #[test]
     fn test_apply_trigger_success() {
-        let mut agent = AgentDescriptor::new("coder-1", AgentRole::Coder, Framework::ClaudeSdk);
+        let mut agent = AgentDescriptor::new("coder-1", AgentRole::Coder, Framework::ClaudeSdk, "claude-sonnet-4");
         assert_eq!(agent.status, AgentStatus::Idle);
 
         let new = agent.apply_trigger(&Trigger::TaskAssign).unwrap();
@@ -101,7 +109,7 @@ mod tests {
 
     #[test]
     fn test_apply_trigger_invalid() {
-        let mut agent = AgentDescriptor::new("writer-1", AgentRole::Writer, Framework::Generic);
+        let mut agent = AgentDescriptor::new("writer-1", AgentRole::Writer, Framework::Generic, "claude-sonnet-4");
         let result = agent.apply_trigger(&Trigger::LlmCallStart);
         assert!(result.is_err());
         // Status should remain unchanged on failure.
@@ -110,7 +118,7 @@ mod tests {
 
     #[test]
     fn test_full_lifecycle() {
-        let mut agent = AgentDescriptor::new("analyst-1", AgentRole::Analyst, Framework::OpenClaw);
+        let mut agent = AgentDescriptor::new("analyst-1", AgentRole::Analyst, Framework::OpenClaw, "claude-sonnet-4");
 
         // idle -> working
         agent.apply_trigger(&Trigger::TaskAssign).unwrap();
@@ -135,7 +143,7 @@ mod tests {
 
     #[test]
     fn test_serde_roundtrip() {
-        let agent = AgentDescriptor::new("operator-1", AgentRole::Operator, Framework::IronClaw);
+        let agent = AgentDescriptor::new("operator-1", AgentRole::Operator, Framework::IronClaw, "claude-haiku-4-5");
         let json = serde_json::to_string(&agent).unwrap();
         let back: AgentDescriptor = serde_json::from_str(&json).unwrap();
         assert_eq!(back.id, agent.id);

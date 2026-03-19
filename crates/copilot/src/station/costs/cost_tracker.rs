@@ -45,12 +45,12 @@ impl ModelTier {
         if lower.contains("gpt-4o-mini")
             || lower.contains("sonnet")
             || lower.contains("gpt-3.5")
-            || lower.contains("haiku")
         {
             ModelTier::Medium
         } else if lower.contains("opus") || lower.contains("gpt-4o") || lower.contains("gpt-4-") {
             ModelTier::Heavy
         } else {
+            // Light tier: haiku, flash, mini models, and anything unrecognized.
             ModelTier::Light
         }
     }
@@ -292,7 +292,7 @@ mod tests {
         assert_eq!(ModelTier::classify("gpt-4-turbo"), ModelTier::Heavy);
         assert_eq!(ModelTier::classify("claude-sonnet-4"), ModelTier::Medium);
         assert_eq!(ModelTier::classify("gpt-3.5-turbo"), ModelTier::Medium);
-        assert_eq!(ModelTier::classify("claude-haiku-3"), ModelTier::Medium);
+        assert_eq!(ModelTier::classify("claude-haiku-3"), ModelTier::Light);
         assert_eq!(ModelTier::classify("gpt-4o-mini"), ModelTier::Medium);
         assert_eq!(ModelTier::classify("gemini-flash"), ModelTier::Light);
         assert_eq!(ModelTier::classify("llama-3-8b"), ModelTier::Light);

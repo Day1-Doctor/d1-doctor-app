@@ -123,7 +123,11 @@ mod tests {
             ("orchestrator-1", AgentRole::Orchestrator),
         ];
         for (name, role) in roles {
-            let agent = AgentDescriptor::new(name, role, Framework::Builtin);
+            let model = match role {
+                AgentRole::Researcher | AgentRole::Operator => "claude-haiku-4-5",
+                _ => "claude-sonnet-4",
+            };
+            let agent = AgentDescriptor::new(name, role, Framework::Builtin, model);
             kernel.register(agent).await;
         }
         kernel
@@ -247,7 +251,7 @@ mod tests {
     async fn test_route_no_matching_agent() {
         // Kernel with only a coder — no researcher, writer, etc.
         let kernel = Arc::new(AgentKernel::new());
-        let coder = AgentDescriptor::new("coder-only", AgentRole::Coder, Framework::Builtin);
+        let coder = AgentDescriptor::new("coder-only", AgentRole::Coder, Framework::Builtin, "claude-sonnet-4");
         kernel.register(coder).await;
 
         let task_engine = Arc::new(TaskEngine::new());
@@ -313,8 +317,8 @@ mod tests {
         let kernel = Arc::new(AgentKernel::new());
 
         // Register two coders.
-        let coder_a = AgentDescriptor::new("coder-busy", AgentRole::Coder, Framework::Builtin);
-        let coder_b = AgentDescriptor::new("coder-idle", AgentRole::Coder, Framework::Builtin);
+        let coder_a = AgentDescriptor::new("coder-busy", AgentRole::Coder, Framework::Builtin, "claude-sonnet-4");
+        let coder_b = AgentDescriptor::new("coder-idle", AgentRole::Coder, Framework::Builtin, "claude-sonnet-4");
         let id_a = kernel.register(coder_a).await;
         let _id_b = kernel.register(coder_b).await;
 

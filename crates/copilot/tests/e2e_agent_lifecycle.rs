@@ -26,7 +26,7 @@ fn make_runtime() -> (BuiltinRuntime, Arc<AgentKernel>, Arc<EventBus>) {
 #[tokio::test]
 async fn lifecycle_register_and_deregister() {
     let kernel = make_kernel();
-    let agent = AgentDescriptor::new("test-agent", AgentRole::Coder, Framework::Builtin);
+    let agent = AgentDescriptor::new("test-agent", AgentRole::Coder, Framework::Builtin, "claude-sonnet-4");
     let id = agent.id.clone();
 
     kernel.register(agent).await;
@@ -40,7 +40,7 @@ async fn lifecycle_register_and_deregister() {
 #[tokio::test]
 async fn lifecycle_full_fsm_cycle() {
     let kernel = make_kernel();
-    let agent = AgentDescriptor::new("worker", AgentRole::Writer, Framework::Generic);
+    let agent = AgentDescriptor::new("worker", AgentRole::Writer, Framework::Generic, "claude-sonnet-4");
     let id = kernel.register(agent).await;
 
     // idle -> working
@@ -83,7 +83,7 @@ async fn lifecycle_full_fsm_cycle() {
 #[tokio::test]
 async fn lifecycle_error_and_recovery() {
     let kernel = make_kernel();
-    let agent = AgentDescriptor::new("fragile", AgentRole::Coder, Framework::Builtin);
+    let agent = AgentDescriptor::new("fragile", AgentRole::Coder, Framework::Builtin, "claude-sonnet-4");
     let id = kernel.register(agent).await;
 
     // idle -> working
@@ -112,7 +112,7 @@ async fn lifecycle_error_and_recovery() {
 #[tokio::test]
 async fn lifecycle_approval_flow() {
     let kernel = make_kernel();
-    let agent = AgentDescriptor::new("cautious", AgentRole::Operator, Framework::Builtin);
+    let agent = AgentDescriptor::new("cautious", AgentRole::Operator, Framework::Builtin, "claude-haiku-4-5");
     let id = kernel.register(agent).await;
 
     // idle -> working
@@ -139,7 +139,7 @@ async fn lifecycle_approval_flow() {
 #[tokio::test]
 async fn lifecycle_invalid_transition_rejected() {
     let kernel = make_kernel();
-    let agent = AgentDescriptor::new("strict", AgentRole::Analyst, Framework::Builtin);
+    let agent = AgentDescriptor::new("strict", AgentRole::Analyst, Framework::Builtin, "claude-sonnet-4");
     let id = kernel.register(agent).await;
 
     // Cannot go from idle directly to thinking
