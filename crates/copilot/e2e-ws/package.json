@@ -1,0 +1,11 @@
+{
+  "name": "d1-copilot-e2e-ws",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node runner.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
