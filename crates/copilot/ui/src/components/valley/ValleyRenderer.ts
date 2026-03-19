@@ -1,13 +1,13 @@
 /**
- * ValleyRenderer — Pure Canvas 2D rendering functions for the Cowork Campus
- * parcel grid view showing 11 office parcels in a diamond pattern.
+ * ValleyRenderer — Pure Canvas 2D rendering functions for the Day1 Valley
+ * parcel grid view showing 11 office parcels in a (+) cross shape.
  *
  * Layout (11 parcels):
- *   Row 0:     [P1]  [P2]  [P3]         (top 3)
- *   Row 1: [P4] [P5] [P6] [P7] [P8]    (middle 5, widest)
- *   Row 2:     [P9]  [P10] [P11]        (bottom 3)
+ *   Row 0:     [P1]  [P2]  [P3]         (top 3, cols 1-3)
+ *   Row 1: [P4] [P5] [P6] [P7] [P8]    (middle 5, full width)
+ *   Row 2:     [P9]  [P10] [P11]        (bottom 3, cols 1-3)
  *
- * Center parcels P5, P6, P7 are priority active slots.
+ * Center parcel P5 (index 4) is the primary active slot.
  *
  * Each parcel has one of three states:
  *   - running: dark card with accent glow border + animated mini agents
@@ -50,7 +50,7 @@ export interface Parcel {
 // ---------------------------------------------------------------------------
 
 /**
- * Diamond layout: [col, row] positions for P1..P11 within the 5x3 grid.
+ * Cross (+) layout: [col, row] positions for P1..P11 within the 5x3 grid.
  * Row 0: cols 1,2,3  (P1,P2,P3)
  * Row 1: cols 0,1,2,3,4  (P4,P5,P6,P7,P8)
  * Row 2: cols 1,2,3  (P9,P10,P11)
@@ -60,9 +60,9 @@ export const PARCEL_POSITIONS: Array<{ col: number; row: number }> = [
   { col: 2, row: 0 }, // P2
   { col: 3, row: 0 }, // P3
   { col: 0, row: 1 }, // P4
-  { col: 1, row: 1 }, // P5  (priority)
-  { col: 2, row: 1 }, // P6  (priority)
-  { col: 3, row: 1 }, // P7  (priority)
+  { col: 1, row: 1 }, // P5  (center — primary active slot)
+  { col: 2, row: 1 }, // P6
+  { col: 3, row: 1 }, // P7
   { col: 4, row: 1 }, // P8
   { col: 1, row: 2 }, // P9
   { col: 2, row: 2 }, // P10
@@ -70,16 +70,16 @@ export const PARCEL_POSITIONS: Array<{ col: number; row: number }> = [
 ];
 
 /**
- * Priority fill order: center first, then ring.
- * Indices are 0-based into PARCEL_POSITIONS (P1=0, P5=4, P6=5, P7=6...).
+ * Priority fill order: center first (index 4 = P5), then adjacent.
+ * Indices are 0-based into PARCEL_POSITIONS.
  */
-export const FILL_ORDER = [4, 5, 6, 1, 3, 7, 9, 0, 2, 8, 10];
+export const FILL_ORDER = [4, 5, 3, 1, 7, 0, 2, 6, 8, 9, 10];
 
 /** Parcel card dimensions */
-const PARCEL_W = 160;
-const PARCEL_H = 120;
-const PARCEL_GAP_X = 16;
-const PARCEL_GAP_Y = 16;
+const PARCEL_W = 170;
+const PARCEL_H = 190;
+const PARCEL_GAP_X = 12;
+const PARCEL_GAP_Y = 12;
 const PARCEL_RADIUS = 8;
 
 /** Colors */
@@ -178,16 +178,16 @@ function drawRunningParcel(
 
   // ---- Office name (title at top, centered) ----
   ctx.fillStyle = TEXT_WHITE;
-  ctx.font = `bold 11px ui-monospace, "SF Mono", Menlo, monospace`;
+  ctx.font = `bold 14px ui-monospace, "SF Mono", Menlo, monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  ctx.fillText(office.name, x + PARCEL_W / 2, y + 20, PARCEL_W - 12);
+  ctx.fillText(office.name, x + PARCEL_W / 2, y + 18, PARCEL_W - 12);
 
-  // ---- Interior: mini desks (3x2 grid) centered in middle area ----
-  // Area for agents: starts at y+40 (below name), ends at y+h-50 (above progress bar)
-  // This is the middle 50% of the card vertically
+  // ---- Interior: mini desks (3x2 grid) centered between title and progress bar ----
+  // Title occupies y+18 to y+32. Agent area: y+40 to y+135.
+  // 2 rows of desks (each ~30px tall incl. agent): 60px total. Center in 95px = start at y+57.
   const agentAreaTop = y + 40;
-  const agentAreaBottom = y + PARCEL_H - 50;
+  const agentAreaBottom = y + 135;
   const agentAreaH = agentAreaBottom - agentAreaTop;
 
   const deskW = 20;
@@ -245,9 +245,9 @@ function drawRunningParcel(
     }
   }
 
-  // ---- Progress bar (near bottom) ----
+  // ---- Progress bar (at y+140) ----
   const barX = x + 10;
-  const barY = y + PARCEL_H - 26;
+  const barY = y + 140;
   const barW = PARCEL_W - 20;
   const barH = 5;
   const progress = Math.max(0, Math.min(1, office.taskProgress));
@@ -267,13 +267,13 @@ function drawRunningParcel(
     ctx.fill();
   }
 
-  // ---- Stats at very bottom ----
+  // ---- Stats line (at y+160) ----
   ctx.fillStyle = "#666666";
-  ctx.font = `9px ui-monospace, "SF Mono", Menlo, monospace`;
+  ctx.font = `11px ui-monospace, "SF Mono", Menlo, monospace`;
   ctx.textAlign = "center";
-  ctx.textBaseline = "bottom";
+  ctx.textBaseline = "top";
   const statsText = `${office.agentCount} agents · ${office.skillCount} skills`;
-  ctx.fillText(statsText, x + PARCEL_W / 2, y + PARCEL_H - 6, PARCEL_W - 12);
+  ctx.fillText(statsText, x + PARCEL_W / 2, y + 160, PARCEL_W - 12);
 
   ctx.restore();
 
@@ -507,7 +507,7 @@ function drawCampusBackground(
 }
 
 /**
- * Render the full Cowork Campus parcel grid.
+ * Render the full Day1 Valley parcel grid.
  */
 export function drawCampus(
   ctx: CanvasRenderingContext2D,

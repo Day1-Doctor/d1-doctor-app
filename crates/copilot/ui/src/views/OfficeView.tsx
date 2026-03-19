@@ -6,15 +6,80 @@ import { useViewStore } from "../stores/viewStore";
 import { useCanvasSize } from "../hooks/useCanvasSize";
 import { IsometricCanvas } from "../components/office/IsometricCanvas";
 import { AgentDetailPanel } from "../components/office/AgentDetailPanel";
-import { TaskTimeline } from "../components/task/TaskTimeline";
 import { OFFICE_LAYOUT, hitTestAgent } from "../components/office/OfficeRenderer";
+import type { Task } from "../stores/taskStore";
+
+/**
+ * Thin horizontal segmented progress bar showing task steps at the bottom
+ * of the office view. Each segment represents one step, color-coded by status.
+ */
+function TaskProgressBar({ activeTask }: { activeTask: Task }) {
+  const steps = activeTask.steps;
+  if (!steps.length) return null;
+  const totalSteps = steps.length;
+  const completedCount = steps.filter((s) => s.status === "completed").length;
+  const pct = Math.round((completedCount / totalSteps) * 100);
+
+  return (
+    <div
+      className="absolute bottom-0 left-0 right-0 flex items-center px-3 gap-1 border-t border-border/50"
+      style={{
+        height: 40,
+        background: "rgba(5, 5, 8, 0.8)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+      }}
+    >
+      {/* Task name */}
+      <span
+        className="text-sm shrink-0 mr-2 truncate max-w-[150px]"
+        style={{ color: "#888888" }}
+      >
+        {activeTask.title}
+      </span>
+
+      {/* Segmented progress bar */}
+      <div className="flex-1 flex gap-0.5 rounded-full overflow-hidden" style={{ height: 12 }}>
+        {steps.map((step) => (
+          <button
+            key={step.id}
+            className="flex-1 relative cursor-pointer transition-all hover:brightness-125"
+            style={{
+              backgroundColor:
+                step.status === "completed"
+                  ? "#22C55E"
+                  : step.status === "running"
+                    ? "#F97316"
+                    : step.status === "failed"
+                      ? "#EF4444"
+                      : "#1F1F1F",
+            }}
+            title={`${step.title}${step.agentName ? ` (${step.agentName})` : ""} — ${step.status}`}
+          >
+            {step.status === "running" && (
+              <div className="absolute inset-0 bg-white/20 animate-pulse rounded" />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Percentage */}
+      <span
+        className="text-sm shrink-0 ml-2 tabular-nums"
+        style={{ color: "#555555" }}
+      >
+        {pct}%
+      </span>
+    </div>
+  );
+}
 
 /**
  * OfficeView — Full-height canvas container that renders the 2.5D
  * isometric office. Reads agents from the Zustand store and pipes
  * them into the `IsometricCanvas` component.
  *
- * When a task is active, a glassmorphic TaskTimeline bar is shown
+ * When a task is active, a thin segmented TaskProgressBar is shown
  * at the bottom of the canvas.
  *
  * Clicking on an agent in the canvas opens the AgentDetailPanel.
@@ -95,30 +160,9 @@ export function OfficeView() {
         <IsometricCanvas agents={agents} width={width} height={height} />
       )}
 
-      {/* Task timeline bottom overlay */}
+      {/* Task progress bar — thin 40px strip at bottom */}
       {activeTask && activeTask.steps.length > 0 && (
-        <div
-          className="absolute bottom-0 left-0 right-0 border-t border-border/50"
-          style={{
-            background: "rgba(5, 5, 5, 0.75)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-          }}
-        >
-          <div className="flex items-center gap-3 px-4 py-1">
-            <span className="text-text-secondary text-[12px] font-medium shrink-0 uppercase tracking-wider">
-              {t("nav.tasks")}
-            </span>
-            <span className="text-text-primary text-sm truncate max-w-[160px]">
-              {activeTask.title}
-            </span>
-            <div className="w-px h-4 bg-border shrink-0" />
-            <TaskTimeline
-              steps={activeTask.steps}
-              className="flex-1 min-w-0"
-            />
-          </div>
-        </div>
+        <TaskProgressBar activeTask={activeTask} />
       )}
 
       {/* Agent detail slide-in panel */}
