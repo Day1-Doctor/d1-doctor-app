@@ -1,4 +1,4 @@
-import{c as a,r as c,j as e,A as d,m as o,u as l}from"./index-D6fn235X.js";const x=[{id:"1",name:"research-notes.md",type:"document",agent:"Scout",size:4200,timestamp:"2026-03-18T10:23:00Z",content:`# Research Notes
+import{c as a,r as c,j as e,A as d,m as o,u as l}from"./index-DxvgIKhf.js";const x=[{id:"1",name:"research-notes.md",type:"document",agent:"Scout",size:4200,timestamp:"2026-03-18T10:23:00Z",content:`# Research Notes
 
 ## AI Framework Comparison
 

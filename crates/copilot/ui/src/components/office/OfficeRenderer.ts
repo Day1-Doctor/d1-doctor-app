@@ -969,70 +969,125 @@ function drawEnhancedDesk(
   const agentRole = state?.agent.role ?? "operator";
   const roleColor = AGENT_COLORS[agentRole] ?? "#6B7280";
 
-  const dw = TILE_W * 0.62;
-  const dh = TILE_H * 0.62;
+  // Upscaled desk: 1.4x width, 1.3x depth
+  const dw = TILE_W * 0.62 * 1.4;
+  const dh = TILE_H * 0.62 * 1.3;
+
+  // ---- Shadow under desk ----
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.ellipse(x, y + dh * 0.6, dw * 0.85, dh * 0.55, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 
   // ---- Chair behind desk ----
-  const chairY = y + dh * 0.5;
-  const seatW = dw * 0.55;
-  const seatH = dh * 0.4;
+  const chairY = y + dh * 0.55;
+  const seatW = dw * 0.52;
+  const seatH = dh * 0.42;
 
-  // Chair wheels (small ellipses)
+  // Chair wheels (more visible, 5-wheel base)
   ctx.fillStyle = "#1A1A1A";
+  for (let wi = 0; wi < 5; wi++) {
+    const angle = (wi / 5) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.ellipse(
+      x + Math.cos(angle) * seatW * 0.38,
+      chairY + seatH * 0.7 + Math.sin(angle) * seatH * 0.18,
+      3.5, 2, 0, 0, Math.PI * 2,
+    );
+    ctx.fill();
+  }
+  // Wheel hub
+  ctx.fillStyle = "#2A2A2A";
   ctx.beginPath();
-  ctx.ellipse(x - seatW * 0.35, chairY + seatH + 4, 3, 1.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(x + seatW * 0.35, chairY + seatH + 4, 3, 1.5, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(x, chairY + seatH + 5, 3, 1.5, 0, 0, Math.PI * 2);
+  ctx.ellipse(x, chairY + seatH * 0.6, 5, 3, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Chair seat
+  // Chair seat cushion with texture
   ctx.beginPath();
   ctx.moveTo(x, chairY - seatH);
   ctx.lineTo(x + seatW, chairY);
   ctx.lineTo(x, chairY + seatH);
   ctx.lineTo(x - seatW, chairY);
   ctx.closePath();
+  ctx.fillStyle = roleColor + "66";
+  ctx.fill();
+  ctx.strokeStyle = roleColor + "99";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  // Cushion centre seam
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x, chairY - seatH);
+  ctx.lineTo(x + seatW, chairY);
+  ctx.lineTo(x, chairY + seatH);
+  ctx.lineTo(x - seatW, chairY);
+  ctx.closePath();
+  ctx.clip();
+  ctx.strokeStyle = roleColor + "44";
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(x - seatW * 0.5, chairY - seatH * 0.5);
+  ctx.lineTo(x + seatW * 0.5, chairY + seatH * 0.5);
+  ctx.moveTo(x + seatW * 0.5, chairY - seatH * 0.5);
+  ctx.lineTo(x - seatW * 0.5, chairY + seatH * 0.5);
+  ctx.stroke();
+  ctx.restore();
+
+  // Chair back with padding detail
+  const backH = dh * 0.9;
+  const backW = seatW * 0.65;
+  ctx.beginPath();
+  ctx.moveTo(x - backW, chairY - seatH * 0.3);
+  ctx.lineTo(x - backW, chairY - seatH * 0.3 - backH);
+  ctx.lineTo(x + backW, chairY - seatH * 0.3 - backH);
+  ctx.lineTo(x + backW, chairY - seatH * 0.3);
   ctx.fillStyle = roleColor + "55";
   ctx.fill();
-  ctx.strokeStyle = roleColor + "88";
-  ctx.lineWidth = 0.8;
+  ctx.strokeStyle = roleColor + "77";
+  ctx.lineWidth = 1;
   ctx.stroke();
-
-  // Chair back
-  const backH = dh * 0.7;
-  ctx.beginPath();
-  ctx.moveTo(x - seatW * 0.6, chairY - seatH * 0.4);
-  ctx.lineTo(x - seatW * 0.6, chairY - seatH * 0.4 - backH);
-  ctx.lineTo(x + seatW * 0.6, chairY - seatH * 0.4 - backH);
-  ctx.lineTo(x + seatW * 0.6, chairY - seatH * 0.4);
+  // Back padding lines
+  ctx.strokeStyle = roleColor + "33";
+  ctx.lineWidth = 0.7;
+  for (let pi = 1; pi < 4; pi++) {
+    const py3 = chairY - seatH * 0.3 - (backH * pi) / 4;
+    ctx.beginPath();
+    ctx.moveTo(x - backW + 2, py3);
+    ctx.lineTo(x + backW - 2, py3);
+    ctx.stroke();
+  }
+  // Headrest
   ctx.fillStyle = roleColor + "44";
-  ctx.fill();
+  ctx.fillRect(x - backW * 0.55, chairY - seatH * 0.3 - backH - 6, backW * 1.1, 8);
   ctx.strokeStyle = roleColor + "66";
   ctx.lineWidth = 0.8;
-  ctx.stroke();
+  ctx.strokeRect(x - backW * 0.55, chairY - seatH * 0.3 - backH - 6, backW * 1.1, 8);
 
   // ---- Desk front face (depth) ----
-  const frontH = 8;
+  const frontH = 11;
   ctx.beginPath();
   ctx.moveTo(x + dw, y);
   ctx.lineTo(x + dw, y + frontH);
   ctx.lineTo(x, y + dh + frontH);
   ctx.lineTo(x, y + dh);
   ctx.closePath();
-  ctx.fillStyle = "#6A4A30";
+  ctx.fillStyle = "#7A5538";
   ctx.fill();
   ctx.strokeStyle = "#4A3020";
-  ctx.lineWidth = 0.8;
+  ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Drawer handles on front face
-  ctx.fillStyle = "#C0A060";
-  ctx.fillRect(x + dw * 0.3 - 3, y + frontH * 0.3, 6, 2);
-  ctx.fillRect(x + dw * 0.3 - 3, y + frontH * 0.6 + 1, 6, 2);
+  // Drawer handles on front face (2 drawers)
+  ctx.fillStyle = "#D0B070";
+  ctx.fillRect(x + dw * 0.25 - 5, y + frontH * 0.25, 10, 3);
+  ctx.fillRect(x + dw * 0.25 - 5, y + frontH * 0.62, 10, 3);
+  ctx.strokeStyle = "#B09050";
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(x + dw * 0.25 - 5, y + frontH * 0.25, 10, 3);
+  ctx.strokeRect(x + dw * 0.25 - 5, y + frontH * 0.62, 10, 3);
 
   // Left face for depth
   ctx.beginPath();
@@ -1041,10 +1096,10 @@ function drawEnhancedDesk(
   ctx.lineTo(x, y + dh + frontH);
   ctx.lineTo(x, y + dh);
   ctx.closePath();
-  ctx.fillStyle = "#5A3C22";
+  ctx.fillStyle = "#5E3C20";
   ctx.fill();
   ctx.strokeStyle = "#4A3020";
-  ctx.lineWidth = 0.8;
+  ctx.lineWidth = 1;
   ctx.stroke();
 
   // ---- Desk surface ----
@@ -1054,13 +1109,13 @@ function drawEnhancedDesk(
   ctx.lineTo(x, y + dh);
   ctx.lineTo(x - dw, y);
   ctx.closePath();
-  ctx.fillStyle = "#9A7A60";
+  ctx.fillStyle = "#B08C6A";
   ctx.fill();
   ctx.strokeStyle = "#7A5A40";
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1.2;
   ctx.stroke();
 
-  // Wood grain on surface
+  // Wood grain on surface (richer)
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(x, y - dh);
@@ -1069,57 +1124,82 @@ function drawEnhancedDesk(
   ctx.lineTo(x - dw, y);
   ctx.closePath();
   ctx.clip();
-  ctx.strokeStyle = "#8A6A5020";
-  ctx.lineWidth = 0.5;
-  for (let grain = -dw; grain < dw; grain += 6) {
+  ctx.strokeStyle = "rgba(90, 60, 30, 0.15)";
+  ctx.lineWidth = 0.6;
+  for (let grain = -dw; grain < dw; grain += 5) {
     ctx.beginPath();
     ctx.moveTo(x + grain, y - dh);
-    ctx.lineTo(x + grain + dh, y + dh);
+    ctx.lineTo(x + grain + dh * 1.1, y + dh);
     ctx.stroke();
   }
+  // Surface highlight (shine)
+  const deskShine = ctx.createLinearGradient(x - dw * 0.4, y - dh * 0.6, x + dw * 0.2, y + dh * 0.2);
+  deskShine.addColorStop(0, "rgba(255, 240, 200, 0.12)");
+  deskShine.addColorStop(0.5, "rgba(255, 240, 200, 0.04)");
+  deskShine.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = deskShine;
+  ctx.fill();
   ctx.restore();
 
-  // ---- Monitor on desk ----
-  // Monitor stand
-  ctx.fillStyle = "#2A2A2A";
-  ctx.fillRect(x - 2, y - dh - 6, 4, 6);
-  ctx.fillRect(x - 5, y - dh - 1, 10, 2);
-
-  // Monitor body (isometric-ish rectangle)
-  const monW = dw * 0.7;
-  const monH = 18;
+  // ---- Monitor on desk (bigger, wider bezel, taller screen) ----
+  const monW = dw * 0.82;
+  const monH = 26;
   const monX = x - monW / 2;
-  const monY = y - dh - monH - 6;
+  const monY = y - dh - monH - 10;
 
-  ctx.fillStyle = "#222222";
+  // Monitor stand (wider base)
+  ctx.fillStyle = "#282828";
+  ctx.fillRect(x - 3, y - dh - 10, 6, 10);
+  ctx.fillRect(x - 9, y - dh - 1, 18, 3);
+
+  // Monitor outer bezel
+  ctx.fillStyle = "#1C1C1C";
+  ctx.fillRect(monX - 4, monY - 4, monW + 8, monH + 8);
+  ctx.strokeStyle = "#3A3A3A";
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(monX - 4, monY - 4, monW + 8, monH + 8);
+  // Inner bezel (thicker sides)
+  ctx.fillStyle = "#121212";
   ctx.fillRect(monX - 2, monY - 2, monW + 4, monH + 4);
-  ctx.strokeStyle = "#333333";
-  ctx.lineWidth = 1;
-  ctx.strokeRect(monX - 2, monY - 2, monW + 4, monH + 4);
 
   // Screen content
   drawMonitorScreen(ctx, monX, monY, monW, monH, agentStatus, frame);
+  // Screen shine
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(monX, monY, monW, monH);
+  ctx.clip();
+  const screenShine = ctx.createLinearGradient(monX, monY, monX + monW * 0.5, monY + monH * 0.4);
+  screenShine.addColorStop(0, "rgba(255,255,255,0.07)");
+  screenShine.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = screenShine;
+  ctx.fillRect(monX, monY, monW, monH);
+  ctx.restore();
 
-  // ---- Keyboard ----
-  const kbW = dw * 0.55;
-  const kbH = 6;
+  // ---- Keyboard (wider, more key detail) ----
+  const kbW = dw * 0.72;
+  const kbH = 9;
   const kbX = x - kbW / 2;
-  const kbY = y - dh * 0.1 + 2;
+  const kbY = y - dh * 0.08 + 2;
 
-  ctx.fillStyle = "#1A1A1A";
+  ctx.fillStyle = "#181818";
   ctx.fillRect(kbX, kbY, kbW, kbH);
-  ctx.strokeStyle = "#2A2A2A";
-  ctx.lineWidth = 0.5;
+  ctx.strokeStyle = "#282828";
+  ctx.lineWidth = 0.8;
   ctx.strokeRect(kbX, kbY, kbW, kbH);
+  // Keyboard shine
+  ctx.fillStyle = "rgba(255,255,255,0.04)";
+  ctx.fillRect(kbX, kbY, kbW, kbH * 0.4);
 
-  // Key dots on keyboard
-  ctx.fillStyle = "#303030";
-  const keyCols = 8;
-  const keyRows = 2;
+  // Key grid (12 cols × 3 rows)
+  const keyCols = 12;
+  const keyRows = 3;
   const keyW = (kbW - 4) / keyCols;
   const keyH = (kbH - 2) / keyRows;
   for (let kr = 0; kr < keyRows; kr++) {
     for (let kc = 0; kc < keyCols; kc++) {
+      const keyBrightness = (kc + kr) % 3 === 0 ? "#3A3A3A" : "#2C2C2C";
+      ctx.fillStyle = keyBrightness;
       ctx.fillRect(
         kbX + 2 + kc * keyW,
         kbY + 1 + kr * keyH,
@@ -1129,75 +1209,96 @@ function drawEnhancedDesk(
     }
   }
 
-  // ---- Coffee mug ----
-  const mugX = x + dw * 0.55;
-  const mugY = y - dh * 0.2;
-  ctx.fillStyle = "#C0402020";
-  ctx.strokeStyle = "#C04020";
-  ctx.lineWidth = 0.8;
-  // Mug body
-  ctx.fillRect(mugX - 3, mugY - 7, 7, 7);
-  ctx.strokeRect(mugX - 3, mugY - 7, 7, 7);
+  // ---- Coffee mug (larger) ----
+  const mugX = x + dw * 0.6;
+  const mugY = y - dh * 0.25;
+  ctx.fillStyle = "#C04020";
+  ctx.fillRect(mugX - 5, mugY - 11, 11, 11);
+  ctx.strokeStyle = "#A03010";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(mugX - 5, mugY - 11, 11, 11);
+  // Mug rim highlight
+  ctx.fillStyle = "#D06040";
+  ctx.fillRect(mugX - 5, mugY - 11, 11, 2);
   // Handle
   ctx.beginPath();
-  ctx.arc(mugX + 4, mugY - 3.5, 3, -Math.PI / 2, Math.PI / 2);
+  ctx.arc(mugX + 6, mugY - 5.5, 4, -Math.PI / 2, Math.PI / 2);
+  ctx.strokeStyle = "#A03010";
+  ctx.lineWidth = 1.5;
   ctx.stroke();
+  // Mug interior (dark)
+  ctx.fillStyle = "#1A0A0A";
+  ctx.fillRect(mugX - 4, mugY - 10, 9, 3);
 
   // Steam when working
   if (agentStatus === "working" || agentStatus === "executing") {
-    ctx.strokeStyle = "#FFFFFF40";
-    ctx.lineWidth = 1;
-    for (let si = 0; si < 2; si++) {
+    ctx.strokeStyle = "#FFFFFF50";
+    ctx.lineWidth = 1.2;
+    for (let si = 0; si < 3; si++) {
       const steamPhase = frame * 0.07 + si * 1.2;
-      const steamX = mugX - 1 + si * 3;
+      const steamX = mugX - 2 + si * 3.5;
       ctx.beginPath();
-      ctx.moveTo(steamX, mugY - 7);
+      ctx.moveTo(steamX, mugY - 11);
       ctx.quadraticCurveTo(
-        steamX + Math.sin(steamPhase) * 2,
-        mugY - 10,
-        steamX + Math.sin(steamPhase + 1) * 2,
-        mugY - 14,
+        steamX + Math.sin(steamPhase) * 2.5,
+        mugY - 15,
+        steamX + Math.sin(steamPhase + 1) * 2.5,
+        mugY - 20,
       );
       ctx.stroke();
     }
   }
 
-  // ---- Desk lamp ----
-  const lampX = x - dw * 0.6;
-  const lampY = y - dh * 0.15;
-  ctx.strokeStyle = "#808080";
-  ctx.lineWidth = 1.5;
+  // ---- Desk lamp (larger, better detail) ----
+  const lampX = x - dw * 0.65;
+  const lampY = y - dh * 0.2;
+  ctx.strokeStyle = "#909090";
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(lampX, lampY);
-  ctx.lineTo(lampX, lampY - 10);
-  ctx.lineTo(lampX + 6, lampY - 14);
+  ctx.lineTo(lampX, lampY - 14);
+  ctx.lineTo(lampX + 8, lampY - 20);
   ctx.stroke();
-  // Lamp shade
-  ctx.fillStyle = "#D4B060";
+  // Lamp arm joint
+  ctx.fillStyle = "#707070";
   ctx.beginPath();
-  ctx.moveTo(lampX + 3, lampY - 14);
-  ctx.lineTo(lampX + 10, lampY - 10);
-  ctx.lineTo(lampX + 8, lampY - 18);
-  ctx.lineTo(lampX + 2, lampY - 18);
+  ctx.arc(lampX, lampY - 14, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  // Lamp shade (larger)
+  ctx.fillStyle = "#E0C060";
+  ctx.beginPath();
+  ctx.moveTo(lampX + 4, lampY - 20);
+  ctx.lineTo(lampX + 16, lampY - 14);
+  ctx.lineTo(lampX + 13, lampY - 26);
+  ctx.lineTo(lampX + 2, lampY - 26);
   ctx.closePath();
   ctx.fill();
+  ctx.strokeStyle = "#C0A040";
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(lampX + 4, lampY - 20);
+  ctx.lineTo(lampX + 16, lampY - 14);
+  ctx.lineTo(lampX + 13, lampY - 26);
+  ctx.lineTo(lampX + 2, lampY - 26);
+  ctx.closePath();
+  ctx.stroke();
 
-  // Warm lamp glow
+  // Warm lamp glow (larger radius)
   const lampGlow = ctx.createRadialGradient(
-    lampX + 7, lampY - 10, 0,
-    lampX + 7, lampY - 10, 20,
+    lampX + 10, lampY - 14, 0,
+    lampX + 10, lampY - 14, 30,
   );
-  lampGlow.addColorStop(0, "rgba(255, 200, 80, 0.12)");
+  lampGlow.addColorStop(0, "rgba(255, 200, 80, 0.15)");
   lampGlow.addColorStop(1, "rgba(255, 200, 80, 0)");
   ctx.fillStyle = lampGlow;
-  ctx.fillRect(lampX - 10, lampY - 25, 35, 25);
+  ctx.fillRect(lampX - 12, lampY - 34, 50, 34);
 
-  // ---- Role-specific item ----
+  // ---- Role-specific item (1.5x larger) ----
   drawRoleItem(ctx, desk.label, x, y, dw, dh, frame);
 }
 
 /**
- * Draw a role-specific decorative item on the desk.
+ * Draw a role-specific decorative item on the desk (1.5x larger than before).
  */
 function drawRoleItem(
   ctx: CanvasRenderingContext2D,
@@ -1208,112 +1309,156 @@ function drawRoleItem(
   dh: number,
   _frame: number,
 ): void {
-  const ix = x - dw * 0.2;
-  const iy = y - dh * 0.5;
+  const ix = x - dw * 0.18;
+  const iy = y - dh * 0.55;
+  // Scale factor 1.5 applied to all dimensions below
+  const S = 1.5;
 
   switch (label) {
     case "Dr. Bob": {
-      // Clipboard — orchestrator
+      // Clipboard — orchestrator (1.5x)
       ctx.fillStyle = "#D4C080";
-      ctx.fillRect(ix - 6, iy - 12, 10, 13);
+      ctx.fillRect(ix - 9 * S, iy - 12 * S, 15 * S, 18 * S);
       ctx.fillStyle = "#8A6030";
-      ctx.fillRect(ix - 4, iy - 14, 6, 4);
+      ctx.fillRect(ix - 6 * S, iy - 15 * S, 9 * S, 5 * S);
+      // Clip circle
+      ctx.fillStyle = "#A08040";
+      ctx.beginPath();
+      ctx.arc(ix - 1.5 * S, iy - 14.5 * S, 2 * S, 0, Math.PI * 2);
+      ctx.fill();
       ctx.strokeStyle = "#A08040";
-      ctx.lineWidth = 0.4;
-      for (let li = 0; li < 3; li++) {
+      ctx.lineWidth = 0.6;
+      for (let li = 0; li < 4; li++) {
         ctx.beginPath();
-        ctx.moveTo(ix - 5, iy - 10 + li * 3);
-        ctx.lineTo(ix + 3, iy - 10 + li * 3);
+        ctx.moveTo(ix - 7 * S, iy - 8 * S + li * 3.5 * S);
+        ctx.lineTo(ix + 4 * S, iy - 8 * S + li * 3.5 * S);
         ctx.stroke();
       }
       break;
     }
     case "Scout": {
-      // Globe — researcher
+      // Globe — researcher (1.5x)
+      const gr = 9 * S;
       ctx.strokeStyle = "#3B82F6";
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.2;
       ctx.beginPath();
-      ctx.arc(ix, iy - 6, 6, 0, Math.PI * 2);
+      ctx.arc(ix, iy - gr, gr, 0, Math.PI * 2);
       ctx.stroke();
       ctx.beginPath();
-      ctx.ellipse(ix, iy - 6, 3, 6, 0, 0, Math.PI * 2);
+      ctx.ellipse(ix, iy - gr, gr * 0.45, gr, 0, 0, Math.PI * 2);
       ctx.stroke();
       ctx.beginPath();
-      ctx.moveTo(ix - 6, iy - 6);
-      ctx.lineTo(ix + 6, iy - 6);
+      ctx.moveTo(ix - gr, iy - gr);
+      ctx.lineTo(ix + gr, iy - gr);
       ctx.stroke();
+      // Stand
+      ctx.fillStyle = "#6A3A1A";
+      ctx.fillRect(ix - 2, iy - 2, 4, 4);
       break;
     }
     case "Sage": {
-      // Bar chart — analyst
-      ctx.fillStyle = "#8B5CF6";
-      const barHeights2 = [5, 8, 6, 9];
+      // Bar chart — analyst (1.5x)
+      const barHeights2 = [7, 12, 9, 14, 10];
       for (let bi = 0; bi < barHeights2.length; bi++) {
-        ctx.fillStyle = `rgba(139, 92, 246, ${0.5 + bi * 0.1})`;
-        ctx.fillRect(ix - 7 + bi * 4, iy - barHeights2[bi], 3, barHeights2[bi]);
+        ctx.fillStyle = `rgba(139, 92, 246, ${0.45 + bi * 0.1})`;
+        ctx.fillRect(ix - 10 + bi * 5, iy - barHeights2[bi], 4, barHeights2[bi]);
       }
       ctx.strokeStyle = "#6A3A8A";
+      ctx.lineWidth = 0.7;
+      ctx.strokeRect(ix - 12, iy - 16, 28, 17);
+      // Axis lines
+      ctx.strokeStyle = "#8B5CF680";
       ctx.lineWidth = 0.5;
-      ctx.strokeRect(ix - 8, iy - 10, 18, 11);
+      ctx.beginPath();
+      ctx.moveTo(ix - 12, iy - 8);
+      ctx.lineTo(ix + 16, iy - 8);
+      ctx.stroke();
       break;
     }
     case "Quill": {
-      // Ink pen + scroll — writer
+      // Ink pen + scroll — writer (1.5x)
       ctx.strokeStyle = "#10B981";
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(ix - 4, iy - 2);
-      ctx.lineTo(ix + 5, iy - 11);
+      ctx.moveTo(ix - 6, iy - 3);
+      ctx.lineTo(ix + 7, iy - 16);
       ctx.stroke();
-      ctx.fillStyle = "#10B98160";
+      ctx.fillStyle = "#10B98180";
       ctx.beginPath();
-      ctx.moveTo(ix + 5, iy - 11);
-      ctx.lineTo(ix + 3, iy - 9);
-      ctx.lineTo(ix + 7, iy - 9);
+      ctx.moveTo(ix + 7, iy - 16);
+      ctx.lineTo(ix + 4, iy - 13);
+      ctx.lineTo(ix + 10, iy - 13);
       ctx.closePath();
       ctx.fill();
-      // Scroll
+      // Scroll (larger)
       ctx.fillStyle = "#D4C080";
-      ctx.fillRect(ix - 8, iy - 8, 8, 8);
+      ctx.fillRect(ix - 12, iy - 12, 12, 12);
       ctx.strokeStyle = "#A08040";
-      ctx.lineWidth = 0.4;
+      ctx.lineWidth = 0.6;
+      for (let li = 0; li < 3; li++) {
+        ctx.beginPath();
+        ctx.moveTo(ix - 11, iy - 9 + li * 3.5);
+        ctx.lineTo(ix - 1, iy - 9 + li * 3.5);
+        ctx.stroke();
+      }
+      // Scroll rolled ends
+      ctx.strokeStyle = "#C0A050";
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(ix - 7, iy - 6);
-      ctx.lineTo(ix - 1, iy - 6);
-      ctx.moveTo(ix - 7, iy - 4);
-      ctx.lineTo(ix - 1, iy - 4);
+      ctx.arc(ix - 12, iy - 6, 3, -Math.PI / 2, Math.PI / 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(ix, iy - 6, 3, Math.PI / 2, (3 * Math.PI) / 2);
       ctx.stroke();
       break;
     }
     case "Pixel": {
-      // Second monitor — coder
-      const m2X = ix + 10;
-      const m2Y = iy - 14;
+      // Second monitor — coder (1.5x)
+      const m2X = ix + 8;
+      const m2Y = iy - 21;
       ctx.fillStyle = "#111111";
-      ctx.fillRect(m2X, m2Y, 14, 10);
+      ctx.fillRect(m2X, m2Y, 21, 15);
       ctx.strokeStyle = "#333333";
-      ctx.lineWidth = 0.8;
-      ctx.strokeRect(m2X, m2Y, 14, 10);
-      ctx.fillStyle = "#EC489920";
-      ctx.fillRect(m2X + 1, m2Y + 1, 12, 8);
-      // Code lines
-      ctx.fillStyle = "#EC4899";
-      for (let li = 0; li < 3; li++) {
-        ctx.fillRect(m2X + 2, m2Y + 2 + li * 2.5, 4 + (li % 2) * 4, 1);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(m2X, m2Y, 21, 15);
+      ctx.fillStyle = "#EC489918";
+      ctx.fillRect(m2X + 1, m2Y + 1, 19, 13);
+      // Code lines (more detail)
+      const lineColors = ["#EC4899", "#3B82F6", "#22C55E", "#F59E0B"];
+      for (let li = 0; li < 4; li++) {
+        ctx.fillStyle = lineColors[li];
+        ctx.fillRect(m2X + 2, m2Y + 2 + li * 3, 5 + (li % 3) * 5, 1.5);
       }
+      // Stand
       ctx.fillStyle = "#555555";
-      ctx.fillRect(m2X + 4, m2Y + 10, 6, 2);
+      ctx.fillRect(m2X + 7, m2Y + 15, 8, 3);
       break;
     }
     case "Atlas": {
-      // Toolbox — operator
+      // Toolbox — operator (1.5x)
       ctx.fillStyle = "#F59E0B";
-      ctx.fillRect(ix - 7, iy - 8, 12, 8);
+      ctx.fillRect(ix - 10, iy - 12, 18, 12);
+      ctx.strokeStyle = "#D48000";
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(ix - 10, iy - 12, 18, 12);
+      // Box top
       ctx.fillStyle = "#D48000";
-      ctx.fillRect(ix - 7, iy - 10, 12, 3);
-      ctx.fillRect(ix - 4, iy - 11, 6, 2);
+      ctx.fillRect(ix - 10, iy - 15, 18, 4);
+      ctx.fillRect(ix - 6, iy - 17, 10, 3);
+      // Handle
+      ctx.strokeStyle = "#A06000";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(ix - 1, iy - 16.5, 3.5, Math.PI, 0);
+      ctx.stroke();
+      // Latch
       ctx.fillStyle = "#1A1A1A";
-      ctx.fillRect(ix - 2, iy - 8, 3, 2);
+      ctx.fillRect(ix - 3, iy - 11, 5, 3);
+      // Tool handles peeking out
+      ctx.fillStyle = "#FF4444";
+      ctx.fillRect(ix - 7, iy - 14, 2, 7);
+      ctx.fillStyle = "#4444FF";
+      ctx.fillRect(ix + 5, iy - 14, 2, 5);
       break;
     }
     default:
@@ -1331,8 +1476,8 @@ function drawRestZoneFurniture(
   h: number,
   frame: number,
 ): void {
-  // REST ZONE furniture: gridX 5-7 only. No desks or work items.
-  // Slightly warmer/darker tint for cozy feel — draw subtle warm overlay
+  // REST ZONE furniture: gridX 5-7 only.
+  // Warm overlay tint for cozy feel
   const restOverlayPositions = [6, 7];
   for (const col of restOverlayPositions) {
     for (let row = 0; row < GRID_ROWS; row++) {
@@ -1350,438 +1495,811 @@ function drawRestZoneFurniture(
     }
   }
 
-  // ---- Sofa (grid 6, 2) — wider, prominent, with cushions + throw pillow ----
-  const sofaPos = gridToScreen(6, 2, w, h);
-  const sx = sofaPos.x;
-  const sy = sofaPos.y;
+  // =========================================================================
+  // SOFA — against the LEFT BACK WALL (grid 6, 0–1, pushed toward wall edge)
+  // Width ~100px isometric, with cushions, armrests, throw pillows
+  // =========================================================================
+  const sofaPos = gridToScreen(6, 1, w, h);
+  // Offset toward the top-left (wall direction) to make it look wall-hugging
+  const sx = sofaPos.x - 14;
+  const sy = sofaPos.y - 8;
 
-  // Sofa back (taller, more prominent)
-  ctx.fillStyle = "#2A4060";
-  ctx.fillRect(sx - 40, sy - 40, 80, 18);
-  ctx.strokeStyle = "#1A3050";
+  // Shadow under sofa
+  ctx.save();
+  ctx.globalAlpha = 0.2;
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.ellipse(sx, sy + 4, 60, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Sofa legs (draw first, behind everything)
+  ctx.fillStyle = "#3A2A1A";
+  ctx.fillRect(sx - 52, sy - 4, 6, 10);
+  ctx.fillRect(sx + 46, sy - 4, 6, 10);
+  ctx.fillRect(sx - 26, sy + 2, 5, 8);
+  ctx.fillRect(sx + 21, sy + 2, 5, 8);
+
+  // Armrests (drawn before seat/back so they appear as sides)
+  ctx.fillStyle = "#1C3254";
+  // Left armrest — 3 faces for 3D look
+  ctx.beginPath();
+  ctx.moveTo(sx - 52, sy - 44);
+  ctx.lineTo(sx - 44, sy - 44);
+  ctx.lineTo(sx - 44, sy + 6);
+  ctx.lineTo(sx - 52, sy + 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#142840";
   ctx.lineWidth = 1;
-  ctx.strokeRect(sx - 40, sy - 40, 80, 18);
+  ctx.stroke();
+  // Armrest top face
+  ctx.fillStyle = "#263E5E";
+  ctx.fillRect(sx - 52, sy - 46, 10, 4);
+  ctx.strokeStyle = "#142840";
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(sx - 52, sy - 46, 10, 4);
 
-  // Sofa back subtle fabric pattern
-  ctx.strokeStyle = "#223658";
-  ctx.lineWidth = 0.4;
-  for (let gi = -38; gi < 38; gi += 10) {
+  // Right armrest
+  ctx.fillStyle = "#1C3254";
+  ctx.beginPath();
+  ctx.moveTo(sx + 44, sy - 44);
+  ctx.lineTo(sx + 52, sy - 44);
+  ctx.lineTo(sx + 52, sy + 6);
+  ctx.lineTo(sx + 44, sy + 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#142840";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = "#263E5E";
+  ctx.fillRect(sx + 42, sy - 46, 10, 4);
+  ctx.strokeStyle = "#142840";
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(sx + 42, sy - 46, 10, 4);
+
+  // Sofa back (tall, prominent — represents wall-backing)
+  ctx.fillStyle = "#243A60";
+  ctx.fillRect(sx - 48, sy - 44, 96, 22);
+  ctx.strokeStyle = "#142840";
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(sx - 48, sy - 44, 96, 22);
+  // Back fabric texture (vertical channels)
+  ctx.strokeStyle = "#1E3258";
+  ctx.lineWidth = 0.5;
+  for (let gi = -44; gi <= 44; gi += 14) {
     ctx.beginPath();
-    ctx.moveTo(sx + gi, sy - 40);
+    ctx.moveTo(sx + gi, sy - 44);
     ctx.lineTo(sx + gi, sy - 22);
     ctx.stroke();
   }
+  // Back top highlight
+  ctx.fillStyle = "rgba(100, 160, 255, 0.06)";
+  ctx.fillRect(sx - 48, sy - 44, 96, 5);
 
-  // Sofa seat (wider — 80px isometric width)
-  ctx.fillStyle = "#244068";
-  ctx.fillRect(sx - 38, sy - 23, 76, 15);
-  ctx.strokeStyle = "#1A3050";
+  // Sofa seat (wide, padded)
+  ctx.fillStyle = "#1E3860";
+  ctx.fillRect(sx - 46, sy - 22, 92, 20);
+  ctx.strokeStyle = "#142840";
   ctx.lineWidth = 1;
-  ctx.strokeRect(sx - 38, sy - 23, 76, 15);
+  ctx.strokeRect(sx - 46, sy - 22, 92, 20);
 
-  // Cushions on back (3 sections)
-  ctx.fillStyle = "#304878";
-  ctx.fillRect(sx - 37, sy - 38, 22, 14);
-  ctx.fillRect(sx - 12, sy - 38, 22, 14);
-  ctx.fillRect(sx + 13, sy - 38, 22, 14);
-  // Cushion seam lines
-  ctx.strokeStyle = "#1E3860";
-  ctx.lineWidth = 0.5;
+  // 3 seat cushion sections
+  const cushionColors = ["#2A4878", "#304878", "#2A4878"];
   for (let ci = 0; ci < 3; ci++) {
-    const cx2 = sx - 37 + ci * 25 + 11;
+    ctx.fillStyle = cushionColors[ci];
+    ctx.fillRect(sx - 44 + ci * 32, sy - 20, 30, 16);
+    ctx.strokeStyle = "#1C3460";
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(sx - 44 + ci * 32, sy - 20, 30, 16);
+    // Cushion centre seam
+    ctx.strokeStyle = "#162C50";
+    ctx.lineWidth = 0.5;
     ctx.beginPath();
-    ctx.moveTo(cx2, sy - 38);
-    ctx.lineTo(cx2, sy - 24);
+    ctx.moveTo(sx - 29 + ci * 32, sy - 20);
+    ctx.lineTo(sx - 29 + ci * 32, sy - 4);
     ctx.stroke();
   }
 
-  // Throw pillow (accent color) on seat
-  ctx.fillStyle = "#C87040";
+  // Back cushions (3 sections matching seat)
+  for (let ci = 0; ci < 3; ci++) {
+    ctx.fillStyle = "#2E4876";
+    ctx.fillRect(sx - 44 + ci * 32, sy - 42, 30, 18);
+    ctx.strokeStyle = "#1C3460";
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(sx - 44 + ci * 32, sy - 42, 30, 18);
+    // Horizontal channel stitch
+    ctx.strokeStyle = "#1A2E54";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(sx - 44 + ci * 32, sy - 33);
+    ctx.lineTo(sx - 14 + ci * 32, sy - 33);
+    ctx.stroke();
+  }
+
+  // Throw pillow 1 (warm orange)
+  ctx.save();
+  ctx.shadowColor = "#C87040";
+  ctx.shadowBlur = 3;
+  ctx.fillStyle = "#D88040";
   ctx.beginPath();
-  ctx.ellipse(sx - 18, sy - 16, 9, 6, 0.3, 0, Math.PI * 2);
+  ctx.ellipse(sx - 22, sy - 14, 12, 8, 0.25, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "#A05020";
-  ctx.lineWidth = 0.5;
+  ctx.restore();
+  ctx.strokeStyle = "#A85020";
+  ctx.lineWidth = 0.8;
   ctx.beginPath();
-  ctx.ellipse(sx - 18, sy - 16, 9, 6, 0.3, 0, Math.PI * 2);
+  ctx.ellipse(sx - 22, sy - 14, 12, 8, 0.25, 0, Math.PI * 2);
   ctx.stroke();
-  // Second throw pillow
+  // Pillow seam
+  ctx.strokeStyle = "#B86030";
+  ctx.lineWidth = 0.6;
+  ctx.beginPath();
+  ctx.ellipse(sx - 22, sy - 14, 7, 4, 0.25, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Throw pillow 2 (cool blue-gray)
   ctx.fillStyle = "#5A6090";
   ctx.beginPath();
-  ctx.ellipse(sx + 18, sy - 16, 9, 6, -0.3, 0, Math.PI * 2);
+  ctx.ellipse(sx + 22, sy - 13, 12, 8, -0.25, 0, Math.PI * 2);
   ctx.fill();
+  ctx.strokeStyle = "#3A4070";
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.ellipse(sx + 22, sy - 13, 12, 8, -0.25, 0, Math.PI * 2);
+  ctx.stroke();
 
-  // Armrests (visible)
-  ctx.fillStyle = "#1E3858";
-  ctx.fillRect(sx - 46, sy - 40, 8, 32);
-  ctx.fillRect(sx + 38, sy - 40, 8, 32);
+  // =========================================================================
+  // GAME CONSOLE / ARCADE — against RIGHT BACK WALL (grid 7, 0–1)
+  // Taller cabinet, bright screen, visible joystick + colored buttons
+  // =========================================================================
+  const arcPos = gridToScreen(7, 1, w, h);
+  // Offset toward top-right wall
+  const ax = arcPos.x + 10;
+  const ay = arcPos.y - 4;
 
-  // Sofa legs
-  ctx.fillStyle = "#3A2A1A";
-  ctx.fillRect(sx - 42, sy - 7, 5, 8);
-  ctx.fillRect(sx + 37, sy - 7, 5, 8);
+  // Shadow
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.ellipse(ax, ay + 2, 22, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 
-  // ---- Arcade machine (grid 5, 1) — tall game cabinet against wall ----
-  const arcPos = gridToScreen(5, 1, w, h);
-  const ax = arcPos.x;
-  const ay = arcPos.y;
-
-  // Cabinet body (taller)
-  ctx.fillStyle = "#1A1430";
-  ctx.fillRect(ax - 17, ay - 62, 34, 62);
-  ctx.strokeStyle = "#2A2040";
+  // Cabinet body (taller — 70px high)
+  ctx.fillStyle = "#16102E";
+  ctx.fillRect(ax - 20, ay - 70, 40, 70);
+  ctx.strokeStyle = "#261C40";
   ctx.lineWidth = 1.5;
-  ctx.strokeRect(ax - 17, ay - 62, 34, 62);
+  ctx.strokeRect(ax - 20, ay - 70, 40, 70);
 
-  // Side panel accent stripes
+  // Side accent stripes (brighter)
   ctx.fillStyle = "#F97316";
-  ctx.fillRect(ax - 17, ay - 62, 3, 62);
-  ctx.fillRect(ax + 14, ay - 62, 3, 62);
+  ctx.fillRect(ax - 20, ay - 70, 4, 70);
+  ctx.fillRect(ax + 16, ay - 70, 4, 70);
+  // Inner edge highlight
+  ctx.fillStyle = "#FF9940";
+  ctx.fillRect(ax - 16, ay - 70, 1, 70);
+  ctx.fillRect(ax + 15, ay - 70, 1, 70);
 
-  // "GAME" marquee text at top with glow
+  // "GAME" marquee panel with glow animation
   const marqueeGlow = 0.5 + 0.5 * Math.abs(Math.sin(frame * 0.06));
+  ctx.fillStyle = "#0A0818";
+  ctx.fillRect(ax - 18, ay - 70, 36, 14);
   ctx.save();
   ctx.shadowColor = "#F97316";
-  ctx.shadowBlur = 6 * marqueeGlow;
-  ctx.fillStyle = `rgba(249, 115, 22, ${0.8 + 0.2 * marqueeGlow})`;
-  ctx.font = 'bold 7px ui-monospace, "SF Mono", Menlo, monospace';
+  ctx.shadowBlur = 8 * marqueeGlow;
+  ctx.fillStyle = `rgba(249, 115, 22, ${0.85 + 0.15 * marqueeGlow})`;
+  ctx.font = 'bold 8px ui-monospace, "SF Mono", Menlo, monospace';
   ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.fillText("GAME", ax, ay - 60);
+  ctx.textBaseline = "middle";
+  ctx.fillText("GAME", ax, ay - 63);
   ctx.restore();
 
-  // Screen bezel
-  ctx.fillStyle = "#0A0818";
-  ctx.fillRect(ax - 13, ay - 52, 26, 22);
+  // Screen bezel (thick, dark)
+  ctx.fillStyle = "#0A0620";
+  ctx.fillRect(ax - 16, ay - 56, 32, 28);
 
-  // Screen (brighter, larger)
-  const arcScreenX = ax - 11;
-  const arcScreenY = ay - 50;
-  const arcScreenW = 22;
-  const arcScreenH = 16;
-  ctx.fillStyle = "#050A18";
+  // Screen (bright, larger: 26×20)
+  const arcScreenX = ax - 13;
+  const arcScreenY = ay - 54;
+  const arcScreenW = 26;
+  const arcScreenH = 20;
+  ctx.fillStyle = "#040810";
   ctx.fillRect(arcScreenX, arcScreenY, arcScreenW, arcScreenH);
-  ctx.strokeStyle = "#3A3060";
+  ctx.strokeStyle = "#3A2870";
   ctx.lineWidth = 1;
   ctx.strokeRect(arcScreenX, arcScreenY, arcScreenW, arcScreenH);
+  // Screen ambient glow
+  ctx.save();
+  const screenGlow = ctx.createRadialGradient(
+    arcScreenX + arcScreenW / 2, arcScreenY + arcScreenH / 2, 0,
+    arcScreenX + arcScreenW / 2, arcScreenY + arcScreenH / 2, arcScreenW,
+  );
+  screenGlow.addColorStop(0, "rgba(34, 197, 94, 0.12)");
+  screenGlow.addColorStop(1, "rgba(34, 197, 94, 0)");
+  ctx.fillStyle = screenGlow;
+  ctx.fillRect(arcScreenX, arcScreenY, arcScreenW, arcScreenH);
+  ctx.restore();
 
-  // Screen glow
+  // Animated pixel sprite on screen
   ctx.save();
   ctx.shadowColor = "#22C55E";
-  ctx.shadowBlur = 4;
-  // Animated pixel sprite
+  ctx.shadowBlur = 6;
   ctx.fillStyle = "#22C55E";
-  const spriteX = arcScreenX + 3 + ((frame * 0.2) % (arcScreenW - 8)) | 0;
-  ctx.fillRect(spriteX, arcScreenY + 9, 5, 5);
-  ctx.fillRect(spriteX + 1, arcScreenY + 7, 3, 2);
-  // Bullets
-  ctx.fillStyle = "#F97316";
+  const spriteX = arcScreenX + 2 + ((frame * 0.2) % (arcScreenW - 10)) | 0;
+  // Sprite body
+  ctx.fillRect(spriteX, arcScreenY + arcScreenH - 8, 7, 6);
+  ctx.fillRect(spriteX + 1, arcScreenY + arcScreenH - 11, 5, 3);
+  // Stars/score at top
+  ctx.fillStyle = "#FFD700";
+  ctx.font = '5px ui-monospace, "SF Mono", Menlo, monospace';
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText("★ 99", arcScreenX + 2, arcScreenY + 2);
+  // Enemy bullets
+  ctx.fillStyle = "#EF4444";
+  ctx.shadowColor = "#EF4444";
   for (let bi = 0; bi < 3; bi++) {
-    const bx = arcScreenX + 2 + bi * 7;
-    const bphase = (frame * 0.15 + bi * 2) % arcScreenH;
-    ctx.fillRect(bx, arcScreenY + (bphase | 0), 2, 4);
+    const bx = arcScreenX + 3 + bi * 8;
+    const bphase = (frame * 0.18 + bi * 2.5) % arcScreenH;
+    ctx.fillRect(bx, arcScreenY + (bphase | 0), 2, 5);
   }
   ctx.restore();
 
-  // Control panel (wider)
-  ctx.fillStyle = "#241C3C";
-  ctx.fillRect(ax - 16, ay - 28, 32, 14);
-  // Joystick
-  ctx.fillStyle = "#4A4060";
-  ctx.fillRect(ax - 12, ay - 27, 6, 9);
-  ctx.fillStyle = "#6A6080";
+  // Screen scanline overlay
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  for (let sl = 0; sl < arcScreenH; sl += 3) {
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(arcScreenX, arcScreenY + sl, arcScreenW, 1);
+  }
+  ctx.restore();
+
+  // Control panel (angled)
+  ctx.fillStyle = "#1E1838";
+  ctx.fillRect(ax - 18, ay - 28, 36, 16);
+  ctx.strokeStyle = "#2A2250";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(ax - 18, ay - 28, 36, 16);
+
+  // Joystick (left side of panel)
+  ctx.fillStyle = "#3A3058";
+  ctx.fillRect(ax - 14, ay - 27, 8, 11);
+  ctx.fillStyle = "#201830";
+  ctx.fillRect(ax - 14, ay - 27, 8, 3);
+  ctx.fillStyle = "#7060A0";
   ctx.beginPath();
-  ctx.arc(ax - 9, ay - 27, 4, 0, Math.PI * 2);
+  ctx.arc(ax - 10, ay - 26, 5, 0, Math.PI * 2);
   ctx.fill();
-  // 3 colored buttons
-  const btnColors = ["#EF4444", "#22C55E", "#3B82F6"];
-  for (let bi = 0; bi < 3; bi++) {
+  ctx.strokeStyle = "#4030708";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(ax - 10, ay - 26, 5, 0, Math.PI * 2);
+  ctx.stroke();
+  // Joystick ball shine
+  ctx.fillStyle = "rgba(180, 160, 255, 0.4)";
+  ctx.beginPath();
+  ctx.arc(ax - 11, ay - 27, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 4 colored buttons (right side)
+  const btnColors = ["#EF4444", "#22C55E", "#F59E0B", "#3B82F6"];
+  const btnPositions = [
+    { bx: ax + 2, by: ay - 22 },
+    { bx: ax + 9, by: ay - 25 },
+    { bx: ax + 9, by: ay - 18 },
+    { bx: ax + 16, by: ay - 22 },
+  ];
+  for (let bi = 0; bi < 4; bi++) {
+    const { bx, by } = btnPositions[bi];
+    // Glow halo
+    ctx.fillStyle = btnColors[bi] + "40";
+    ctx.beginPath();
+    ctx.arc(bx, by, 5.5, 0, Math.PI * 2);
+    ctx.fill();
+    // Button body
     ctx.fillStyle = btnColors[bi];
     ctx.beginPath();
-    ctx.arc(ax + 2 + bi * 6, ay - 21, 3, 0, Math.PI * 2);
+    ctx.arc(bx, by, 3.5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = btnColors[bi] + "50";
+    // Button shine
+    ctx.fillStyle = "rgba(255,255,255,0.35)";
     ctx.beginPath();
-    ctx.arc(ax + 2 + bi * 6, ay - 21, 5, 0, Math.PI * 2);
+    ctx.arc(bx - 1, by - 1, 1.5, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Coin slot
-  ctx.fillStyle = "#333030";
-  ctx.fillRect(ax - 6, ay - 14, 12, 3);
+  // Coin slot + speaker grille
+  ctx.fillStyle = "#111028";
+  ctx.fillRect(ax - 8, ay - 12, 16, 4);
+  ctx.strokeStyle = "#2A2248";
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(ax - 8, ay - 12, 16, 4);
+  // Speaker dots
+  ctx.fillStyle = "#2A2248";
+  for (let si = 0; si < 4; si++) {
+    ctx.beginPath();
+    ctx.arc(ax - 6 + si * 4, ay - 6, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-  // ---- Pool table (grid 6, 4) — LARGE green felt, 4 grid tiles wide ----
-  const poolPos = gridToScreen(6, 4, w, h);
+  // =========================================================================
+  // POOL TABLE — CENTER of rest zone (grid 6, 3), LARGE (~120x80px isometric)
+  // Dominant feature spanning ~4 grid tiles
+  // =========================================================================
+  const poolPos = gridToScreen(6, 3, w, h);
   const ptx = poolPos.x;
   const pty = poolPos.y;
 
-  // Table body outer (wooden rails — dark brown border)
-  ctx.fillStyle = "#0A3A0A"; // dark green border
+  // Shadow under table
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  ctx.fillStyle = "#000000";
   ctx.beginPath();
-  ctx.moveTo(ptx, pty - 34);
-  ctx.lineTo(ptx + 50, pty - 9);
-  ctx.lineTo(ptx, pty + 16);
-  ctx.lineTo(ptx - 50, pty - 9);
+  ctx.moveTo(ptx, pty - 10);
+  ctx.lineTo(ptx + 66, pty + 15);
+  ctx.lineTo(ptx, pty + 40);
+  ctx.lineTo(ptx - 66, pty + 15);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  // Table legs (visible front pair)
+  ctx.fillStyle = "#5A3010";
+  ctx.fillRect(ptx - 60, pty + 10, 8, 18);
+  ctx.fillRect(ptx + 52, pty + 10, 8, 18);
+  ctx.fillRect(ptx - 30, pty + 20, 6, 14);
+  ctx.fillRect(ptx + 24, pty + 20, 6, 14);
+  // Leg cross-brace
+  ctx.strokeStyle = "#4A2808";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(ptx - 56, pty + 22);
+  ctx.lineTo(ptx + 56, pty + 22);
+  ctx.stroke();
+
+  // Outer body (dark wood — slightly larger than felt for rail effect)
+  ctx.fillStyle = "#0A3A0A";
+  ctx.beginPath();
+  ctx.moveTo(ptx, pty - 42);
+  ctx.lineTo(ptx + 62, pty - 11);
+  ctx.lineTo(ptx, pty + 20);
+  ctx.lineTo(ptx - 62, pty - 11);
   ctx.closePath();
   ctx.fill();
 
-  // Wooden rails
-  ctx.strokeStyle = "#6A4A30";
-  ctx.lineWidth = 5;
+  // Wooden rails (rich brown, thick stroke)
+  ctx.strokeStyle = "#7A5030";
+  ctx.lineWidth = 7;
+  ctx.lineJoin = "round";
   ctx.beginPath();
-  ctx.moveTo(ptx, pty - 34);
-  ctx.lineTo(ptx + 50, pty - 9);
-  ctx.lineTo(ptx, pty + 16);
-  ctx.lineTo(ptx - 50, pty - 9);
+  ctx.moveTo(ptx, pty - 42);
+  ctx.lineTo(ptx + 62, pty - 11);
+  ctx.lineTo(ptx, pty + 20);
+  ctx.lineTo(ptx - 62, pty - 11);
+  ctx.closePath();
+  ctx.stroke();
+  // Rail inner highlight
+  ctx.strokeStyle = "#9A6840";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(ptx, pty - 36);
+  ctx.lineTo(ptx + 56, pty - 7);
+  ctx.lineTo(ptx, pty + 14);
+  ctx.lineTo(ptx - 56, pty - 7);
   ctx.closePath();
   ctx.stroke();
 
-  // Green felt top
-  ctx.fillStyle = "#1A5A1A";
+  // Green felt top (richer saturated green #1A6A1A)
+  ctx.fillStyle = "#1A6A1A";
   ctx.beginPath();
-  ctx.moveTo(ptx, pty - 30);
-  ctx.lineTo(ptx + 44, pty - 7);
-  ctx.lineTo(ptx, pty + 12);
-  ctx.lineTo(ptx - 44, pty - 7);
+  ctx.moveTo(ptx, pty - 38);
+  ctx.lineTo(ptx + 56, pty - 9);
+  ctx.lineTo(ptx, pty + 16);
+  ctx.lineTo(ptx - 56, pty - 9);
   ctx.closePath();
   ctx.fill();
 
-  // Felt texture lines
+  // Felt texture (diagonal grain lines)
   ctx.save();
   ctx.beginPath();
-  ctx.moveTo(ptx, pty - 30);
-  ctx.lineTo(ptx + 44, pty - 7);
-  ctx.lineTo(ptx, pty + 12);
-  ctx.lineTo(ptx - 44, pty - 7);
+  ctx.moveTo(ptx, pty - 38);
+  ctx.lineTo(ptx + 56, pty - 9);
+  ctx.lineTo(ptx, pty + 16);
+  ctx.lineTo(ptx - 56, pty - 9);
   ctx.closePath();
   ctx.clip();
-  ctx.strokeStyle = "#1E6A1E";
-  ctx.lineWidth = 0.5;
-  for (let gi = -44; gi < 44; gi += 7) {
+  ctx.strokeStyle = "#1E7A1E";
+  ctx.lineWidth = 0.6;
+  for (let gi = -56; gi < 56; gi += 8) {
     ctx.beginPath();
-    ctx.moveTo(ptx + gi, pty - 30);
-    ctx.lineTo(ptx + gi + 18, pty + 12);
+    ctx.moveTo(ptx + gi, pty - 38);
+    ctx.lineTo(ptx + gi + 24, pty + 16);
     ctx.stroke();
   }
+  // Felt shine/highlight
+  const feltShine = ctx.createLinearGradient(ptx - 20, pty - 35, ptx + 20, pty - 10);
+  feltShine.addColorStop(0, "rgba(120, 255, 120, 0.08)");
+  feltShine.addColorStop(0.5, "rgba(80, 200, 80, 0.04)");
+  feltShine.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = feltShine;
+  ctx.fill();
   ctx.restore();
 
-  // Pockets (6 holes: 4 corners + 2 midpoints on long sides)
+  // Center line (white stripe)
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(ptx + 28, pty - 23);
+  ctx.lineTo(ptx - 28, pty + 3);
+  ctx.stroke();
+  // Center dot
+  ctx.fillStyle = "rgba(255,255,255,0.25)";
+  ctx.beginPath();
+  ctx.arc(ptx, pty - 10, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Pockets (6 — dark circles with leather rim)
   ctx.fillStyle = "#050505";
   const pocketPositions = [
-    { px: ptx, py: pty - 30 },         // top apex
-    { px: ptx + 44, py: pty - 7 },     // right apex
-    { px: ptx, py: pty + 12 },          // bottom apex
-    { px: ptx - 44, py: pty - 7 },     // left apex
-    { px: ptx + 22, py: pty - 19 },    // top-right mid
-    { px: ptx - 22, py: pty - 19 },    // top-left mid
+    { px: ptx, py: pty - 38 },           // top apex
+    { px: ptx + 56, py: pty - 9 },       // right apex
+    { px: ptx, py: pty + 16 },            // bottom apex
+    { px: ptx - 56, py: pty - 9 },       // left apex
+    { px: ptx + 28, py: pty - 24 },      // top-right mid
+    { px: ptx - 28, py: pty - 24 },      // top-left mid
   ];
   for (const pp of pocketPositions) {
+    // Leather pocket surround
+    ctx.fillStyle = "#3A1A08";
     ctx.beginPath();
-    ctx.arc(pp.px, pp.py, 4, 0, Math.PI * 2);
+    ctx.arc(pp.px, pp.py, 6.5, 0, Math.PI * 2);
     ctx.fill();
-    // Pocket rim
-    ctx.strokeStyle = "#2A1A0A";
-    ctx.lineWidth = 1;
+    // Pocket hole
+    ctx.fillStyle = "#020202";
     ctx.beginPath();
-    ctx.arc(pp.px, pp.py, 4.5, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.arc(pp.px, pp.py, 5, 0, Math.PI * 2);
+    ctx.fill();
   }
 
-  // Billiard balls (3-4 colored balls)
-  const ballColors = ["#F5F5F5", "#F97316", "#3B82F6", "#EF4444", "#8B5CF6"];
+  // Billiard balls (6 colored balls in triangle formation)
+  const ballColors = ["#F5F5F5", "#F97316", "#3B82F6", "#EF4444", "#8B5CF6", "#22C55E"];
   const ballPositions = [
-    { bx: ptx - 6, by: pty - 10 },
-    { bx: ptx + 10, by: pty - 15 },
-    { bx: ptx - 14, by: pty - 5 },
-    { bx: ptx + 4, by: pty - 1 },
+    { bx: ptx - 8, by: pty - 18 },
+    { bx: ptx + 4, by: pty - 22 },
+    { bx: ptx - 18, by: pty - 14 },
+    { bx: ptx + 14, by: pty - 14 },
+    { bx: ptx - 4, by: pty - 9 },
+    { bx: ptx + 10, by: pty - 4 },
   ];
   for (let bi = 0; bi < ballPositions.length; bi++) {
     const bp = ballPositions[bi];
+    // Ball shadow
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.beginPath();
+    ctx.ellipse(bp.bx + 1, bp.by + 2, 5, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Ball body
     ctx.fillStyle = ballColors[bi % ballColors.length];
     ctx.beginPath();
-    ctx.arc(bp.bx, bp.by, 4, 0, Math.PI * 2);
+    ctx.arc(bp.bx, bp.by, 5, 0, Math.PI * 2);
     ctx.fill();
+    // Ball stripe (for striped balls, alternating)
+    if (bi % 2 === 1) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(bp.bx, bp.by, 5, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = "rgba(255,255,255,0.25)";
+      ctx.fillRect(bp.bx - 5, bp.by - 1.5, 10, 3);
+      ctx.restore();
+    }
     // Shine dot
-    ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
     ctx.beginPath();
-    ctx.arc(bp.bx - 1, bp.by - 1, 1.5, 0, Math.PI * 2);
+    ctx.arc(bp.bx - 1.5, bp.by - 1.5, 2, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Table legs (front two visible)
-  ctx.fillStyle = "#6A3A10";
-  ctx.fillRect(ptx - 46, pty - 5, 6, 14);
-  ctx.fillRect(ptx + 40, pty - 5, 6, 14);
+  // =========================================================================
+  // WATER COOLER — near right wall, between arcade and bookshelf (grid 7, 2)
+  // Flush with wall area, standard size
+  // =========================================================================
+  const wcPos = gridToScreen(7, 2, w, h);
+  const wx2 = wcPos.x + 6;
+  const wy2 = wcPos.y - 2;
 
-  // ---- Water cooler (grid 7, 3) ----
-  const wcPos = gridToScreen(7, 3, w, h);
-  const wx2 = wcPos.x;
-  const wy2 = wcPos.y;
-
-  // Stand
-  ctx.fillStyle = "#303030";
-  ctx.fillRect(wx2 - 5, wy2 - 20, 10, 20);
-  ctx.fillRect(wx2 - 8, wy2 - 4, 16, 4);
-
-  // Blue bottle
-  ctx.fillStyle = "#2060A0";
-  ctx.fillRect(wx2 - 7, wy2 - 44, 14, 24);
-  ctx.strokeStyle = "#104080";
-  ctx.strokeRect(wx2 - 7, wy2 - 44, 14, 24);
-  // Bottle cap
-  ctx.fillStyle = "#4080C0";
-  ctx.fillRect(wx2 - 4, wy2 - 48, 8, 5);
-
-  // Bubbles inside bottle (rising)
-  ctx.fillStyle = "#80C0FF80";
-  for (let bi = 0; bi < 3; bi++) {
-    const bubblePhase = (frame * 0.05 + bi * 1.5) % 20;
-    ctx.beginPath();
-    ctx.arc(wx2 - 3 + bi * 3, wy2 - 24 - bubblePhase, 1.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Dispense buttons
-  ctx.fillStyle = "#3B82F6";
+  // Shadow
+  ctx.save();
+  ctx.globalAlpha = 0.2;
+  ctx.fillStyle = "#000000";
   ctx.beginPath();
-  ctx.arc(wx2 - 3, wy2 - 8, 2.5, 0, Math.PI * 2);
+  ctx.ellipse(wx2, wy2 + 2, 12, 4, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#EF4444";
+  ctx.restore();
+
+  // Stand body (solid, wider base)
+  ctx.fillStyle = "#2C2C2C";
+  ctx.fillRect(wx2 - 7, wy2 - 24, 14, 24);
+  ctx.strokeStyle = "#1A1A1A";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(wx2 - 7, wy2 - 24, 14, 24);
+  // Stand base plate
+  ctx.fillStyle = "#383838";
+  ctx.fillRect(wx2 - 10, wy2 - 4, 20, 5);
+  ctx.strokeStyle = "#1A1A1A";
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(wx2 - 10, wy2 - 4, 20, 5);
+
+  // Blue water bottle (translucent look)
+  ctx.fillStyle = "#1A58A8";
+  ctx.fillRect(wx2 - 8, wy2 - 52, 16, 28);
+  ctx.strokeStyle = "#0E3870";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(wx2 - 8, wy2 - 52, 16, 28);
+  // Bottle shine (left highlight)
+  ctx.fillStyle = "rgba(100, 180, 255, 0.25)";
+  ctx.fillRect(wx2 - 7, wy2 - 51, 4, 26);
+  // Water level line
+  ctx.strokeStyle = "rgba(100, 160, 255, 0.4)";
+  ctx.lineWidth = 0.8;
   ctx.beginPath();
-  ctx.arc(wx2 + 3, wy2 - 8, 2.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // ---- Plant (grid 5, 5) ----
-  const plantPos = gridToScreen(5, 5, w, h);
-  const px2 = plantPos.x;
-  const py2 = plantPos.y;
-
-  // Pot
-  ctx.fillStyle = "#8A4020";
-  ctx.fillRect(px2 - 8, py2 - 14, 16, 12);
-  ctx.fillRect(px2 - 10, py2 - 16, 20, 4);
-  ctx.fillStyle = "#704010";
-  ctx.fillRect(px2 - 8, py2 - 14, 16, 2);
-
-  // Stems
-  ctx.strokeStyle = "#1A6020";
-  ctx.lineWidth = 1.5;
-  const stemSway = Math.sin(frame * 0.02) * 1;
-  ctx.beginPath();
-  ctx.moveTo(px2, py2 - 14);
-  ctx.quadraticCurveTo(px2 + stemSway * 2, py2 - 24, px2, py2 - 34);
+  ctx.moveTo(wx2 - 7, wy2 - 36);
+  ctx.lineTo(wx2 + 7, wy2 - 36);
   ctx.stroke();
+  // Bottle cap
+  ctx.fillStyle = "#4A9ADA";
+  ctx.fillRect(wx2 - 5, wy2 - 57, 10, 6);
+  ctx.strokeStyle = "#2A6AB0";
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(wx2 - 5, wy2 - 57, 10, 6);
+
+  // Bubbles inside bottle (rising animation)
+  ctx.fillStyle = "rgba(160, 210, 255, 0.6)";
+  for (let bi = 0; bi < 4; bi++) {
+    const bubblePhase = (frame * 0.04 + bi * 1.8) % 24;
+    ctx.beginPath();
+    ctx.arc(wx2 - 4 + bi * 3, wy2 - 28 - bubblePhase, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Dispense tap area (panel)
+  ctx.fillStyle = "#1E1E1E";
+  ctx.fillRect(wx2 - 6, wy2 - 22, 12, 10);
+  // Dispense buttons (blue = cold, red = hot)
+  ctx.fillStyle = "#2060E0";
+  ctx.beginPath();
+  ctx.arc(wx2 - 3, wy2 - 16, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(32, 96, 224, 0.4)";
+  ctx.beginPath();
+  ctx.arc(wx2 - 3, wy2 - 16, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#E04020";
+  ctx.beginPath();
+  ctx.arc(wx2 + 3, wy2 - 16, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(224, 64, 32, 0.4)";
+  ctx.beginPath();
+  ctx.arc(wx2 + 3, wy2 - 16, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // =========================================================================
+  // PLANT 1 — Corner where walls meet floor (grid 5, 0 — top corner)
+  // Taller fern-style plant with multiple leaf clusters
+  // =========================================================================
+  const plantPos = gridToScreen(5, 0, w, h);
+  const px2 = plantPos.x - 6;
+  const py2 = plantPos.y + 4;
+
+  // Shadow
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.ellipse(px2, py2 + 2, 14, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Pot (terracotta, wider rim)
+  ctx.fillStyle = "#9A4822";
+  ctx.beginPath();
+  ctx.moveTo(px2 - 10, py2 - 4);
+  ctx.lineTo(px2 + 10, py2 - 4);
+  ctx.lineTo(px2 + 8, py2 + 10);
+  ctx.lineTo(px2 - 8, py2 + 10);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#6A2E10";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(px2 - 10, py2 - 4);
+  ctx.lineTo(px2 + 10, py2 - 4);
+  ctx.lineTo(px2 + 8, py2 + 10);
+  ctx.lineTo(px2 - 8, py2 + 10);
+  ctx.closePath();
+  ctx.stroke();
+  // Pot rim (wider)
+  ctx.fillStyle = "#B05830";
+  ctx.fillRect(px2 - 12, py2 - 8, 24, 5);
+  ctx.strokeStyle = "#6A2E10";
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(px2 - 12, py2 - 8, 24, 5);
+  // Soil
+  ctx.fillStyle = "#3A2010";
+  ctx.fillRect(px2 - 9, py2 - 4, 18, 3);
+
+  // Main stem (tall)
+  const stemSway = Math.sin(frame * 0.018) * 1.5;
+  ctx.strokeStyle = "#1A6022";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(px2, py2 - 5);
+  ctx.quadraticCurveTo(px2 + stemSway * 2, py2 - 25, px2 + stemSway, py2 - 46);
+  ctx.stroke();
+
+  // Secondary stems
+  ctx.strokeStyle = "#1C6824";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(px2, py2 - 12);
+  ctx.quadraticCurveTo(px2 - 8 + stemSway, py2 - 28, px2 - 16 + stemSway, py2 - 38);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(px2, py2 - 10);
+  ctx.quadraticCurveTo(px2 + 8 + stemSway, py2 - 26, px2 + 14 + stemSway, py2 - 36);
+  ctx.stroke();
+  ctx.lineWidth = 1.2;
   ctx.beginPath();
   ctx.moveTo(px2, py2 - 18);
-  ctx.quadraticCurveTo(px2 - 6 + stemSway, py2 - 26, px2 - 10 + stemSway, py2 - 30);
+  ctx.quadraticCurveTo(px2 - 5 + stemSway, py2 - 30, px2 - 10 + stemSway, py2 - 44);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(px2, py2 - 16);
-  ctx.quadraticCurveTo(px2 + 6 + stemSway, py2 - 24, px2 + 10 + stemSway, py2 - 28);
+  ctx.moveTo(px2, py2 - 20);
+  ctx.quadraticCurveTo(px2 + 5 + stemSway, py2 - 30, px2 + 10 + stemSway, py2 - 42);
   ctx.stroke();
 
-  // Leaves
-  ctx.fillStyle = "#22A040";
-  const leafPositions = [
-    { lx: px2, ly: py2 - 34, rx: 8, ry: 5, rot: -0.3 },
-    { lx: px2 - 10 + stemSway, ly: py2 - 30, rx: 7, ry: 4, rot: -0.8 },
-    { lx: px2 + 10 + stemSway, ly: py2 - 28, rx: 7, ry: 4, rot: 0.6 },
+  // Leaf clusters (larger ellipses, multiple colors for depth)
+  const leafData = [
+    { lx: px2 + stemSway, ly: py2 - 46, rx: 12, ry: 7, rot: -0.2, col: "#22A040" },
+    { lx: px2 - 16 + stemSway, ly: py2 - 38, rx: 11, ry: 6, rot: -0.9, col: "#28B848" },
+    { lx: px2 + 14 + stemSway, ly: py2 - 36, rx: 11, ry: 6, rot: 0.7, col: "#24A844" },
+    { lx: px2 - 10 + stemSway, ly: py2 - 44, rx: 9, ry: 5, rot: -0.6, col: "#1E9038" },
+    { lx: px2 + 10 + stemSway, ly: py2 - 42, rx: 9, ry: 5, rot: 0.5, col: "#1E9038" },
+    { lx: px2, ly: py2 - 34, rx: 10, ry: 6, rot: -0.1, col: "#2AAC46" },
   ];
-  for (const lp of leafPositions) {
+  for (const lf of leafData) {
     ctx.save();
-    ctx.translate(lp.lx, lp.ly);
-    ctx.rotate(lp.rot);
+    ctx.translate(lf.lx, lf.ly);
+    ctx.rotate(lf.rot);
+    ctx.fillStyle = lf.col;
     ctx.beginPath();
-    ctx.ellipse(0, -lp.ry, lp.rx, lp.ry, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, -lf.ry, lf.rx, lf.ry, 0, 0, Math.PI * 2);
     ctx.fill();
+    // Leaf vein
+    ctx.strokeStyle = "rgba(0, 80, 20, 0.4)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -lf.ry * 1.8);
+    ctx.stroke();
     ctx.restore();
   }
 
-  // ---- Second plant — small cactus (grid 7, 1) ----
-  const cactusPos = gridToScreen(7, 1, w, h);
-  const cpx = cactusPos.x;
+  // =========================================================================
+  // PLANT 2 — Bottom-right corner of rest zone (grid 7, 5)
+  // Larger cactus/fern variety
+  // =========================================================================
+  const cactusPos = gridToScreen(7, 5, w, h);
+  const cpx = cactusPos.x + 4;
   const cpy = cactusPos.y;
 
-  // Cactus pot
-  ctx.fillStyle = "#9A4020";
-  ctx.fillRect(cpx - 6, cpy - 10, 12, 10);
-  ctx.fillRect(cpx - 8, cpy - 12, 16, 4);
-  ctx.fillStyle = "#6A2C10";
-  ctx.fillRect(cpx - 6, cpy - 10, 12, 2);
+  // Shadow
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.ellipse(cpx, cpy + 2, 14, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 
-  // Cactus body (tall trunk)
-  ctx.fillStyle = "#2A6A20";
-  ctx.fillRect(cpx - 4, cpy - 28, 8, 18);
-  ctx.strokeStyle = "#1A5010";
+  // Cactus pot (terracotta, slightly bigger)
+  ctx.fillStyle = "#A04A24";
+  ctx.beginPath();
+  ctx.moveTo(cpx - 10, cpy - 4);
+  ctx.lineTo(cpx + 10, cpy - 4);
+  ctx.lineTo(cpx + 8, cpy + 10);
+  ctx.lineTo(cpx - 8, cpy + 10);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#6A2E10";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cpx - 10, cpy - 4);
+  ctx.lineTo(cpx + 10, cpy - 4);
+  ctx.lineTo(cpx + 8, cpy + 10);
+  ctx.lineTo(cpx - 8, cpy + 10);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fillStyle = "#C06030";
+  ctx.fillRect(cpx - 12, cpy - 8, 24, 5);
+  ctx.strokeStyle = "#6A2E10";
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(cpx - 12, cpy - 8, 24, 5);
+
+  // Cactus body (tall trunk, ribbed)
+  ctx.fillStyle = "#2E7028";
+  ctx.fillRect(cpx - 6, cpy - 36, 12, 28);
+  ctx.strokeStyle = "#1A5018";
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(cpx - 6, cpy - 36, 12, 28);
+  // Rib lines
+  ctx.strokeStyle = "#367830";
   ctx.lineWidth = 0.5;
-  ctx.strokeRect(cpx - 4, cpy - 28, 8, 18);
+  for (let ri = 0; ri < 3; ri++) {
+    ctx.beginPath();
+    ctx.moveTo(cpx - 4 + ri * 4, cpy - 36);
+    ctx.lineTo(cpx - 4 + ri * 4, cpy - 8);
+    ctx.stroke();
+  }
+  // Top dome
+  ctx.fillStyle = "#2E7028";
+  ctx.beginPath();
+  ctx.arc(cpx, cpy - 36, 6, Math.PI, 0);
+  ctx.fill();
 
-  // Left arm
-  ctx.fillStyle = "#2A6A20";
-  ctx.fillRect(cpx - 10, cpy - 24, 7, 5);
-  ctx.fillRect(cpx - 10, cpy - 30, 5, 7);
-
-  // Right arm
-  ctx.fillRect(cpx + 3, cpy - 22, 7, 5);
-  ctx.fillRect(cpx + 5, cpy - 28, 5, 7);
-
-  // Cactus spines
-  ctx.strokeStyle = "#80C060";
+  // Left arm (larger)
+  ctx.fillStyle = "#2E7028";
+  ctx.fillRect(cpx - 16, cpy - 30, 11, 6);
+  ctx.fillRect(cpx - 16, cpy - 38, 7, 9);
+  ctx.strokeStyle = "#1A5018";
   ctx.lineWidth = 0.5;
+  ctx.strokeRect(cpx - 16, cpy - 30, 11, 6);
+  ctx.strokeRect(cpx - 16, cpy - 38, 7, 9);
+
+  // Right arm (larger)
+  ctx.fillStyle = "#2E7028";
+  ctx.fillRect(cpx + 5, cpy - 28, 11, 6);
+  ctx.fillRect(cpx + 9, cpy - 36, 7, 9);
+  ctx.strokeStyle = "#1A5018";
+  ctx.lineWidth = 0.5;
+  ctx.strokeRect(cpx + 5, cpy - 28, 11, 6);
+  ctx.strokeRect(cpx + 9, cpy - 36, 7, 9);
+
+  // Cactus spines (longer, more visible)
+  ctx.strokeStyle = "#A0CC80";
+  ctx.lineWidth = 0.8;
   const spinePositions = [
-    { x: cpx - 4, y: cpy - 26 }, { x: cpx + 4, y: cpy - 24 },
-    { x: cpx - 4, y: cpy - 20 }, { x: cpx + 4, y: cpy - 18 },
-    { x: cpx - 10, y: cpy - 29 }, { x: cpx + 10, y: cpy - 27 },
+    { x: cpx - 6, y: cpy - 32 }, { x: cpx + 6, y: cpy - 30 },
+    { x: cpx - 6, y: cpy - 24 }, { x: cpx + 6, y: cpy - 22 },
+    { x: cpx - 6, y: cpy - 16 }, { x: cpx + 6, y: cpy - 14 },
+    { x: cpx - 16, y: cpy - 36 }, { x: cpx + 16, y: cpy - 34 },
+    { x: cpx, y: cpy - 36 },
   ];
   for (const sp of spinePositions) {
     ctx.beginPath();
     ctx.moveTo(sp.x, sp.y);
-    ctx.lineTo(sp.x + (sp.x < cpx ? -4 : 4), sp.y - 2);
+    ctx.lineTo(sp.x + (sp.x < cpx ? -5 : 5), sp.y - 3);
     ctx.stroke();
   }
 
-  // ---- Snack table (grid 7, 5) ----
-  const snackPos = gridToScreen(7, 5, w, h);
-  const stx = snackPos.x;
-  const sty = snackPos.y;
-
-  // Table surface (small round table)
-  ctx.fillStyle = "#5A3A1A";
-  ctx.beginPath();
-  ctx.ellipse(stx, sty - 12, 16, 8, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = "#3A2010";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.ellipse(stx, sty - 12, 16, 8, 0, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Table leg
-  ctx.fillStyle = "#3A2010";
-  ctx.fillRect(stx - 2, sty - 12, 4, 14);
-  // Base
-  ctx.fillRect(stx - 8, sty, 16, 3);
-
-  // Snacks on table
-  // Bowl of snacks
-  ctx.fillStyle = "#8A6030";
-  ctx.beginPath();
-  ctx.ellipse(stx - 5, sty - 15, 6, 3, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // Snack dots (colorful)
-  const snackColors = ["#F97316", "#EF4444", "#22C55E", "#F59E0B"];
-  for (let sni = 0; sni < 4; sni++) {
-    ctx.fillStyle = snackColors[sni];
+  // Flower on top (small pink bloom)
+  ctx.fillStyle = "#FF88AA";
+  for (let fi = 0; fi < 5; fi++) {
+    const fangle = (fi / 5) * Math.PI * 2;
     ctx.beginPath();
-    ctx.arc(stx - 8 + sni * 3, sty - 16, 1.5, 0, Math.PI * 2);
+    ctx.ellipse(
+      cpx + Math.cos(fangle) * 4, cpy - 38 + Math.sin(fangle) * 3,
+      3, 2, fangle, 0, Math.PI * 2,
+    );
     ctx.fill();
   }
-  // Cup/mug
-  ctx.fillStyle = "#3B82F6";
-  ctx.fillRect(stx + 4, sty - 19, 7, 7);
-  ctx.strokeStyle = "#2060A0";
-  ctx.lineWidth = 0.5;
-  ctx.strokeRect(stx + 4, sty - 19, 7, 7);
+  ctx.fillStyle = "#FFE040";
+  ctx.beginPath();
+  ctx.arc(cpx, cpy - 38, 3, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 // ---------------------------------------------------------------------------
