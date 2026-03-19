@@ -731,6 +731,7 @@ dependencies = [
  "chrono",
  "dirs 5.0.1",
  "futures",
+ "glob",
  "reqwest 0.12.28",
  "rusqlite",
  "serde",
