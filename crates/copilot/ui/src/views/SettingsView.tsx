@@ -107,20 +107,6 @@ export function SettingsView() {
               <div className="space-y-2">
                 <div>
                   <label className="text-[12px] text-text-muted uppercase tracking-wider">
-                    {t("settings.apiKey")}
-                  </label>
-                  <input
-                    type="password"
-                    value={provider.apiKey}
-                    onChange={(e) => updateProvider(provider.id, { apiKey: e.target.value })}
-                    placeholder="sk-..."
-                    className="w-full bg-card border border-border rounded px-2 py-1 text-sm text-text-primary
-                      placeholder:text-text-disabled focus:outline-none focus:ring-1 focus:ring-accent/50
-                      font-mono mt-0.5"
-                  />
-                </div>
-                <div>
-                  <label className="text-[12px] text-text-muted uppercase tracking-wider">
                     {t("settings.endpoint")}
                   </label>
                   <input

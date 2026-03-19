@@ -150,11 +150,15 @@ function App() {
     fetchAgents();
   }, [fetchAgents]);
 
+  const handleAuthDismiss = useCallback(() => {
+    setShowAuthWall(false);
+  }, []);
+
   return (
     <div className="h-screen flex flex-col bg-background font-mono overflow-hidden">
       {!hasOnboarded && <OnboardingWizard onComplete={completeOnboarding} />}
       {/* Auth wall modal */}
-      {showAuthWall && <AuthWall onAuthenticated={handleAuthenticated} />}
+      {showAuthWall && <AuthWall onAuthenticated={handleAuthenticated} onClose={handleAuthDismiss} />}
 
       {/* Approval dialog for risky agent tool calls (PRD 10.4) */}
       <ApprovalDialog />

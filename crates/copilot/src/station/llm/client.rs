@@ -9,7 +9,7 @@ pub struct LlmClient {
     api_key: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ChatRequest {
     pub model: String,
     pub messages: Vec<ChatMessage>,
@@ -221,6 +221,35 @@ impl LlmClient {
             .map_err(|e| format!("Failed to parse response: {}", e))
     }
 
+    /// Call /dr-agent/v1/free/chat (no auth required).
+    ///
+    /// This is the fallback endpoint for unauthenticated users. It uses a
+    /// rate-limited free model on the gateway side.
+    pub async fn chat_free(
+        &self,
+        request: ChatRequest,
+        agent_name: &str,
+    ) -> Result<ChatResponse, String> {
+        let resp = self
+            .http
+            .post(format!("{}/dr-agent/v1/free/chat", self.gateway_url))
+            .header("x-copilot-agent", agent_name)
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| format!("Free chat request failed: {}", e))?;
+
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            return Err(format!("Free chat error {}: {}", status, body));
+        }
+
+        resp.json::<ChatResponse>()
+            .await
+            .map_err(|e| format!("Failed to parse free chat response: {}", e))
+    }
+
     /// Call /dr-agent/v1/decompose
     pub async fn decompose(
         &self,
@@ -337,6 +366,25 @@ mod tests {
 
         let client2 = client.with_api_key("test_key");
         assert_eq!(client2.api_key(), Some("test_key"));
+    }
+
+    #[tokio::test]
+    async fn test_chat_free_bad_url_returns_error() {
+        let client = LlmClient::new("http://127.0.0.1:1");
+        let request = ChatRequest {
+            model: "free-model".to_string(),
+            messages: vec![ChatMessage {
+                role: "user".to_string(),
+                content: "Hello".to_string(),
+            }],
+            max_tokens: None,
+            temperature: None,
+            stream: false,
+            tools: None,
+        };
+        let result = client.chat_free(request, "dr-bob").await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Free chat request failed"));
     }
 
     #[tokio::test]

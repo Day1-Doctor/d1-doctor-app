@@ -40,7 +40,7 @@ function formatTimestamp(ts: string): string {
 
 type ChatMode = "plan" | "btw";
 
-function ChatPanel({ onAuthRequired }: { onAuthRequired?: () => void }) {
+function ChatPanel() {
   const { t } = useTranslation();
   const allMessages = useChatStore((s) => s.messages);
   const addMessage = useChatStore((s) => s.addMessage);
@@ -100,12 +100,6 @@ function ChatPanel({ onAuthRequired }: { onAuthRequired?: () => void }) {
   }
 
   async function handleConfirmPlan() {
-    // Demo mode: require auth before creating tasks
-    if (!isAuthenticated) {
-      onAuthRequired?.();
-      return;
-    }
-
     // Gather user messages from Plan Mode as the task description
     const userMessages = drBobMessages
       .filter((m) => m.role === "user")
@@ -121,7 +115,9 @@ function ChatPanel({ onAuthRequired }: { onAuthRequired?: () => void }) {
     addTask(description.length > 80 ? description.slice(0, 80) + "..." : description);
 
     try {
-      // Call the Tauri create_task command to kick off real backend execution
+      // Call the Tauri create_task command to kick off real backend execution.
+      // When not authenticated the backend will automatically fall back to the
+      // free model endpoint (no auth required).
       const result = await invoke<{ id: string; title: string; status: string }>(
         "create_task",
         { description, maxAgents },
@@ -257,7 +253,7 @@ function ChatPanel({ onAuthRequired }: { onAuthRequired?: () => void }) {
         <div className="shrink-0 px-3 py-2 border-t border-border">
           {!isAuthenticated && (
             <p className="text-[12px] text-text-muted text-center mb-1.5">
-              {t("chat.signInToStart", { defaultValue: "Sign in to start execution" })}
+              {t("chat.freeModelHint", { defaultValue: "Running in free mode. Sign in for full access." })}
             </p>
           )}
           <button
@@ -270,9 +266,7 @@ function ChatPanel({ onAuthRequired }: { onAuthRequired?: () => void }) {
           >
             {isCreatingTask
               ? t("chat.creatingTask", { defaultValue: "Creating task..." })
-              : !isAuthenticated
-                ? t("chat.signInAndConfirm", { defaultValue: "Sign in & Confirm Plan" })
-                : t("chat.confirmPlan", { defaultValue: "Confirm Plan & Start Execution" })}
+              : t("chat.confirmPlan", { defaultValue: "Confirm Plan & Start Execution" })}
           </button>
         </div>
       )}
@@ -440,7 +434,7 @@ function AgentsPanel({ onOpenChat }: { onOpenChat: () => void }) {
 
 // ── Command Center (RightPanel) ────────────────────────────────────────────
 
-export function RightPanel({ onAuthRequired }: { onAuthRequired?: () => void }) {
+export function RightPanel(_props: { onAuthRequired?: () => void }) {
   const { t } = useTranslation();
   const [mode, setMode] = useState<CommandCenterMode>("chat");
   const collapsed = useLayoutStore((s) => s.rightPanelCollapsed);
@@ -591,7 +585,7 @@ export function RightPanel({ onAuthRequired }: { onAuthRequired?: () => void }) 
 
           {/* Content */}
           {mode === "chat" ? (
-            <ChatPanel onAuthRequired={onAuthRequired} />
+            <ChatPanel />
           ) : (
             <AgentsPanel onOpenChat={() => setMode("chat")} />
           )}
