@@ -9,6 +9,8 @@ export interface BillingState {
   maxAgents: number;
   /** Monthly DD credit allocation for current tier. */
   monthlyCredits: number;
+  /** Monthly price (USD) for the current tier. */
+  priceMonthly: number;
   /** Whether the upgrade prompt modal is visible. */
   showUpgradePrompt: boolean;
   /** Message displayed in the upgrade prompt. */
@@ -21,17 +23,18 @@ export interface BillingState {
 
 const TIER_CONFIG: Record<
   SubscriptionTier,
-  { maxAgents: number; monthlyCredits: number }
+  { maxAgents: number; monthlyDD: number; priceMonthly: number }
 > = {
-  free_man: { maxAgents: 1, monthlyCredits: 100 },
-  mini_shop: { maxAgents: 3, monthlyCredits: 1_000 },
-  rocket_inc: { maxAgents: 8, monthlyCredits: 5_000 },
+  free_man: { maxAgents: 1, monthlyDD: 0, priceMonthly: 0 },
+  mini_shop: { maxAgents: 3, monthlyDD: 3_500, priceMonthly: 30 },
+  rocket_inc: { maxAgents: 10, monthlyDD: 15_000, priceMonthly: 100 },
 };
 
 export const useBillingStore = create<BillingState>((set) => ({
   tier: "free_man",
   maxAgents: TIER_CONFIG.free_man.maxAgents,
-  monthlyCredits: TIER_CONFIG.free_man.monthlyCredits,
+  monthlyCredits: TIER_CONFIG.free_man.monthlyDD,
+  priceMonthly: TIER_CONFIG.free_man.priceMonthly,
   showUpgradePrompt: false,
   upgradeMessage: "",
 
@@ -39,7 +42,8 @@ export const useBillingStore = create<BillingState>((set) => ({
     set({
       tier,
       maxAgents: TIER_CONFIG[tier].maxAgents,
-      monthlyCredits: TIER_CONFIG[tier].monthlyCredits,
+      monthlyCredits: TIER_CONFIG[tier].monthlyDD,
+      priceMonthly: TIER_CONFIG[tier].priceMonthly,
     }),
 
   openUpgradePrompt: (message) =>

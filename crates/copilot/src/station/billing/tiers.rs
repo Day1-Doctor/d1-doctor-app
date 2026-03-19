@@ -20,9 +20,11 @@ pub enum SubscriptionTier {
 pub struct TierConfig {
     pub name: String,
     pub price_monthly: f64,
-    pub price_annual: f64,
+    /// Effective monthly price when billed annually.
+    pub price_annual_monthly: f64,
     pub max_agents: u32,
     pub monthly_dd_credits: u64,
+    pub description: String,
 }
 
 impl SubscriptionTier {
@@ -42,23 +44,26 @@ pub fn get_tier_config(tier: SubscriptionTier) -> TierConfig {
         SubscriptionTier::FreMan => TierConfig {
             name: "Free Man".to_string(),
             price_monthly: 0.0,
-            price_annual: 0.0,
+            price_annual_monthly: 0.0,
             max_agents: 1,
-            monthly_dd_credits: 100,
+            monthly_dd_credits: 0,
+            description: "Pay as you go".to_string(),
         },
         SubscriptionTier::MiniShop => TierConfig {
             name: "Mini Shop".to_string(),
-            price_monthly: 19.0,
-            price_annual: 190.0,
+            price_monthly: 30.0,
+            price_annual_monthly: 25.0,
             max_agents: 3,
-            monthly_dd_credits: 1_000,
+            monthly_dd_credits: 3_500,
+            description: "For small teams".to_string(),
         },
         SubscriptionTier::RocketInc => TierConfig {
             name: "Rocket Inc.".to_string(),
-            price_monthly: 49.0,
-            price_annual: 490.0,
-            max_agents: 8,
-            monthly_dd_credits: 5_000,
+            price_monthly: 100.0,
+            price_annual_monthly: 80.0,
+            max_agents: 10,
+            monthly_dd_credits: 15_000,
+            description: "For growing businesses".to_string(),
         },
     }
 }
@@ -72,28 +77,29 @@ mod tests {
         let config = get_tier_config(SubscriptionTier::FreMan);
         assert_eq!(config.name, "Free Man");
         assert!((config.price_monthly - 0.0).abs() < f64::EPSILON);
-        assert!((config.price_annual - 0.0).abs() < f64::EPSILON);
+        assert!((config.price_annual_monthly - 0.0).abs() < f64::EPSILON);
         assert_eq!(config.max_agents, 1);
-        assert_eq!(config.monthly_dd_credits, 100);
+        assert_eq!(config.monthly_dd_credits, 0);
+        assert_eq!(config.description, "Pay as you go");
     }
 
     #[test]
     fn test_mini_shop_config() {
         let config = get_tier_config(SubscriptionTier::MiniShop);
         assert_eq!(config.name, "Mini Shop");
-        assert!((config.price_monthly - 19.0).abs() < f64::EPSILON);
-        assert!((config.price_annual - 190.0).abs() < f64::EPSILON);
+        assert!((config.price_monthly - 30.0).abs() < f64::EPSILON);
+        assert!((config.price_annual_monthly - 25.0).abs() < f64::EPSILON);
         assert_eq!(config.max_agents, 3);
-        assert_eq!(config.monthly_dd_credits, 1_000);
+        assert_eq!(config.monthly_dd_credits, 3_500);
     }
 
     #[test]
     fn test_rocket_inc_config() {
         let config = get_tier_config(SubscriptionTier::RocketInc);
         assert_eq!(config.name, "Rocket Inc.");
-        assert!((config.price_monthly - 49.0).abs() < f64::EPSILON);
-        assert!((config.price_annual - 490.0).abs() < f64::EPSILON);
-        assert_eq!(config.max_agents, 8);
-        assert_eq!(config.monthly_dd_credits, 5_000);
+        assert!((config.price_monthly - 100.0).abs() < f64::EPSILON);
+        assert!((config.price_annual_monthly - 80.0).abs() < f64::EPSILON);
+        assert_eq!(config.max_agents, 10);
+        assert_eq!(config.monthly_dd_credits, 15_000);
     }
 }
