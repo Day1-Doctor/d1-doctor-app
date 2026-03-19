@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { useAgentStore, type AgentStatus } from "../stores/agentStore";
 import { useTaskStore, type TaskStatus } from "../stores/taskStore";
 import { useConnectionStore } from "../stores/connectionStore";
+import { useCostStore } from "../stores/costStore";
 
 interface EventMessage {
   id: string;
@@ -31,9 +32,11 @@ export function useEventStream(options: UseEventStreamOptions = {}) {
   const mountedRef = useRef(true);
 
   const updateAgentStatus = useAgentStore((s) => s.updateAgentStatus);
+  const agents = useAgentStore((s) => s.agents);
   const updateTaskStatus = useTaskStore((s) => s.updateTaskStatus);
   const setConnected = useConnectionStore((s) => s.setConnected);
   const setLastEvent = useConnectionStore((s) => s.setLastEvent);
+  const updateFromEvent = useCostStore((s) => s.updateFromEvent);
 
   const handleEvent = useCallback(
     (event: EventMessage) => {
@@ -46,7 +49,8 @@ export function useEventStream(options: UseEventStreamOptions = {}) {
           break;
         }
         case "token.stream": {
-          // Future: update token count in store
+          // Token streaming events are handled by cost.updated for DD tracking.
+          // Individual token deltas are not tracked in the cost store.
           break;
         }
         case "tool.started": {
@@ -72,14 +76,21 @@ export function useEventStream(options: UseEventStreamOptions = {}) {
           break;
         }
         case "cost.updated": {
-          // Future: update cost display
+          const { session_tokens, session_cost_dd } = event.payload as {
+            session_tokens: number;
+            session_cost_dd: number;
+          };
+          // Resolve agent_id to display name for the cost breakdown
+          const costAgent = agents.find((a) => a.id === event.agent_id);
+          const agentName = costAgent?.name ?? event.agent_id;
+          updateFromEvent(session_tokens, session_cost_dd, agentName);
           break;
         }
         default:
           break;
       }
     },
-    [updateAgentStatus, updateTaskStatus, setLastEvent],
+    [updateAgentStatus, updateTaskStatus, setLastEvent, updateFromEvent, agents],
   );
 
   const connect = useCallback(() => {
