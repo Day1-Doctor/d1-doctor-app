@@ -4,6 +4,7 @@ pub mod adapters;
 pub mod billing;
 pub mod costs;
 pub mod db;
+pub mod executor;
 pub mod events;
 pub mod kernel;
 pub mod llm;
