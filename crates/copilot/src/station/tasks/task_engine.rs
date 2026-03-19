@@ -6,15 +6,21 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 
 use super::task_types::{Artifact, CreateTaskRequest, TaskFilter, TaskSpec, TaskStatus};
+use crate::station::db::DbHandle;
 
 /// The Task Engine manages the lifecycle of tasks and their artifacts.
 ///
 /// All operations are concurrency-safe via `RwLock`-guarded internal state.
 /// State transitions are validated against the task FSM before being applied.
+/// An optional `DbHandle` enables write-behind persistence to SQLite so that
+/// tasks survive app restarts. The in-memory HashMap remains the primary store
+/// during runtime.
 pub struct TaskEngine {
     tasks: Arc<RwLock<HashMap<String, TaskSpec>>>,
     /// Artifacts grouped by task ID.
     artifacts: Arc<RwLock<HashMap<String, Vec<Artifact>>>>,
+    /// Optional SQLite handle for write-behind persistence.
+    db: Option<DbHandle>,
 }
 
 impl TaskEngine {
@@ -23,6 +29,182 @@ impl TaskEngine {
         Self {
             tasks: Arc::new(RwLock::new(HashMap::new())),
             artifacts: Arc::new(RwLock::new(HashMap::new())),
+            db: None,
+        }
+    }
+
+    /// Create a new Task Engine backed by an SQLite database.
+    pub fn with_db(db: DbHandle) -> Self {
+        Self {
+            tasks: Arc::new(RwLock::new(HashMap::new())),
+            artifacts: Arc::new(RwLock::new(HashMap::new())),
+            db: Some(db),
+        }
+    }
+
+    /// Load non-completed tasks from the database into the in-memory store.
+    ///
+    /// Call this once at startup to restore pending/running/paused tasks from
+    /// the previous session. Completed, failed, and cancelled tasks are not
+    /// loaded to keep the working set small.
+    pub async fn load_from_db(&self) -> Result<usize, String> {
+        let db = match &self.db {
+            Some(db) => db,
+            None => return Ok(0),
+        };
+
+        // Collect all rows while holding the db mutex, then release it.
+        let loaded_tasks: Vec<TaskSpec> = {
+            let conn = db.lock().map_err(|e| format!("db lock failed: {e}"))?;
+            let mut stmt = conn
+                .prepare(
+                    "SELECT id, title, status, agent_id, parent_id, step_index,
+                            priority, input, output, created_at, started_at, completed_at
+                     FROM tasks
+                     WHERE status NOT IN ('completed', 'failed', 'cancelled')",
+                )
+                .map_err(|e| format!("prepare failed: {e}"))?;
+
+            let rows = stmt
+                .query_map([], |row| {
+                    let status_str: String = row.get(2)?;
+                    let status = match status_str.as_str() {
+                        "pending" => TaskStatus::Pending,
+                        "running" => TaskStatus::Running,
+                        "paused" => TaskStatus::Paused,
+                        _ => TaskStatus::Pending,
+                    };
+
+                    let input_str: Option<String> = row.get(7)?;
+                    let input = input_str.and_then(|s| serde_json::from_str(&s).ok());
+
+                    let output_str: Option<String> = row.get(8)?;
+                    let output = output_str.and_then(|s| serde_json::from_str(&s).ok());
+
+                    let created_str: String = row.get(9)?;
+                    let created_at = chrono::DateTime::parse_from_rfc3339(&created_str)
+                        .map(|dt| dt.with_timezone(&Utc))
+                        .unwrap_or_else(|_| Utc::now());
+
+                    let started_str: Option<String> = row.get(10)?;
+                    let started_at = started_str.and_then(|s| {
+                        chrono::DateTime::parse_from_rfc3339(&s)
+                            .map(|dt| dt.with_timezone(&Utc))
+                            .ok()
+                    });
+
+                    let completed_str: Option<String> = row.get(11)?;
+                    let completed_at = completed_str.and_then(|s| {
+                        chrono::DateTime::parse_from_rfc3339(&s)
+                            .map(|dt| dt.with_timezone(&Utc))
+                            .ok()
+                    });
+
+                    Ok(TaskSpec {
+                        id: row.get(0)?,
+                        title: row.get(1)?,
+                        status,
+                        agent_id: row.get(3)?,
+                        parent_id: row.get(4)?,
+                        step_index: row.get::<_, Option<i32>>(5)?.map(|v| v as u32),
+                        priority: row.get(6)?,
+                        input,
+                        output,
+                        sub_tasks: Vec::new(),
+                        started_at,
+                        completed_at,
+                        created_at,
+                    })
+                })
+                .map_err(|e| format!("query failed: {e}"))?;
+
+            rows.collect::<Result<Vec<_>, _>>()
+                .map_err(|e| format!("row read failed: {e}"))?
+        };
+
+        let count = loaded_tasks.len();
+        let mut tasks = self.tasks.write().await;
+        for task in loaded_tasks {
+            tasks.insert(task.id.clone(), task);
+        }
+
+        // Rebuild sub_tasks references from parent_id links.
+        let parent_child: Vec<(String, String)> = tasks
+            .values()
+            .filter_map(|t| t.parent_id.as_ref().map(|pid| (pid.clone(), t.id.clone())))
+            .collect();
+        for (parent_id, child_id) in parent_child {
+            if let Some(parent) = tasks.get_mut(&parent_id) {
+                if !parent.sub_tasks.contains(&child_id) {
+                    parent.sub_tasks.push(child_id);
+                }
+            }
+        }
+
+        Ok(count)
+    }
+
+    /// Persist a task to SQLite (write-behind). Errors are logged, not propagated.
+    fn persist_task(&self, task: &TaskSpec) {
+        let db = match &self.db {
+            Some(db) => db,
+            None => return,
+        };
+
+        let conn = match db.lock() {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::warn!("failed to acquire db lock for task persist: {e}");
+                return;
+            }
+        };
+
+        let status = match task.status {
+            TaskStatus::Pending => "pending",
+            TaskStatus::Running => "running",
+            TaskStatus::Paused => "paused",
+            TaskStatus::Completed => "completed",
+            TaskStatus::Failed => "failed",
+            TaskStatus::Cancelled => "cancelled",
+        };
+
+        let input = task.input.as_ref().map(|v| v.to_string());
+        let output = task.output.as_ref().map(|v| v.to_string());
+        let created_at = task.created_at.to_rfc3339();
+        let started_at = task.started_at.map(|dt| dt.to_rfc3339());
+        let completed_at = task.completed_at.map(|dt| dt.to_rfc3339());
+        let step_index = task.step_index.map(|v| v as i32);
+
+        let result = conn.execute(
+            "INSERT INTO tasks (id, title, status, agent_id, parent_id, step_index,
+                               priority, input, output, created_at, started_at, completed_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+             ON CONFLICT(id) DO UPDATE SET
+                status = excluded.status,
+                agent_id = excluded.agent_id,
+                parent_id = excluded.parent_id,
+                input = excluded.input,
+                output = excluded.output,
+                started_at = excluded.started_at,
+                completed_at = excluded.completed_at",
+            rusqlite::params![
+                task.id,
+                task.title,
+                status,
+                task.agent_id,
+                task.parent_id,
+                step_index,
+                task.priority,
+                input,
+                output,
+                created_at,
+                started_at,
+                completed_at,
+            ],
+        );
+
+        if let Err(e) = result {
+            tracing::warn!(task_id = %task.id, "failed to persist task: {e}");
         }
     }
 
@@ -45,6 +227,8 @@ impl TaskEngine {
         };
         let mut tasks = self.tasks.write().await;
         tasks.insert(task.id.clone(), task.clone());
+        drop(tasks);
+        self.persist_task(&task);
         task
     }
 
@@ -64,7 +248,10 @@ impl TaskEngine {
 
         task.status = TaskStatus::Running;
         task.started_at = Some(Utc::now());
-        Ok(task.clone())
+        let snapshot = task.clone();
+        drop(tasks);
+        self.persist_task(&snapshot);
+        Ok(snapshot)
     }
 
     /// Pause a running task (transition Running -> Paused).
@@ -82,7 +269,10 @@ impl TaskEngine {
         }
 
         task.status = TaskStatus::Paused;
-        Ok(task.clone())
+        let snapshot = task.clone();
+        drop(tasks);
+        self.persist_task(&snapshot);
+        Ok(snapshot)
     }
 
     /// Cancel a task (valid from Pending or Running).
@@ -101,7 +291,10 @@ impl TaskEngine {
 
         task.status = TaskStatus::Cancelled;
         task.completed_at = Some(Utc::now());
-        Ok(task.clone())
+        let snapshot = task.clone();
+        drop(tasks);
+        self.persist_task(&snapshot);
+        Ok(snapshot)
     }
 
     /// Complete a task with output (transition Running -> Completed).
@@ -125,7 +318,10 @@ impl TaskEngine {
         task.status = TaskStatus::Completed;
         task.output = Some(output);
         task.completed_at = Some(Utc::now());
-        Ok(task.clone())
+        let snapshot = task.clone();
+        drop(tasks);
+        self.persist_task(&snapshot);
+        Ok(snapshot)
     }
 
     /// Fail a task with an error message (valid from Running or Pending).
@@ -145,7 +341,10 @@ impl TaskEngine {
         task.status = TaskStatus::Failed;
         task.output = Some(serde_json::json!({ "error": error }));
         task.completed_at = Some(Utc::now());
-        Ok(task.clone())
+        let snapshot = task.clone();
+        drop(tasks);
+        self.persist_task(&snapshot);
+        Ok(snapshot)
     }
 
     /// Get a task by ID.
@@ -199,7 +398,10 @@ impl TaskEngine {
         // Store the sub-task itself with parent_id set.
         let mut child = subtask;
         child.parent_id = Some(parent_id.to_string());
+        let child_snapshot = child.clone();
         tasks.insert(child.id.clone(), child);
+        drop(tasks);
+        self.persist_task(&child_snapshot);
 
         Ok(subtask_id)
     }

@@ -2,6 +2,7 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use super::{Artifact, CreateTaskRequest, TaskEngine, TaskFilter, TaskStatus};
+use crate::station::db;
 
 fn make_request(description: &str) -> CreateTaskRequest {
     CreateTaskRequest {
@@ -439,4 +440,202 @@ async fn test_artifact_serde_roundtrip() {
     assert_eq!(back.task_id, artifact.task_id);
     assert_eq!(back.artifact_type, "code");
     assert_eq!(back.mime_type, Some("text/x-rust".to_string()));
+}
+
+// ---------------------------------------------------------------------------
+// SQLite persistence tests (D1D-267)
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn test_task_persisted_to_sqlite() {
+    let db_handle = db::init_memory().expect("init in-memory db");
+    let engine = TaskEngine::with_db(db_handle.clone());
+
+    let task = engine.create(make_request("Persist me")).await;
+
+    // Verify the task was written to SQLite.
+    let conn = db_handle.lock().unwrap();
+    let title: String = conn
+        .query_row(
+            "SELECT title FROM tasks WHERE id = ?1",
+            rusqlite::params![task.id],
+            |row| row.get(0),
+        )
+        .expect("task should exist in db");
+    assert_eq!(title, "Persist me");
+
+    let status: String = conn
+        .query_row(
+            "SELECT status FROM tasks WHERE id = ?1",
+            rusqlite::params![task.id],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(status, "pending");
+}
+
+#[tokio::test]
+async fn test_task_status_updates_persisted() {
+    let db_handle = db::init_memory().expect("init in-memory db");
+    let engine = TaskEngine::with_db(db_handle.clone());
+
+    let task = engine.create(make_request("Track status")).await;
+    engine.start(&task.id).await.unwrap();
+
+    // Verify running status persisted.
+    {
+        let conn = db_handle.lock().unwrap();
+        let status: String = conn
+            .query_row(
+                "SELECT status FROM tasks WHERE id = ?1",
+                rusqlite::params![task.id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(status, "running");
+    }
+
+    engine
+        .complete(&task.id, serde_json::json!({"result": "ok"}))
+        .await
+        .unwrap();
+
+    // Verify completed status persisted.
+    {
+        let conn = db_handle.lock().unwrap();
+        let status: String = conn
+            .query_row(
+                "SELECT status FROM tasks WHERE id = ?1",
+                rusqlite::params![task.id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(status, "completed");
+
+        let output: Option<String> = conn
+            .query_row(
+                "SELECT output FROM tasks WHERE id = ?1",
+                rusqlite::params![task.id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert!(output.unwrap().contains("ok"));
+    }
+}
+
+#[tokio::test]
+async fn test_task_roundtrip_save_load() {
+    let db_handle = db::init_memory().expect("init in-memory db");
+
+    // Engine 1: create tasks and transition them.
+    let engine1 = TaskEngine::with_db(db_handle.clone());
+    let t1 = engine1.create(make_request("Pending task")).await;
+    let t2 = engine1.create(make_request("Running task")).await;
+    let t3 = engine1.create(make_request("Completed task")).await;
+    engine1.start(&t2.id).await.unwrap();
+    engine1.start(&t3.id).await.unwrap();
+    engine1
+        .complete(&t3.id, serde_json::json!({}))
+        .await
+        .unwrap();
+
+    // Engine 2: simulate app restart — load from same DB.
+    let engine2 = TaskEngine::with_db(db_handle);
+    let loaded = engine2.load_from_db().await.unwrap();
+
+    // Should load pending + running (not completed).
+    assert_eq!(loaded, 2);
+
+    let pending = engine2.status(&t1.id).await;
+    assert!(pending.is_some());
+    assert_eq!(pending.unwrap().status, TaskStatus::Pending);
+
+    let running = engine2.status(&t2.id).await;
+    assert!(running.is_some());
+    assert_eq!(running.unwrap().status, TaskStatus::Running);
+
+    // Completed task should NOT be loaded.
+    let completed = engine2.status(&t3.id).await;
+    assert!(completed.is_none());
+}
+
+#[tokio::test]
+async fn test_task_pause_cancel_persisted() {
+    let db_handle = db::init_memory().expect("init in-memory db");
+    let engine = TaskEngine::with_db(db_handle.clone());
+
+    let task = engine.create(make_request("Pausable")).await;
+    engine.start(&task.id).await.unwrap();
+    engine.pause(&task.id).await.unwrap();
+
+    {
+        let conn = db_handle.lock().unwrap();
+        let status: String = conn
+            .query_row(
+                "SELECT status FROM tasks WHERE id = ?1",
+                rusqlite::params![task.id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(status, "paused");
+    }
+
+    // Create another task to cancel.
+    let task2 = engine.create(make_request("Cancellable")).await;
+    engine.cancel(&task2.id).await.unwrap();
+
+    {
+        let conn = db_handle.lock().unwrap();
+        let status: String = conn
+            .query_row(
+                "SELECT status FROM tasks WHERE id = ?1",
+                rusqlite::params![task2.id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(status, "cancelled");
+    }
+}
+
+#[tokio::test]
+async fn test_subtask_persisted_with_parent_id() {
+    let db_handle = db::init_memory().expect("init in-memory db");
+    let engine = TaskEngine::with_db(db_handle.clone());
+
+    let parent = engine.create(make_request("Parent")).await;
+    let child = engine.create(make_request("Child")).await;
+    engine
+        .add_subtask(&parent.id, child.clone())
+        .await
+        .unwrap();
+
+    // Verify the child's parent_id is set in the database.
+    let conn = db_handle.lock().unwrap();
+    let parent_id: Option<String> = conn
+        .query_row(
+            "SELECT parent_id FROM tasks WHERE id = ?1",
+            rusqlite::params![child.id],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(parent_id, Some(parent.id));
+}
+
+#[tokio::test]
+async fn test_load_rebuilds_subtask_refs() {
+    let db_handle = db::init_memory().expect("init in-memory db");
+
+    let engine1 = TaskEngine::with_db(db_handle.clone());
+    let parent = engine1.create(make_request("Parent")).await;
+    let child = engine1.create(make_request("Child")).await;
+    let child_id = child.id.clone();
+    engine1.add_subtask(&parent.id, child).await.unwrap();
+
+    // Simulate restart.
+    let engine2 = TaskEngine::with_db(db_handle);
+    engine2.load_from_db().await.unwrap();
+
+    // Parent should have the child in sub_tasks.
+    let loaded_parent = engine2.status(&parent.id).await.unwrap();
+    assert!(loaded_parent.sub_tasks.contains(&child_id));
 }
