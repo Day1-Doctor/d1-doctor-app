@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::{oneshot, RwLock};
 
 use super::risk::{classify_risk, RiskLevel};
+use crate::station::db::DbHandle;
 
 /// A request asking the user to approve (or reject) a tool invocation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,6 +70,8 @@ pub struct PermissionEngine {
     /// Ordered queue of approval requests (FIFO). When multiple agents request
     /// approval simultaneously the queue determines presentation order in the UI.
     approval_queue: Arc<RwLock<VecDeque<ApprovalRequest>>>,
+    /// Optional SQLite handle for write-behind trust score persistence.
+    db: Option<DbHandle>,
 }
 
 impl PermissionEngine {
@@ -79,6 +82,84 @@ impl PermissionEngine {
             trust_overrides: Arc::new(RwLock::new(HashMap::new())),
             trust_scores: Arc::new(RwLock::new(HashMap::new())),
             approval_queue: Arc::new(RwLock::new(VecDeque::new())),
+            db: None,
+        }
+    }
+
+    /// Create a new permission engine backed by an SQLite database.
+    pub fn with_db(db: DbHandle) -> Self {
+        Self {
+            pending: Arc::new(RwLock::new(HashMap::new())),
+            trust_overrides: Arc::new(RwLock::new(HashMap::new())),
+            trust_scores: Arc::new(RwLock::new(HashMap::new())),
+            approval_queue: Arc::new(RwLock::new(VecDeque::new())),
+            db: Some(db),
+        }
+    }
+
+    /// Load trust scores from the `agents` table into the in-memory store.
+    ///
+    /// Call once at startup to restore trust scores from the previous session.
+    pub async fn load_trust_scores(&self) -> Result<usize, String> {
+        let db = match &self.db {
+            Some(db) => db,
+            None => return Ok(0),
+        };
+
+        // Collect all rows while holding the db mutex, then release it.
+        let entries: Vec<(String, f64)> = {
+            let conn = db.lock().map_err(|e| format!("db lock failed: {e}"))?;
+            let mut stmt = conn
+                .prepare("SELECT id, trust_score FROM agents WHERE trust_score IS NOT NULL")
+                .map_err(|e| format!("prepare failed: {e}"))?;
+
+            let rows = stmt
+                .query_map([], |row| {
+                    let id: String = row.get(0)?;
+                    let score: f64 = row.get(1)?;
+                    Ok((id, score))
+                })
+                .map_err(|e| format!("query failed: {e}"))?;
+
+            rows.collect::<Result<Vec<_>, _>>()
+                .map_err(|e| format!("row read failed: {e}"))?
+        };
+
+        let mut scores = self.trust_scores.write().await;
+        for (id, score) in &entries {
+            scores.insert(id.clone(), *score);
+        }
+        Ok(entries.len())
+    }
+
+    /// Persist a trust score to the `agents` table (write-behind).
+    ///
+    /// Uses UPSERT: if the agent row exists, update the trust_score;
+    /// otherwise insert a minimal agent row.
+    fn persist_trust_score(&self, agent_id: &str, score: f64) {
+        let db = match &self.db {
+            Some(db) => db,
+            None => return,
+        };
+
+        let conn = match db.lock() {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::warn!("failed to acquire db lock for trust score persist: {e}");
+                return;
+            }
+        };
+
+        let now = chrono::Utc::now().to_rfc3339();
+        let result = conn.execute(
+            "INSERT INTO agents (id, name, role, framework, trust_score, created_at, updated_at)
+             VALUES (?1, ?1, 'unknown', 'unknown', ?2, ?3, ?3)
+             ON CONFLICT(id) DO UPDATE SET trust_score = excluded.trust_score, updated_at = excluded.updated_at",
+            rusqlite::params![agent_id, score, now],
+        );
+
+        if let Err(e) = result {
+            tracing::warn!(agent_id = %agent_id, "failed to persist trust score: {e}");
         }
     }
 
@@ -231,6 +312,8 @@ impl PermissionEngine {
         let current = scores.get(agent_id).copied().unwrap_or(0.5);
         let updated = (current + delta).clamp(0.0, 1.0);
         scores.insert(agent_id.to_string(), updated);
+        drop(scores);
+        self.persist_trust_score(agent_id, updated);
     }
 
     // ------------------------------------------------------------------
@@ -265,6 +348,7 @@ impl Default for PermissionEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::station::db;
     use serde_json::json;
 
     #[tokio::test]
@@ -573,5 +657,66 @@ mod tests {
 
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("queued approval not found"));
+    }
+
+    // -----------------------------------------------------------------------
+    // Trust score persistence tests (D1D-267)
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn test_trust_score_persisted_to_sqlite() {
+        let db_handle = db::init_memory().expect("init in-memory db");
+        let engine = PermissionEngine::with_db(db_handle.clone());
+
+        engine.update_trust_score("agent-1", 0.3).await;
+
+        // Verify persisted to the agents table.
+        let conn = db_handle.lock().unwrap();
+        let score: f64 = conn
+            .query_row(
+                "SELECT trust_score FROM agents WHERE id = ?1",
+                rusqlite::params!["agent-1"],
+                |row| row.get(0),
+            )
+            .expect("agent should exist in db");
+        // Default 0.5 + 0.3 = 0.8
+        assert!((score - 0.8).abs() < 0.001);
+    }
+
+    #[tokio::test]
+    async fn test_trust_score_roundtrip_save_load() {
+        let db_handle = db::init_memory().expect("init in-memory db");
+
+        // Engine 1: set some trust scores.
+        let engine1 = PermissionEngine::with_db(db_handle.clone());
+        engine1.update_trust_score("agent-a", 0.3).await; // 0.5+0.3 = 0.8
+        engine1.update_trust_score("agent-b", -0.2).await; // 0.5-0.2 = 0.3
+
+        // Engine 2: simulate restart — load from same DB.
+        let engine2 = PermissionEngine::with_db(db_handle);
+        let loaded = engine2.load_trust_scores().await.unwrap();
+        assert_eq!(loaded, 2);
+
+        assert!((engine2.get_trust_score("agent-a").await - 0.8).abs() < 0.001);
+        assert!((engine2.get_trust_score("agent-b").await - 0.3).abs() < 0.001);
+    }
+
+    #[tokio::test]
+    async fn test_trust_score_clamped_persisted() {
+        let db_handle = db::init_memory().expect("init in-memory db");
+        let engine = PermissionEngine::with_db(db_handle.clone());
+
+        // Overshoot — should clamp to 1.0.
+        engine.update_trust_score("agent-1", 0.7).await; // 0.5+0.7 = 1.0
+
+        let conn = db_handle.lock().unwrap();
+        let score: f64 = conn
+            .query_row(
+                "SELECT trust_score FROM agents WHERE id = ?1",
+                rusqlite::params!["agent-1"],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert!((score - 1.0).abs() < 0.001);
     }
 }

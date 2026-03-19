@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
+use crate::station::db::DbHandle;
 use crate::station::events::bus::EventBus;
 use crate::station::events::event_types::{AgentEvent, EventType};
 
@@ -85,10 +86,13 @@ impl AgentCostSummary {
 /// Tracks per-agent token usage and DD cost for the current session.
 ///
 /// Thread-safe via `RwLock`. Emits `cost.updated` events on the EventBus
-/// after each `record_usage` call.
+/// after each `record_usage` call. Optionally persists each usage record
+/// to SQLite for historical analysis across sessions.
 pub struct CostTracker {
     agents: Arc<RwLock<HashMap<String, AgentCostSummary>>>,
     event_bus: Option<Arc<EventBus>>,
+    /// Optional SQLite handle for write-behind cost persistence.
+    db: Option<DbHandle>,
 }
 
 impl CostTracker {
@@ -97,6 +101,7 @@ impl CostTracker {
         Self {
             agents: Arc::new(RwLock::new(HashMap::new())),
             event_bus: None,
+            db: None,
         }
     }
 
@@ -105,18 +110,130 @@ impl CostTracker {
         Self {
             agents: Arc::new(RwLock::new(HashMap::new())),
             event_bus: Some(event_bus),
+            db: None,
         }
+    }
+
+    /// Create a new cost tracker backed by an SQLite database.
+    pub fn with_db(db: DbHandle) -> Self {
+        Self {
+            agents: Arc::new(RwLock::new(HashMap::new())),
+            event_bus: None,
+            db: Some(db),
+        }
+    }
+
+    /// Create a new cost tracker with both an event bus and SQLite persistence.
+    pub fn with_event_bus_and_db(event_bus: Arc<EventBus>, db: DbHandle) -> Self {
+        Self {
+            agents: Arc::new(RwLock::new(HashMap::new())),
+            event_bus: Some(event_bus),
+            db: Some(db),
+        }
+    }
+
+    /// Persist a single usage record to the `session_costs` table (write-behind).
+    fn persist_cost(
+        &self,
+        agent_id: &str,
+        provider: &str,
+        model: &str,
+        tokens_in: u64,
+        tokens_out: u64,
+        cost_usd: f64,
+        cost_dd: f64,
+    ) {
+        let db = match &self.db {
+            Some(db) => db,
+            None => return,
+        };
+
+        let conn = match db.lock() {
+            Ok(c) => c,
+            Err(e) => {
+                tracing::warn!("failed to acquire db lock for cost persist: {e}");
+                return;
+            }
+        };
+
+        let id = Uuid::new_v4().to_string();
+        let now = chrono::Utc::now().to_rfc3339();
+
+        // Ensure the agent row exists (FK requirement).
+        let _ = conn.execute(
+            "INSERT INTO agents (id, name, role, framework, created_at, updated_at)
+             VALUES (?1, ?1, 'unknown', 'unknown', ?2, ?2)
+             ON CONFLICT(id) DO NOTHING",
+            rusqlite::params![agent_id, now],
+        );
+
+        let result = conn.execute(
+            "INSERT INTO session_costs (id, agent_id, provider, model, tokens_in, tokens_out, cost_usd, cost_dd, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            rusqlite::params![id, agent_id, provider, model, tokens_in as i64, tokens_out as i64, cost_usd, cost_dd, now],
+        );
+
+        if let Err(e) = result {
+            tracing::warn!(agent_id = %agent_id, "failed to persist session cost: {e}");
+        }
+    }
+
+    /// Load historical cost records from SQLite for summary display.
+    ///
+    /// Returns the total number of records loaded. Cost records are grouped
+    /// into per-agent summaries and merged into the in-memory store.
+    pub async fn load_from_db(&self) -> Result<usize, String> {
+        let db = match &self.db {
+            Some(db) => db,
+            None => return Ok(0),
+        };
+
+        // Collect all rows while holding the db mutex, then release it.
+        let summaries: Vec<AgentCostSummary> = {
+            let conn = db.lock().map_err(|e| format!("db lock failed: {e}"))?;
+            let mut stmt = conn
+                .prepare(
+                    "SELECT agent_id, SUM(tokens_in), SUM(tokens_out), SUM(cost_usd), SUM(cost_dd), COUNT(*)
+                     FROM session_costs
+                     GROUP BY agent_id",
+                )
+                .map_err(|e| format!("prepare failed: {e}"))?;
+
+            let rows = stmt
+                .query_map([], |row| {
+                    Ok(AgentCostSummary {
+                        agent_id: row.get(0)?,
+                        tokens_in: row.get::<_, i64>(1)? as u64,
+                        tokens_out: row.get::<_, i64>(2)? as u64,
+                        cost_usd: row.get(3)?,
+                        cost_dd: row.get(4)?,
+                        request_count: row.get::<_, i64>(5)? as u64,
+                        last_updated: Utc::now(),
+                    })
+                })
+                .map_err(|e| format!("query failed: {e}"))?;
+
+            rows.collect::<Result<Vec<_>, _>>()
+                .map_err(|e| format!("row read failed: {e}"))?
+        };
+
+        let count = summaries.len();
+        let mut agents = self.agents.write().await;
+        for summary in summaries {
+            agents.insert(summary.agent_id.clone(), summary);
+        }
+        Ok(count)
     }
 
     /// Record a usage event for an agent.
     ///
     /// Calculates the DD cost using the model's tier rate and updates the
     /// running totals. Emits a `cost.updated` event if an EventBus is
-    /// configured.
+    /// configured. Persists the record to SQLite if a DbHandle is configured.
     pub async fn record_usage(
         &self,
         agent_id: &str,
-        _provider: &str,
+        provider: &str,
         model: &str,
         tokens_in: u64,
         tokens_out: u64,
@@ -149,6 +266,9 @@ impl CostTracker {
             }
             (total_tokens_session, total_dd_session)
         };
+
+        // Persist to SQLite.
+        self.persist_cost(agent_id, provider, model, tokens_in, tokens_out, usd_cost, dd_cost);
 
         // Emit cost.updated event.
         if let Some(ref bus) = self.event_bus {
@@ -207,6 +327,7 @@ impl Default for CostTracker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::station::db;
 
     #[tokio::test]
     async fn test_record_usage_calculates_correct_dd_cost() {
@@ -387,5 +508,96 @@ mod tests {
     async fn test_nonexistent_agent() {
         let tracker = CostTracker::new();
         assert!(tracker.get_agent_cost("nonexistent").await.is_none());
+    }
+
+    // -----------------------------------------------------------------------
+    // SQLite cost persistence tests (D1D-267)
+    // -----------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn test_cost_persisted_to_sqlite() {
+        let db_handle = db::init_memory().expect("init in-memory db");
+        let tracker = CostTracker::with_db(db_handle.clone());
+
+        tracker
+            .record_usage("agent-1", "anthropic", "claude-opus-4", 100_000, 50_000)
+            .await;
+
+        // Verify written to session_costs table.
+        let conn = db_handle.lock().unwrap();
+        let count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM session_costs WHERE agent_id = ?1",
+                rusqlite::params!["agent-1"],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 1);
+
+        let model: String = conn
+            .query_row(
+                "SELECT model FROM session_costs WHERE agent_id = ?1",
+                rusqlite::params!["agent-1"],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(model, "claude-opus-4");
+    }
+
+    #[tokio::test]
+    async fn test_cost_roundtrip_save_load() {
+        let db_handle = db::init_memory().expect("init in-memory db");
+
+        // Tracker 1: record some usage.
+        let tracker1 = CostTracker::with_db(db_handle.clone());
+        tracker1
+            .record_usage("agent-a", "anthropic", "claude-opus-4", 100_000, 50_000)
+            .await;
+        tracker1
+            .record_usage("agent-b", "openai", "gpt-4o-mini", 200_000, 100_000)
+            .await;
+
+        // Tracker 2: simulate restart — load from same DB.
+        let tracker2 = CostTracker::with_db(db_handle);
+        let loaded = tracker2.load_from_db().await.unwrap();
+        assert_eq!(loaded, 2);
+
+        let cost_a = tracker2.get_agent_cost("agent-a").await.unwrap();
+        assert_eq!(cost_a.tokens_in, 100_000);
+        assert_eq!(cost_a.tokens_out, 50_000);
+        // Heavy tier: 150k tokens * 25/1M = 3.75 DD
+        assert!((cost_a.cost_dd - 3.75).abs() < 0.001);
+        assert_eq!(cost_a.request_count, 1);
+
+        let cost_b = tracker2.get_agent_cost("agent-b").await.unwrap();
+        assert_eq!(cost_b.tokens_in, 200_000);
+        assert_eq!(cost_b.tokens_out, 100_000);
+        // Medium tier: 300k tokens * 5/1M = 1.5 DD
+        assert!((cost_b.cost_dd - 1.5).abs() < 0.001);
+        assert_eq!(cost_b.request_count, 1);
+    }
+
+    #[tokio::test]
+    async fn test_multiple_costs_same_agent_persisted() {
+        let db_handle = db::init_memory().expect("init in-memory db");
+        let tracker = CostTracker::with_db(db_handle.clone());
+
+        tracker
+            .record_usage("agent-1", "anthropic", "claude-opus-4", 100_000, 50_000)
+            .await;
+        tracker
+            .record_usage("agent-1", "anthropic", "claude-opus-4", 200_000, 100_000)
+            .await;
+
+        // Should have 2 separate records in the DB.
+        let conn = db_handle.lock().unwrap();
+        let count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM session_costs WHERE agent_id = ?1",
+                rusqlite::params!["agent-1"],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(count, 2);
     }
 }
