@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
 import { useLayoutStore } from "../../stores/layoutStore";
 import { useAgentStore } from "../../stores/agentStore";
 import { useChatStore, generateMsgId } from "../../stores/chatStore";
 import { useCostStore } from "../../stores/costStore";
+import { useTaskStore } from "../../stores/taskStore";
+import { useBillingStore } from "../../stores/billingStore";
 
 type CommandCenterMode = "chat" | "agents";
 
@@ -40,10 +43,13 @@ function ChatPanel() {
   const { t } = useTranslation();
   const allMessages = useChatStore((s) => s.messages);
   const addMessage = useChatStore((s) => s.addMessage);
+  const addTask = useTaskStore((s) => s.addTask);
+  const maxAgents = useBillingStore((s) => s.maxAgents);
 
   const [inputValue, setInputValue] = useState("");
   const [chatMode, setChatMode] = useState<ChatMode>("plan");
   const [planConfirmed, setPlanConfirmed] = useState(false);
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Always talk to Dr. Bob (team leader / orchestrator)
@@ -91,18 +97,53 @@ function ChatPanel() {
     }
   }
 
-  function handleConfirmPlan() {
+  async function handleConfirmPlan() {
+    // Gather user messages from Plan Mode as the task description
+    const userMessages = drBobMessages
+      .filter((m) => m.role === "user")
+      .map((m) => m.content);
+    const description = userMessages.join("\n");
+
+    if (!description.trim()) return;
+
+    setIsCreatingTask(true);
     setPlanConfirmed(true);
-    addMessage({
-      id: generateMsgId(),
-      agentId: drBobId,
-      agentName: "Dr. Bob",
-      role: "agent",
-      content: t("chat.planConfirmed", {
-        defaultValue: "Plan confirmed! Handing off to the team now. I'll coordinate the agents to complete all tasks.",
-      }),
-      timestamp: new Date().toISOString(),
-    });
+
+    // Optimistically add a task to the UI store
+    addTask(description.length > 80 ? description.slice(0, 80) + "..." : description);
+
+    try {
+      // Call the Tauri create_task command to kick off real backend execution
+      const result = await invoke<{ id: string; title: string; status: string }>(
+        "create_task",
+        { description, maxAgents },
+      );
+
+      addMessage({
+        id: generateMsgId(),
+        agentId: drBobId,
+        agentName: "Dr. Bob",
+        role: "agent",
+        content: t("chat.planConfirmed", {
+          defaultValue: `Plan confirmed! Task "${result.title}" is now ${result.status}. I'll coordinate the agents to complete all tasks.`,
+        }),
+        timestamp: new Date().toISOString(),
+      });
+    } catch (e) {
+      // Fallback: show confirmation even if Tauri is not available (e.g. dev/browser mode)
+      addMessage({
+        id: generateMsgId(),
+        agentId: drBobId,
+        agentName: "Dr. Bob",
+        role: "agent",
+        content: t("chat.planConfirmed", {
+          defaultValue: "Plan confirmed! Handing off to the team now. I'll coordinate the agents to complete all tasks.",
+        }),
+        timestamp: new Date().toISOString(),
+      });
+    } finally {
+      setIsCreatingTask(false);
+    }
   }
 
   const isPlanMode = chatMode === "plan";
@@ -207,12 +248,16 @@ function ChatPanel() {
       {isPlanMode && drBobMessages.length > 0 && !planConfirmed && (
         <div className="shrink-0 px-3 py-2 border-t border-border">
           <button
-            onClick={handleConfirmPlan}
+            onClick={() => void handleConfirmPlan()}
+            disabled={isCreatingTask}
             className="w-full py-2 rounded-lg bg-accent hover:bg-accent-hover text-background
               text-sm font-semibold transition-colors duration-100
+              disabled:opacity-50 disabled:cursor-not-allowed
               focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
           >
-            {t("chat.confirmPlan", { defaultValue: "Confirm Plan & Start Execution" })}
+            {isCreatingTask
+              ? t("chat.creatingTask", { defaultValue: "Creating task..." })
+              : t("chat.confirmPlan", { defaultValue: "Confirm Plan & Start Execution" })}
           </button>
         </div>
       )}

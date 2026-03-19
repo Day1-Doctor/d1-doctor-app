@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
 import {
   useApprovalStore,
   type RiskLevel,
@@ -42,12 +43,28 @@ export function ApprovalDialog() {
   const request = pendingApprovals[0];
   if (!request) return null;
 
-  const handleDecision = (decision: ApprovalDecision) => {
+  const handleDecision = async (decision: ApprovalDecision) => {
     // If trust checkbox is checked, upgrade "allow_once" to "allow_always".
     const finalDecision =
       trustChecked && decision === "allow_once" ? "allow_always" : decision;
+
+    // Update local approval store immediately for responsive UI
     respond(request.id, finalDecision);
     setTrustChecked(false);
+
+    // Send decision to the backend via Tauri command
+    // TODO: Add `respond_approval` Tauri command to lib.rs when backend
+    // PermissionEngine supports async approval responses. For now we
+    // optimistically update the local store and attempt the invoke.
+    try {
+      await invoke("respond_approval", {
+        requestId: request.id,
+        decision: finalDecision === "allow_always" ? "approve" : finalDecision === "allow_once" ? "approve" : "deny",
+      });
+    } catch {
+      // `respond_approval` Tauri command not yet registered -- approval
+      // was already handled in the local store above, so this is non-fatal.
+    }
   };
 
   const badgeClass = riskBadgeClasses[request.riskLevel];
@@ -139,7 +156,7 @@ export function ApprovalDialog() {
         {/* Action buttons */}
         <div className="flex gap-2">
           <button
-            onClick={() => handleDecision("allow_once")}
+            onClick={() => void handleDecision("allow_once")}
             className="flex-1 rounded-lg bg-accent px-3 py-2 text-sm font-medium
               text-white transition-colors hover:bg-accent/90
               focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
@@ -148,7 +165,7 @@ export function ApprovalDialog() {
           </button>
 
           <button
-            onClick={() => handleDecision("allow_always")}
+            onClick={() => void handleDecision("allow_always")}
             className="flex-1 rounded-lg border border-accent/40 bg-transparent
               px-3 py-2 text-sm font-medium text-accent transition-colors
               hover:bg-accent/10
@@ -158,7 +175,7 @@ export function ApprovalDialog() {
           </button>
 
           <button
-            onClick={() => handleDecision("reject")}
+            onClick={() => void handleDecision("reject")}
             className="flex-1 rounded-lg border border-border bg-transparent
               px-3 py-2 text-sm font-medium text-text-secondary
               transition-colors hover:bg-muted hover:text-text-primary

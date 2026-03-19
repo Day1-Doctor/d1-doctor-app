@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useArtifactStore } from "../stores/artifactStore";
+import { useTaskStore } from "../stores/taskStore";
+import { useCostStore } from "../stores/costStore";
 import { ArtifactCard } from "../components/task/ArtifactCard";
 
 /** Mock memory entries for placeholder display. */
@@ -12,6 +14,8 @@ const mockMemoryEntries = [
 export function WorkspaceView() {
   const { t } = useTranslation();
   const artifacts = useArtifactStore((s) => s.artifacts);
+  const tasks = useTaskStore((s) => s.tasks);
+  const sessionCost = useCostStore((s) => s.sessionCost);
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
@@ -21,6 +25,13 @@ export function WorkspaceView() {
       </div>
 
       <div className="flex-1 px-6 py-4 space-y-6">
+        {/* Session summary */}
+        <section className="flex items-center gap-4 text-[12px] text-text-muted">
+          <span>{tasks.length} {t("workspace.tasks", { defaultValue: "tasks" })}</span>
+          <span>{artifacts.length} {t("workspace.artifacts", { defaultValue: "artifacts" })}</span>
+          {sessionCost > 0 && <span>{sessionCost} DD {t("workspace.spent", { defaultValue: "spent" })}</span>}
+        </section>
+
         {/* Files & Artifacts section */}
         <section>
           <h2 className="text-[12px] uppercase tracking-wider text-text-muted font-semibold mb-2">

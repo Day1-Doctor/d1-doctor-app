@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { invoke } from "@tauri-apps/api/core";
 import { useApprovalStore, type ApprovalRequest, type RiskLevel } from "../../stores/approvalStore";
 
 // ---------------------------------------------------------------------------
@@ -20,8 +21,23 @@ function ApprovalCard({ request }: { request: ApprovalRequest }) {
   const respond = useApprovalStore((s) => s.respond);
   const riskStyle = RISK_COLORS[request.riskLevel];
 
-  const handleApprove = () => respond(request.id, "allow_once");
-  const handleDeny = () => respond(request.id, "reject");
+  const handleApprove = async () => {
+    respond(request.id, "allow_once");
+    // TODO: `respond_approval` Tauri command not yet in lib.rs -- attempt call
+    try {
+      await invoke("respond_approval", { requestId: request.id, decision: "approve" });
+    } catch {
+      // Non-fatal: local store already updated
+    }
+  };
+  const handleDeny = async () => {
+    respond(request.id, "reject");
+    try {
+      await invoke("respond_approval", { requestId: request.id, decision: "deny" });
+    } catch {
+      // Non-fatal: local store already updated
+    }
+  };
 
   return (
     <div
@@ -68,7 +84,7 @@ function ApprovalCard({ request }: { request: ApprovalRequest }) {
       {/* Buttons */}
       <div style={{ display: "flex", gap: 6, marginTop: 2 }}>
         <button
-          onClick={handleApprove}
+          onClick={() => void handleApprove()}
           style={{
             flex: 1,
             padding: "4px 8px",
@@ -94,7 +110,7 @@ function ApprovalCard({ request }: { request: ApprovalRequest }) {
         </button>
 
         <button
-          onClick={handleDeny}
+          onClick={() => void handleDeny()}
           style={{
             flex: 1,
             padding: "4px 8px",

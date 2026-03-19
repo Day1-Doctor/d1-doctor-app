@@ -1,7 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { useAgentStore } from "../stores/agentStore";
 import { useCostStore } from "../stores/costStore";
+import { useTaskStore } from "../stores/taskStore";
 import { useOfficeStore } from "../stores/officeStore";
+import { useEventLogStore } from "../stores/eventLogStore";
 
 function StatCard({ label, value, unit }: { label: string; value: string | number; unit?: string }) {
   return (
@@ -21,18 +23,41 @@ export function MetricsView() {
   const agentCosts = useCostStore((s) => s.agentCosts);
   const sessionCost = useCostStore((s) => s.sessionCost);
   const balance = useCostStore((s) => s.balance);
+  const tasks = useTaskStore((s) => s.tasks);
   const offices = useOfficeStore((s) => s.offices);
+  const agentTokenUsage = useEventLogStore((s) => s.agentTokenUsage);
 
-  const totalTokens = 24_580; // placeholder
-  const tasksDone = 3; // placeholder
+  // Compute real task counts from task store
+  const tasksDone = tasks.filter((t) => t.status === "completed").length;
+  const tasksRunning = tasks.filter((t) => t.status === "running").length;
+  const tasksPending = tasks.filter((t) => t.status === "pending").length;
 
-  // Per-agent rows
+  // Compute total tokens from event log store agent usage
+  const totalTokens = agentTokenUsage.reduce((sum, a) => sum + a.totalTokens, 0);
+
+  // Build a token lookup from event log store for per-agent display
+  const tokensByAgent: Record<string, number> = {};
+  for (const usage of agentTokenUsage) {
+    tokensByAgent[usage.agentName] = usage.totalTokens;
+  }
+
+  // Count tasks assigned to each agent (based on steps with agentName)
+  const taskCountByAgent: Record<string, number> = {};
+  for (const task of tasks) {
+    for (const step of task.steps) {
+      if (step.agentName && (step.status === "running" || step.status === "completed")) {
+        taskCountByAgent[step.agentName] = (taskCountByAgent[step.agentName] ?? 0) + 1;
+      }
+    }
+  }
+
+  // Per-agent rows using real data
   const agentRows = agents.map((agent) => ({
     name: agent.name,
     role: agent.role,
     cost: agentCosts[agent.name] ?? 0,
-    tokens: Math.floor(Math.random() * 5000 + 500), // placeholder
-    tasks: agent.status !== "idle" ? 1 : 0,
+    tokens: tokensByAgent[agent.name] ?? 0,
+    tasks: taskCountByAgent[agent.name] ?? (agent.status !== "idle" ? 1 : 0),
   }));
 
   return (
@@ -43,12 +68,14 @@ export function MetricsView() {
       </div>
 
       <div className="flex-1 px-6 py-4 space-y-6">
-        {/* 4-stat grid */}
+        {/* 6-stat grid */}
         <div className="grid grid-cols-2 gap-2">
           <StatCard label={t("metrics.totalCost")} value={sessionCost} unit="DD" />
           <StatCard label={t("metrics.totalTokens")} value={totalTokens.toLocaleString()} />
           <StatCard label={t("metrics.tasksDone")} value={tasksDone} />
           <StatCard label={t("metrics.ddBalance")} value={balance} unit="DD" />
+          <StatCard label={t("metrics.tasksRunning", { defaultValue: "Running" })} value={tasksRunning} />
+          <StatCard label={t("metrics.tasksPending", { defaultValue: "Pending" })} value={tasksPending} />
         </div>
 
         {/* By Office */}
